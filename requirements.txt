@@ -1,0 +1,7 @@
+numpy
+gym
+gymnasium
+mujoco-py
+git+https://github.com/Farama-Foundation/d4rl@master#egg=d4rl
+pybullet
+stable-baselines3
