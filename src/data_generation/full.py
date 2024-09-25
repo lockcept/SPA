@@ -33,9 +33,9 @@ def compare_trajectories(traj1, traj2):
     reward_sum_2 = np.sum(traj2["rewards"])
 
     if reward_sum_1 > reward_sum_2:
-        return 1
-    else:
         return 0
+    else:
+        return 1
 
 
 def generate_preference_pair(dataset, indices):
@@ -76,5 +76,5 @@ def scripted_teacher(env, num_pairs=10):
 
 
 if __name__ == "__main__":
-    env = "antmaze-umaze-v0"
+    env = "maze2d-medium-dense-v1"
     scripted_teacher(env)
