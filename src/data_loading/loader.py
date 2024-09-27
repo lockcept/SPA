@@ -4,6 +4,8 @@ import d4rl  # import 해야 gym.make()에서 d4rl 환경을 불러올 수 있�
 import numpy as np
 import argparse
 
+from config import DEFAULT_ENV_NAME
+
 
 def save_dataset(env_name, dataset):
     save_dir = f"dataset/d4rl/{env_name}"
@@ -45,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--env_name",
         type=str,
-        default="maze2d-medium-dense-v1",
+        default=DEFAULT_ENV_NAME,
         help="Name of the environment to load the dataset for",
     )
 
