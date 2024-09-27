@@ -2,6 +2,13 @@ import argparse
 import numpy as np
 import random
 
+
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+
+
 from config import DEFAULT_ENV_NAME
 
 
@@ -17,42 +24,45 @@ def extract_trajectory_indices(dataset):
     start = 0
     for i in range(length):
         if terminals[i] or timeouts[i]:
-            end = i
-            indices.append((start, end))
+            indices.append((start, i + 1))
             start = i + 1
     return indices
 
 
-def sample_trajectory(dataset, indices):
-    start, end = random.choice(indices)
+def trajectory_from_index(dataset, start, end):
     trajectory = {
-        "observations": dataset["observations"][start : end + 1],
-        "actions": dataset["actions"][start : end + 1],
-        "rewards": dataset["rewards"][start : end + 1],
+        "observations": dataset["observations"][start:end],
+        "actions": dataset["actions"][start:end],
+        "rewards": dataset["rewards"][start:end],
     }
-    return trajectory, (start, end)
+    return trajectory
 
 
-def compare_trajectories(traj1, traj2):
+def compare_trajectories(traj0, traj1):
+    reward_sum_0 = np.sum(traj0["rewards"])
     reward_sum_1 = np.sum(traj1["rewards"])
-    reward_sum_2 = np.sum(traj2["rewards"])
 
-    if reward_sum_1 > reward_sum_2:
+    if reward_sum_0 > reward_sum_1:
         return 0
     else:
         return 1
 
 
 def generate_preference_pair(dataset, indices):
-    traj0, (start0, end0) = sample_trajectory(dataset, indices)
-    traj1, (start1, end1) = sample_trajectory(dataset, indices)
+    index0, index1 = random.sample(range(len(indices)), 2)
+    (start0, end0), (start1, end1) = indices[index0], indices[index1]
+
+    if (end0 - start0) > (end1 - start1):
+        end0 = start0 + (end1 - start1)
+    else:
+        end1 = start1 + (end0 - start0)
+
+    traj0, traj1 = trajectory_from_index(dataset, start0, end0), trajectory_from_index(
+        dataset, start1, end1
+    )
 
     winner = compare_trajectories(traj0, traj1)
     preference_pair = {"s0": (start0, end0), "s1": (start1, end1), "winner": winner}
-
-    print(
-        f"Trajectory 0: {end0-start0+1}, Trajectory 1: {end1-start1+1}, Winner: {winner}"
-    )
 
     return preference_pair
 
@@ -63,7 +73,7 @@ def save_preference_pairs(file_path, preference_pairs):
 
 
 def generate_and_save(env, num_pairs=10):
-    dataset_file_path = f"dataset/d4rl/{env}/dataset.npz"
+    dataset_file_path = f"dataset/{env}/d4rl_dataset.npz"
     dataset = load_dataset(dataset_file_path)
 
     indices = extract_trajectory_indices(dataset)
@@ -73,7 +83,7 @@ def generate_and_save(env, num_pairs=10):
         preference_pair = generate_preference_pair(dataset, indices)
         preference_pairs.append(preference_pair)
 
-    save_path = f"dataset/pbrl/{env}/preference_pairs.npz"
+    save_path = f"dataset/{env}/full_preference_pairs.npz"
     save_preference_pairs(save_path, preference_pairs)
 
 
