@@ -1,5 +1,8 @@
+import argparse
 import numpy as np
 import random
+
+from config import DEFAULT_ENV_NAME
 
 
 def load_dataset(file_path):
@@ -7,10 +10,12 @@ def load_dataset(file_path):
     return dataset
 
 
-def extract_trajectory_indices(terminals, timeouts):
+def extract_trajectory_indices(dataset):
+    terminals, timeouts = dataset["terminals"], dataset["timeouts"]
     indices = []
+    length = len(terminals)
     start = 0
-    for i in range(len(terminals)):
+    for i in range(length):
         if terminals[i] or timeouts[i]:
             end = i
             indices.append((start, end))
@@ -39,14 +44,14 @@ def compare_trajectories(traj1, traj2):
 
 
 def generate_preference_pair(dataset, indices):
+    traj0, (start0, end0) = sample_trajectory(dataset, indices)
     traj1, (start1, end1) = sample_trajectory(dataset, indices)
-    traj2, (start2, end2) = sample_trajectory(dataset, indices)
 
-    winner = compare_trajectories(traj1, traj2)
-    preference_pair = {"s0": (start1, end1), "s1": (start2, end2), "winner": winner}
+    winner = compare_trajectories(traj0, traj1)
+    preference_pair = {"s0": (start0, end0), "s1": (start1, end1), "winner": winner}
 
     print(
-        f"Trajectory 1: {end1-start1+1}, Trajectory 2: {end2-start2+1}, Winner: {winner}"
+        f"Trajectory 0: {end0-start0+1}, Trajectory 1: {end1-start1+1}, Winner: {winner}"
     )
 
     return preference_pair
@@ -57,14 +62,11 @@ def save_preference_pairs(file_path, preference_pairs):
     print(f"Preference pairs saved at {file_path}")
 
 
-def scripted_teacher(env, num_pairs=10):
+def generate_and_save(env, num_pairs=10):
     dataset_file_path = f"dataset/d4rl/{env}/dataset.npz"
     dataset = load_dataset(dataset_file_path)
 
-    indices = extract_trajectory_indices(dataset["terminals"], dataset["timeouts"])
-
-    length_stat = int(np.mean([end - start for start, end in indices]))
-    print(length_stat)
+    indices = extract_trajectory_indices(dataset)
 
     preference_pairs = []
     for _ in range(num_pairs):
@@ -76,5 +78,17 @@ def scripted_teacher(env, num_pairs=10):
 
 
 if __name__ == "__main__":
-    env = "maze2d-medium-dense-v1"
-    scripted_teacher(env)
+    parser = argparse.ArgumentParser(
+        description="Load and save D4RL dataset for a given environment."
+    )
+
+    parser.add_argument(
+        "--env_name",
+        type=str,
+        default=DEFAULT_ENV_NAME,
+        help="Name of the environment to load the dataset for",
+    )
+
+    args = parser.parse_args()
+
+    generate_and_save(args.env_name)
