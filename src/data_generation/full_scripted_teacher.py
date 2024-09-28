@@ -68,7 +68,7 @@ def generate_preference_pair(dataset, indices):
 
 
 def save_preference_pairs(file_path, preference_pairs):
-    np.savez(file_path, preference_pairs=preference_pairs)
+    np.savez(file_path, data=preference_pairs)
     print(f"Preference pairs saved at {file_path}")
 
 
