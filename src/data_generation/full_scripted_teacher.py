@@ -62,7 +62,11 @@ def generate_preference_pair(dataset, indices):
     )
 
     winner = compare_trajectories(traj0, traj1)
-    preference_pair = {"s0": (start0, end0), "s1": (start1, end1), "winner": winner}
+
+    preference_pair = np.array(
+        ((start0, end0), (start1, end1), winner),
+        dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "i4")],
+    )
 
     return preference_pair
 
