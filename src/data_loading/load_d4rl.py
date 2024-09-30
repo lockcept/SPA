@@ -37,12 +37,12 @@ def save_dataset(env_name, dataset):
 
 
 def load(env_name):
-    antmaze_env = gym.make(env_name)
-    antmaze_dataset = antmaze_env.get_dataset()
+    env = gym.make(env_name)
+    dataset = env.get_dataset()
 
-    save_dataset(env_name, antmaze_dataset)
+    save_dataset(env_name, dataset)
 
-    return antmaze_dataset
+    return dataset
 
 
 if __name__ == "__main__":
