@@ -3,12 +3,6 @@ import numpy as np
 import argparse
 
 
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-
 def load_d4rl_dataset(env_name):
     dir_path = f"dataset/{env_name}"
     dataset_name = "d4rl_dataset.npz"

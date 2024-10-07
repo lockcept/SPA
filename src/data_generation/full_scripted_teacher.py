@@ -3,15 +3,6 @@ import numpy as np
 import random
 
 
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-
-
-from config import DEFAULT_ENV_NAME
-
-
 def load_dataset(file_path):
     dataset = np.load(file_path)
     return dataset
@@ -89,20 +80,3 @@ def generate_and_save(env, num_pairs=10):
 
     save_path = f"dataset/{env}/full_preference_pairs.npz"
     save_preference_pairs(save_path, preference_pairs)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Load and save D4RL dataset for a given environment."
-    )
-
-    parser.add_argument(
-        "--env_name",
-        type=str,
-        default=DEFAULT_ENV_NAME,
-        help="Name of the environment to load the dataset for",
-    )
-
-    args = parser.parse_args()
-
-    generate_and_save(args.env_name)

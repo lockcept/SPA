@@ -1,4 +1,3 @@
-import argparse
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,12 +6,9 @@ import sys
 import os
 
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from data_loading import load_dataset
-
-from config import DEFAULT_ENV_NAME
 
 
 def load_d4rl(env_name):
@@ -61,20 +57,3 @@ def analyze(env_name):
     print(data["observations"].shape)
     save_trajectory_lengths(data, env_name)
     show_reward_graph(data)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Load and save D4RL dataset for a given environment."
-    )
-
-    parser.add_argument(
-        "--env_name",
-        type=str,
-        default=DEFAULT_ENV_NAME,
-        help="Name of the environment to load the dataset for",
-    )
-
-    args = parser.parse_args()
-
-    analyze(args.env_name)

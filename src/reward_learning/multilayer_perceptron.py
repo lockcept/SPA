@@ -1,16 +1,7 @@
-import argparse
-import os
-import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-from src.data_loading.preference_dataloader import get_dataloader
-
-from config import DEFAULT_ENV_NAME
 
 
 class RewardNetwork(nn.Module):
@@ -88,21 +79,3 @@ def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001):
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     return model, optimizer
-
-
-if __name__ == "__main__":
-    data_loader, obs_dim, act_dim = get_dataloader(
-        env_name="maze2d-medium-dense-v1", pair_name="full_preference_pairs.npz"
-    )
-
-    print("Observation Dimension:", obs_dim)
-    print("Action Dimension:", act_dim)
-    model, optimizer = initialize_network(data_loader, obs_dim, act_dim)
-
-    loss_fn = BradleyTerryLoss()
-
-    num_epochs = 10
-    loss_history = learn(model, optimizer, data_loader, loss_fn, num_epochs=num_epochs)
-
-    # 최종 학습 결과 확인
-    print("Training completed. Loss history:", loss_history)
