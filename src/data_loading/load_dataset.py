@@ -34,11 +34,18 @@ def load_processed_data(env_name, pair_name="full_preference_pairs.npz"):
 
     for preference_data in pair["data"]:
         s0, s1, mu = preference_data["s0"], preference_data["s1"], preference_data["mu"]
-        print(s0)
 
-        s0 = [dataset["observations"][s0[0] : s0[1]], dataset["actions"][s0[0] : s0[1]]]
-        s1 = [dataset["observations"][s1[0] : s1[1]], dataset["actions"][s1[0] : s1[1]]]
-        processed_data.append(np.array([s0, s1, mu]))
+        s0 = [
+            np.array(dataset["observations"][s0[0] : s0[1]]),
+            np.array(dataset["actions"][s0[0] : s0[1]]),
+        ]
+        s1 = [
+            np.array(dataset["observations"][s1[0] : s1[1]]),
+            np.array(dataset["actions"][s1[0] : s1[1]]),
+        ]
+        mu = np.array(mu)
+
+        processed_data.append(np.array((s0, s1, mu)))
 
     return processed_data
 
@@ -58,3 +65,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     pairs = load_processed_data(args.env_name)
+    print(len(pairs))
