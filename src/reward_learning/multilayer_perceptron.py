@@ -31,9 +31,9 @@ class BradleyTerryLoss(nn.Module):
         self.cross_entropy_loss = nn.BCELoss()
 
     def forward(self, reward_s0, reward_s1, mu):
-        prob_s0_wins = torch.sigmoid(reward_s0 - reward_s1)
+        prob_s1_wins = torch.sigmoid(reward_s1 - reward_s0)
 
-        loss = self.cross_entropy_loss(prob_s0_wins, mu)
+        loss = self.cross_entropy_loss(prob_s1_wins, mu)
         return loss
 
 
