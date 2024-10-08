@@ -50,25 +50,21 @@ class PreferenceDataset(Dataset):
 def collate_fn(batch):
     s0_obs, s0_act, s1_obs, s1_act, mu = zip(*batch)
 
-    # Pad sequences to the same length in the batch
     s0_obs_padded = rnn_utils.pad_sequence(s0_obs, batch_first=True)
     s0_act_padded = rnn_utils.pad_sequence(s0_act, batch_first=True)
     s1_obs_padded = rnn_utils.pad_sequence(s1_obs, batch_first=True)
     s1_act_padded = rnn_utils.pad_sequence(s1_act, batch_first=True)
 
-    mu = torch.stack(mu)  # Stack mu values into a tensor
+    mu = torch.stack(mu)
 
     return s0_obs_padded, s0_act_padded, s1_obs_padded, s1_act_padded, mu
 
 
 def get_dataloader(env_name, pair_name, batch_size=32, shuffle=True):
-    # Get the processed data (structured array of s0, s1, mu)
     processed_data = get_processed_data(env_name, pair_name)
 
-    # Create a custom dataset
     dataset = PreferenceDataset(processed_data)
 
-    # Create the DataLoader with a custom collate_fn to handle padding
     dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn
     )
