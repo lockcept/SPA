@@ -48,16 +48,26 @@ class PreferenceDataset(Dataset):
 
 # Collate function to handle variable-length sequences
 def collate_fn(batch):
-    s0_obs, s0_act, s1_obs, s1_act, mu = zip(*batch)
+    s0_obs, s0_act, s0_obs_next, s1_obs, s1_act, s1_obs_next, mu = zip(*batch)
 
     s0_obs_padded = rnn_utils.pad_sequence(s0_obs, batch_first=True)
     s0_act_padded = rnn_utils.pad_sequence(s0_act, batch_first=True)
+    s0_obs_next_padded = rnn_utils.pad_sequence(s0_obs_next, batch_first=True)
     s1_obs_padded = rnn_utils.pad_sequence(s1_obs, batch_first=True)
     s1_act_padded = rnn_utils.pad_sequence(s1_act, batch_first=True)
+    s1_obs_next_padded = rnn_utils.pad_sequence(s1_obs_next, batch_first=True)
 
     mu = torch.stack(mu)
 
-    return s0_obs_padded, s0_act_padded, s1_obs_padded, s1_act_padded, mu
+    return (
+        s0_obs_padded,
+        s0_act_padded,
+        s0_obs_next_padded,
+        s1_obs_padded,
+        s1_act_padded,
+        s1_obs_next_padded,
+        mu,
+    )
 
 
 def get_dataloader(env_name, pair_name, batch_size=32, shuffle=True):

@@ -30,8 +30,12 @@ class BradleyTerryLoss(nn.Module):
         super(BradleyTerryLoss, self).__init__()
         self.cross_entropy_loss = nn.BCELoss()
 
-    def forward(self, reward_s0, reward_s1, mu):
-        prob_s1_wins = torch.sigmoid(reward_s1 - reward_s0)
+    def forward(self, rewards_s0, rewards_s1, mu):
+        reward_s0_sum = torch.sum(rewards_s0, dim=1)
+        reward_s1_sum = torch.sum(rewards_s1, dim=1)
+
+        prob_s1_wins = torch.sigmoid(reward_s1_sum - reward_s0_sum)
+        prob_s1_wins = prob_s1_wins.squeeze()
 
         loss = self.cross_entropy_loss(prob_s1_wins, mu)
         return loss
@@ -55,10 +59,10 @@ def learn(model, optimizer, data_loader, loss_fn, num_epochs=10):
                 mu_batch,
             ) = batch
 
-            reward_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
-            reward_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
+            rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
+            rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
 
-            loss = loss_fn(reward_s0, reward_s1, mu_batch)
+            loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
 
             optimizer.zero_grad()
             loss.backward()
