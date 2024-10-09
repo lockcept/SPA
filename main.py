@@ -65,8 +65,7 @@ if __name__ == "__main__":
 
         print("Observation Dimension:", obs_dim)
         print("Action Dimension:", act_dim)
-        model, optimizer = initialize_network(data_loader, obs_dim, act_dim)
-
+        model, optimizer = initialize_network(obs_dim, act_dim)
         loss_fn = BradleyTerryLoss()
 
         num_epochs = 10
@@ -74,5 +73,4 @@ if __name__ == "__main__":
             model, optimizer, data_loader, loss_fn, num_epochs=num_epochs
         )
 
-        # 최종 학습 결과 확인
         print("Training completed. Loss history:", loss_history)
