@@ -70,13 +70,17 @@ def collate_fn(batch):
     )
 
 
-def get_dataloader(env_name, pair_name, batch_size=32, shuffle=True):
+def get_dataloader(env_name, pair_name, batch_size=32, shuffle=True, drop_last=True):
     processed_data = get_processed_data(env_name, pair_name)
 
     dataset = PreferenceDataset(processed_data)
 
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        collate_fn=collate_fn,
+        drop_last=drop_last,
     )
 
     obs_dim, act_dim = dataset.get_dimensions()

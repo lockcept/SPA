@@ -5,6 +5,9 @@ import random
 import os
 import sys
 
+from tqdm import tqdm
+
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from data_loading.load_dataset import load_d4rl_dataset
@@ -83,7 +86,7 @@ def generate_and_save(env, path, num_pairs=10):
     indices = extract_trajectory_indices(dataset)
 
     preference_pairs = []
-    for _ in range(num_pairs):
+    for _ in tqdm(range(num_pairs), desc="Generating preference pairs"):
         preference_pair = generate_preference_pair(dataset, indices)
         preference_pairs.append(preference_pair)
 

@@ -4,7 +4,7 @@ import os
 import torch
 
 
-DEFAULT_ENV_NAME = "maze2d-medium-dense-v1"
+DEFAULT_ENV_NAME = "hopper-medium-v2"
 DEFAULT_PAIR_NAME = "full_preference_pairs"
 
 
@@ -24,11 +24,12 @@ if __name__ == "__main__":
         default=DEFAULT_PAIR_NAME,
         help="Name of the file to load the preference pairs to",
     )
+    # -2: heler evaluate reward model MLP
     # -1: helper analyze d4rl
     # 0: do nothing
     # 1: load and save d4rl
     # 2: load and save preference pairs from full_scripted_teacher
-    # 3: MLP
+    # 3: train MLP model
     parser.add_argument(
         "--function_number",
         type=int,
@@ -48,6 +49,11 @@ if __name__ == "__main__":
         from src.helper.analyze_d4rl import analyze
 
         analyze(env_name)
+    elif function_number == -2:
+        from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
+
+        evaluate_reward_model_MLP(env_name, pair_name)
+
     elif function_number == 1:
         from src.data_loading.load_d4rl import load
 
@@ -68,7 +74,7 @@ if __name__ == "__main__":
         save_path = f"model/{env_name}/{pair_name}_MLP.pth"
 
         data_loader, obs_dim, act_dim = get_dataloader(
-            env_name=DEFAULT_ENV_NAME, pair_name=DEFAULT_PAIR_NAME
+            env_name=env_name, pair_name=pair_name
         )
 
         model, optimizer = initialize_network(obs_dim, act_dim, path=save_path)
@@ -76,7 +82,11 @@ if __name__ == "__main__":
 
         num_epochs = 30
         loss_history = learn(
-            model, optimizer, data_loader, loss_fn, num_epochs=num_epochs
+            model,
+            optimizer,
+            data_loader,
+            loss_fn,
+            num_epochs=num_epochs,
         )
 
         save_dir = os.path.dirname(save_path)
