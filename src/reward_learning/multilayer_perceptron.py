@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -78,8 +79,12 @@ def learn(model, optimizer, data_loader, loss_fn, num_epochs=10):
     return loss_history
 
 
-def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001):
+def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001, path=None):
     model = RewardNetwork(obs_dim, act_dim, hidden_size)
+    if path is not None:
+        if os.path.isfile(path):
+            model.load_state_dict(torch.load(path, weights_only=True))
+
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     return model, optimizer

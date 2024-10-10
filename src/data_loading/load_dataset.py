@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import argparse
 
 
 def load_d4rl_dataset(env_name):
@@ -11,9 +10,9 @@ def load_d4rl_dataset(env_name):
     return dataset
 
 
-def load_pair(env_name, pair_name="full_preference_pairs.npz"):
+def load_pair(env_name, pair_name):
     dir_path = f"dataset/{env_name}"
-    pair = np.load(os.path.join(dir_path, pair_name), allow_pickle=True)
+    pair = np.load(os.path.join(dir_path, f"{pair_name}.npz"), allow_pickle=True)
 
     return pair
 
@@ -25,7 +24,7 @@ mu is a float
 """
 
 
-def get_processed_data(env_name, pair_name="full_preference_pairs.npz"):
+def get_processed_data(env_name, pair_name):
     dataset = load_d4rl_dataset(env_name)
     observations = dataset["observations"]
     actions = dataset["actions"]

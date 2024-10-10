@@ -1,11 +1,13 @@
-import argparse
 import numpy as np
 import random
 
 
-def load_dataset(file_path):
-    dataset = np.load(file_path)
-    return dataset
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
+
+from data_loading.load_dataset import load_d4rl_dataset
 
 
 def extract_trajectory_indices(dataset):
@@ -75,9 +77,8 @@ def save_preference_pairs(file_path, preference_pairs):
     print(f"Preference pairs saved at {file_path}")
 
 
-def generate_and_save(env, num_pairs=1000):
-    dataset_file_path = f"dataset/{env}/d4rl_dataset.npz"
-    dataset = load_dataset(dataset_file_path)
+def generate_and_save(env, path, num_pairs=10):
+    dataset = load_d4rl_dataset(env)
 
     indices = extract_trajectory_indices(dataset)
 
@@ -86,5 +87,5 @@ def generate_and_save(env, num_pairs=1000):
         preference_pair = generate_preference_pair(dataset, indices)
         preference_pairs.append(preference_pair)
 
-    save_path = f"dataset/{env}/full_preference_pairs.npz"
+    save_path = f"dataset/{env}/{path}.npz"
     save_preference_pairs(save_path, preference_pairs)

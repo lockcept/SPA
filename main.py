@@ -1,8 +1,11 @@
 import argparse
+import os
+
+import torch
 
 
 DEFAULT_ENV_NAME = "maze2d-medium-dense-v1"
-DEFAULT_PAIR_NAME = "full_prefernce_pairs.npz"
+DEFAULT_PAIR_NAME = "full_preference_pairs"
 
 
 if __name__ == "__main__":
@@ -34,23 +37,26 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    env_name = args.env_name
+    pair_name = args.pair_name
+    function_number = args.function_number
 
-    if args.function_number == 0:
+    if function_number == 0:
         print("Pass")
         pass
-    elif args.function_number == -1:
+    elif function_number == -1:
         from src.helper.analyze_d4rl import analyze
 
-        analyze(args.env_name)
-    elif args.function_number == 1:
+        analyze(env_name)
+    elif function_number == 1:
         from src.data_loading.load_d4rl import load
 
-        load(args.env_name)
-    elif args.function_number == 2:
+        load(env_name)
+    elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_and_save
 
-        generate_and_save(args.env_name)
-    elif args.function_number == 3:
+        generate_and_save(env_name, pair_name, 1000)
+    elif function_number == 3:
 
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
@@ -59,18 +65,23 @@ if __name__ == "__main__":
             learn,
         )
 
+        save_path = f"model/{env_name}/{pair_name}_MLP.pth"
+
         data_loader, obs_dim, act_dim = get_dataloader(
-            env_name="maze2d-medium-dense-v1", pair_name="full_preference_pairs.npz"
+            env_name=DEFAULT_ENV_NAME, pair_name=DEFAULT_PAIR_NAME
         )
 
-        print("Observation Dimension:", obs_dim)
-        print("Action Dimension:", act_dim)
-        model, optimizer = initialize_network(obs_dim, act_dim)
+        model, optimizer = initialize_network(obs_dim, act_dim, path=save_path)
         loss_fn = BradleyTerryLoss()
 
-        num_epochs = 100
+        num_epochs = 30
         loss_history = learn(
             model, optimizer, data_loader, loss_fn, num_epochs=num_epochs
         )
+
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        torch.save(model.state_dict(), save_path)
 
         print("Training completed. Loss history:", loss_history)
