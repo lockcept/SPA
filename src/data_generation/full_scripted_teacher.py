@@ -40,26 +40,34 @@ def compare_trajectories(traj0, traj1):
 
 
 def generate_preference_pair(dataset, indices):
-    index0, index1 = random.sample(range(len(indices)), 2)
-    (start0, end0), (start1, end1) = indices[index0], indices[index1]
+    min_length = 10
 
-    if (end0 - start0) > (end1 - start1):
-        end0 = start0 + (end1 - start1)
-    else:
-        end1 = start1 + (end0 - start0)
+    while True:
+        index0, index1 = random.sample(range(len(indices)), 2)
+        (start0, end0), (start1, end1) = indices[index0], indices[index1]
 
-    traj0, traj1 = trajectory_from_index(dataset, start0, end0), trajectory_from_index(
-        dataset, start1, end1
-    )
+        length0 = end0 - start0
+        length1 = end1 - start1
 
-    winner = compare_trajectories(traj0, traj1)
+        if length0 < min_length or length1 < min_length:
+            continue
 
-    preference_pair = np.array(
-        ((start0, end0), (start1, end1), winner),
-        dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "i4")],
-    )
+        if length0 > length1:
+            end0 = start0 + length1
+        else:
+            end1 = start1 + length0
 
-    return preference_pair
+        traj0 = trajectory_from_index(dataset, start0, end0)
+        traj1 = trajectory_from_index(dataset, start1, end1)
+
+        winner = compare_trajectories(traj0, traj1)
+
+        preference_pair = np.array(
+            ((start0, end0), (start1, end1), winner),
+            dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "i4")],
+        )
+
+        return preference_pair
 
 
 def save_preference_pairs(file_path, preference_pairs):
@@ -67,7 +75,7 @@ def save_preference_pairs(file_path, preference_pairs):
     print(f"Preference pairs saved at {file_path}")
 
 
-def generate_and_save(env, num_pairs=10):
+def generate_and_save(env, num_pairs=1000):
     dataset_file_path = f"dataset/{env}/d4rl_dataset.npz"
     dataset = load_dataset(dataset_file_path)
 

@@ -68,7 +68,7 @@ if __name__ == "__main__":
         model, optimizer = initialize_network(obs_dim, act_dim)
         loss_fn = BradleyTerryLoss()
 
-        num_epochs = 10
+        num_epochs = 100
         loss_history = learn(
             model, optimizer, data_loader, loss_fn, num_epochs=num_epochs
         )
