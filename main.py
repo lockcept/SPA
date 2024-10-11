@@ -30,6 +30,7 @@ if __name__ == "__main__":
     # 1: load and save d4rl
     # 2: load and save preference pairs from full_scripted_teacher
     # 3: train MLP model
+    # 4: change MLP reward
     parser.add_argument(
         "--function_number",
         type=int,
@@ -63,7 +64,6 @@ if __name__ == "__main__":
 
         generate_and_save(env_name, pair_name, 1000)
     elif function_number == 3:
-
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
             BradleyTerryLoss,
@@ -76,6 +76,8 @@ if __name__ == "__main__":
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name, pair_name=pair_name
         )
+
+        print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
         model, optimizer = initialize_network(obs_dim, act_dim, path=save_path)
         loss_fn = BradleyTerryLoss()
@@ -95,3 +97,18 @@ if __name__ == "__main__":
         torch.save(model.state_dict(), save_path)
 
         print("Training completed. Loss history:", loss_history)
+    elif function_number == 4:
+        from src.data_loading.preference_dataloader import get_dataloader
+        from src.reward_learning.multilayer_perceptron import initialize_network
+        from src.policy_learning.change_reward import change_reward
+
+        save_path = f"model/{env_name}/{pair_name}_MLP.pth"
+        dataset_path = f"dataset/{env_name}/MLP_dataset.npz"
+        data_loader, obs_dim, act_dim = get_dataloader(
+            env_name=env_name, pair_name=pair_name
+        )
+
+        print("obs_dim:", obs_dim, "act_dim:", act_dim)
+
+        model, _ = initialize_network(obs_dim, act_dim, path=save_path)
+        change_reward(env_name, model, dataset_path)
