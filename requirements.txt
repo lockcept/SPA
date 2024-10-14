@@ -1,5 +1,4 @@
 gym==0.23.1
-d4rl==1.1
 numpy==1.23.0
 mujoco-py==2.1.2.14
 cython<3
