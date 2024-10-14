@@ -1,5 +1,4 @@
 import argparse
-import os
 import random
 
 import gym
@@ -26,6 +25,7 @@ expectile=0.7, temperature=3.0 for all D4RL-Gym tasks
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--algo-name", type=str, default="iql")
+    parser.add_argument("--task", type=str, default="hopper-medium-replay-v2")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--hidden-dims", type=int, nargs="*", default=[256, 256])
     parser.add_argument("--actor-lr", type=float, default=3e-4)
@@ -96,21 +96,14 @@ def normalize_rewards(dataset):
     return dataset
 
 
-def train(env_name, dataset_name):
-    args = get_args()
-    args.task = env_name
+def train(args=get_args()):
     # create env and dataset
-    env = gym.make(env_name)
-    # dataset = qlearning_dataset(env)
-    dir_path = f"dataset/{env_name}"
-    print(dir_path)
-    dataset = np.load(os.path.join(dir_path, dataset_name))
-    print(dataset.keys())
+    env = gym.make(args.task)
+    dataset = qlearning_dataset(env)
     if "antmaze" in args.task:
         dataset["rewards"] -= 1.0
     if "halfcheetah" in args.task or "walker2d" in args.task or "hopper" in args.task:
         dataset = normalize_rewards(dataset)
-        print("normalized rewards")
     args.obs_shape = env.observation_space.shape
     args.action_dim = np.prod(env.action_space.shape)
     args.max_action = env.action_space.high[0]
@@ -232,4 +225,4 @@ def train(env_name, dataset_name):
 
 
 if __name__ == "__main__":
-    train("hopper-medium-v2", "MLP_dataset.npz")
+    train()

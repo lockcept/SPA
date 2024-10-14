@@ -14,33 +14,40 @@ def change_reward(env_name, model, dataset_path):
 
     observations = torch.tensor(dataset["observations"])
     actions = torch.tensor(dataset["actions"])
-    terminals = torch.tensor(dataset["terminals"])
-    timeouts = torch.tensor(dataset["timeouts"])
 
     s_t = observations[:-1]
     s_t_next = observations[1:]
     a_t = actions[:-1]
 
     predicted_rewards = model(s_t, a_t, s_t_next)
-
-    mask = (terminals[:-1] == 1) | (timeouts[:-1] == 1)
-    predicted_rewards[mask] = 0.0
-
     predicted_rewards = predicted_rewards.detach().cpu().numpy()
+    rewards = np.array(predicted_rewards)
 
-    predicted_rewards = list(predicted_rewards)
-    predicted_rewards.append(0.0)
+    observations = dataset["observations"][:-1]
+    next_observations = dataset["observations"][1:]
 
-    rewards_array = np.array(predicted_rewards)
+    terminals = dataset["terminals"] | dataset["timeouts"]
+    mask = terminals[:-1] == 1
+    observations = dataset["observations"][:-1]
+    actions = dataset["actions"][:-1]
+    next_observations = dataset["observations"][1:]
+    rewards[mask] = 0
+    terminals = terminals[:-1]
 
-    print("reward diff example", rewards_array[:10] - dataset["rewards"][:10])
+    print(
+        observations.shape,
+        actions.shape,
+        next_observations.shape,
+        rewards.shape,
+        terminals.shape,
+    )
 
     save_data = {
-        "observations": dataset["observations"],
-        "actions": dataset["actions"],
-        "rewards": rewards_array,
-        "terminals": dataset["terminals"],
-        "timeouts": dataset["timeouts"],
+        "observations": observations,
+        "actions": actions,
+        "next_observations": next_observations,
+        "rewards": rewards,
+        "terminals": terminals,
     }
 
     np.savez(dataset_path, **save_data)
