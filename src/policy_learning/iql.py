@@ -101,11 +101,11 @@ def train(env_name, dataset_name):
     args.task = env_name
     # create env and dataset
     env = gym.make(env_name)
-    # dataset = qlearning_dataset(env)
     dir_path = f"dataset/{env_name}"
     print(dir_path)
-    dataset = np.load(os.path.join(dir_path, dataset_name))
-    print(dataset.keys())
+    dataset_npz = np.load(os.path.join(dir_path, dataset_name))
+    dataset = {key: dataset_npz[key] for key in dataset_npz}
+    dataset = qlearning_dataset(env, dataset=dataset)
     if "antmaze" in args.task:
         dataset["rewards"] -= 1.0
     if "halfcheetah" in args.task or "walker2d" in args.task or "hopper" in args.task:

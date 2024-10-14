@@ -21,23 +21,17 @@ def change_reward(env_name, model, dataset_path):
 
     predicted_rewards = model(s_t, a_t, s_t_next)
     predicted_rewards = predicted_rewards.detach().cpu().numpy()
-    rewards = np.array(predicted_rewards)
-
-    observations = dataset["observations"][:-1]
-    next_observations = dataset["observations"][1:]
+    rewards = np.append(np.array(predicted_rewards), 0)
 
     terminals = dataset["terminals"] | dataset["timeouts"]
-    mask = terminals[:-1] == 1
-    observations = dataset["observations"][:-1]
-    actions = dataset["actions"][:-1]
-    next_observations = dataset["observations"][1:]
+    mask = terminals == 1
+    observations = dataset["observations"]
+    actions = dataset["actions"]
     rewards[mask] = 0
-    terminals = terminals[:-1]
 
     print(
         observations.shape,
         actions.shape,
-        next_observations.shape,
         rewards.shape,
         terminals.shape,
     )
@@ -45,7 +39,6 @@ def change_reward(env_name, model, dataset_path):
     save_data = {
         "observations": observations,
         "actions": actions,
-        "next_observations": next_observations,
         "rewards": rewards,
         "terminals": terminals,
     }
