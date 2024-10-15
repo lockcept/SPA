@@ -4,8 +4,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_loading.preference_dataloader import get_dataloader
-from reward_learning.multilayer_perceptron import initialize_network,
-
+from reward_learning.multilayer_perceptron import initialize_network
 
 
 def evaluate_reward_model_MLP(env_name, pair_name):

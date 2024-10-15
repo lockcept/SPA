@@ -23,29 +23,44 @@ expectile=0.7, temperature=3.0 for all D4RL-Gym tasks
 """
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--algo-name", type=str, default="iql")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--hidden-dims", type=int, nargs="*", default=[256, 256])
-    parser.add_argument("--actor-lr", type=float, default=3e-4)
-    parser.add_argument("--critic-q-lr", type=float, default=3e-4)
-    parser.add_argument("--critic-v-lr", type=float, default=3e-4)
-    parser.add_argument("--dropout_rate", type=float, default=None)
-    parser.add_argument("--lr-decay", type=bool, default=True)
-    parser.add_argument("--gamma", type=float, default=0.99)
-    parser.add_argument("--tau", type=float, default=0.005)
-    parser.add_argument("--expectile", type=float, default=0.7)
-    parser.add_argument("--temperature", type=float, default=3.0)
-    parser.add_argument("--epoch", type=int, default=1000)
-    parser.add_argument("--step-per-epoch", type=int, default=1000)
-    parser.add_argument("--eval_episodes", type=int, default=10)
-    parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument(
-        "--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu"
-    )
+def get_configs():
+    algo_name = "iql"
+    seed = 0
+    hidden_dims = [256, 256]
+    actor_lr = 3e-4
+    critic_q_lr = 3e-4
+    critic_v_lr = 3e-4
+    dropout_rate = None
+    lr_decay = True
+    gamma = 0.99
+    tau = 0.005
+    expectile = 0.7
+    temperature = 3.0
+    epoch = 1000
+    step_per_epoch = 1000
+    eval_episodes = 10
+    batch_size = 256
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    return parser.parse_args()
+    return {
+        "algo_name": algo_name,
+        "seed": seed,
+        "hidden_dims": hidden_dims,
+        "actor_lr": actor_lr,
+        "critic_q_lr": critic_q_lr,
+        "critic_v_lr": critic_v_lr,
+        "dropout_rate": dropout_rate,
+        "lr_decay": lr_decay,
+        "gamma": gamma,
+        "tau": tau,
+        "expectile": expectile,
+        "temperature": temperature,
+        "epoch": epoch,
+        "step_per_epoch": step_per_epoch,
+        "eval_episodes": eval_episodes,
+        "batch_size": batch_size,
+        "device": device,
+    }
 
 
 def normalize_rewards(dataset):
@@ -96,61 +111,64 @@ def normalize_rewards(dataset):
     return dataset
 
 
-def train(env_name, dataset_name):
-    args = get_args()
-    args.task = env_name
+def train(env_name, dataset_path):
+    configs = get_configs()
     # create env and dataset
     env = gym.make(env_name)
-    dir_path = f"dataset/{env_name}"
-    print(dir_path)
-    dataset_npz = np.load(os.path.join(dir_path, dataset_name))
+    dataset_npz = np.load(dataset_path)
     dataset = {key: dataset_npz[key] for key in dataset_npz}
     dataset = qlearning_dataset(env, dataset=dataset)
-    if "antmaze" in args.task:
+    if "antmaze" in env_name:
         dataset["rewards"] -= 1.0
-    if "halfcheetah" in args.task or "walker2d" in args.task or "hopper" in args.task:
+    if "halfcheetah" in env_name or "walker2d" in env_name or "hopper" in env_name:
         dataset = normalize_rewards(dataset)
         print("normalized rewards")
-    args.obs_shape = env.observation_space.shape
-    args.action_dim = np.prod(env.action_space.shape)
-    args.max_action = env.action_space.high[0]
+    configs.update(
+        {
+            "obs_shape": env.observation_space.shape,
+            "action_dim": np.prod(env.action_space.shape),
+            "max_action": env.action_space.high[0],
+        }
+    )
+
+    print(configs)
 
     # seed
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
+    random.seed(configs["seed"])
+    np.random.seed(configs["seed"])
+    torch.manual_seed(configs["seed"])
+    torch.cuda.manual_seed_all(configs["seed"])
     torch.backends.cudnn.deterministic = True
-    env.seed(args.seed)
+    env.seed(configs["seed"])
 
     # create policy model
     actor_backbone = MLP(
-        input_dim=np.prod(args.obs_shape),
-        hidden_dims=args.hidden_dims,
-        dropout_rate=args.dropout_rate,
+        input_dim=np.prod(configs["obs_shape"]),
+        hidden_dims=configs["hidden_dims"],
+        dropout_rate=configs["dropout_rate"],
     )
     critic_q1_backbone = MLP(
-        input_dim=np.prod(args.obs_shape) + args.action_dim,
-        hidden_dims=args.hidden_dims,
+        input_dim=np.prod(configs["obs_shape"]) + configs["action_dim"],
+        hidden_dims=configs["hidden_dims"],
     )
     critic_q2_backbone = MLP(
-        input_dim=np.prod(args.obs_shape) + args.action_dim,
-        hidden_dims=args.hidden_dims,
+        input_dim=np.prod(configs["obs_shape"]) + configs["action_dim"],
+        hidden_dims=configs["hidden_dims"],
     )
     critic_v_backbone = MLP(
-        input_dim=np.prod(args.obs_shape), hidden_dims=args.hidden_dims
+        input_dim=np.prod(configs["obs_shape"]), hidden_dims=configs["hidden_dims"]
     )
     dist = DiagGaussian(
         latent_dim=getattr(actor_backbone, "output_dim"),
-        output_dim=args.action_dim,
+        output_dim=configs["action_dim"],
         unbounded=False,
         conditioned_sigma=False,
-        max_mu=args.max_action,
+        max_mu=configs["max_action"],
     )
-    actor = ActorProb(actor_backbone, dist, args.device)
-    critic_q1 = Critic(critic_q1_backbone, args.device)
-    critic_q2 = Critic(critic_q2_backbone, args.device)
-    critic_v = Critic(critic_v_backbone, args.device)
+    actor = ActorProb(actor_backbone, dist, configs["device"])
+    critic_q1 = Critic(critic_q1_backbone, configs["device"])
+    critic_q2 = Critic(critic_q2_backbone, configs["device"])
+    critic_v = Critic(critic_v_backbone, configs["device"])
 
     for m in (
         list(actor.modules())
@@ -163,14 +181,18 @@ def train(env_name, dataset_name):
             torch.nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
             torch.nn.init.zeros_(m.bias)
 
-    actor_optim = torch.optim.Adam(actor.parameters(), lr=args.actor_lr)
-    critic_q1_optim = torch.optim.Adam(critic_q1.parameters(), lr=args.critic_q_lr)
-    critic_q2_optim = torch.optim.Adam(critic_q2.parameters(), lr=args.critic_q_lr)
-    critic_v_optim = torch.optim.Adam(critic_v.parameters(), lr=args.critic_v_lr)
+    actor_optim = torch.optim.Adam(actor.parameters(), lr=configs["actor_lr"])
+    critic_q1_optim = torch.optim.Adam(
+        critic_q1.parameters(), lr=configs["critic_q_lr"]
+    )
+    critic_q2_optim = torch.optim.Adam(
+        critic_q2.parameters(), lr=configs["critic_q_lr"]
+    )
+    critic_v_optim = torch.optim.Adam(critic_v.parameters(), lr=configs["critic_v_lr"])
 
-    if args.lr_decay:
+    if configs["lr_decay"]:
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            actor_optim, args.epoch
+            actor_optim, configs["epoch"]
         )
     else:
         lr_scheduler = None
@@ -186,33 +208,32 @@ def train(env_name, dataset_name):
         critic_q2_optim,
         critic_v_optim,
         action_space=env.action_space,
-        tau=args.tau,
-        gamma=args.gamma,
-        expectile=args.expectile,
-        temperature=args.temperature,
+        tau=configs["tau"],
+        gamma=configs["gamma"],
+        expectile=configs["expectile"],
+        temperature=configs["temperature"],
     )
 
     # create buffer
     buffer = ReplayBuffer(
         buffer_size=len(dataset["observations"]),
-        obs_shape=args.obs_shape,
+        obs_shape=configs["obs_shape"],
         obs_dtype=np.float32,
-        action_dim=args.action_dim,
+        action_dim=configs["action_dim"],
         action_dtype=np.float32,
-        device=args.device,
+        device=configs["device"],
     )
     buffer.load_dataset(dataset)
 
     # log
-    log_dirs = make_log_dirs(args.task, args.algo_name, args.seed, vars(args))
-    # key: output file name, value: output handler type
+    log_dirs = make_log_dirs(env_name, configs["algo_name"], configs["seed"], configs)
     output_config = {
         "consoleout_backup": "stdout",
         "policy_training_progress": "csv",
         "tb": "tensorboard",
     }
     logger = Logger(log_dirs, output_config)
-    logger.log_hyperparameters(vars(args))
+    logger.log_hyperparameters(configs)
 
     # create policy trainer
     policy_trainer = MFPolicyTrainer(
@@ -220,16 +241,12 @@ def train(env_name, dataset_name):
         eval_env=env,
         buffer=buffer,
         logger=logger,
-        epoch=args.epoch,
-        step_per_epoch=args.step_per_epoch,
-        batch_size=args.batch_size,
-        eval_episodes=args.eval_episodes,
+        epoch=configs["epoch"],
+        step_per_epoch=configs["step_per_epoch"],
+        batch_size=configs["batch_size"],
+        eval_episodes=configs["eval_episodes"],
         lr_scheduler=lr_scheduler,
     )
 
     # train
     policy_trainer.train()
-
-
-if __name__ == "__main__":
-    train("hopper-medium-v2", "MLP_dataset.npz")
