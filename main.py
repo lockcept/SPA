@@ -12,38 +12,51 @@ DEFAULT_REWARD_MODEL = "MLP"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
+    parser = argparse.ArgumentParser(
+        description="Script for different functionalities",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+
     parser.add_argument(
+        "-e",
         "--env",
         type=str,
         default=DEFAULT_ENV,
-        help="Name of the environment to load the dataset for",
+        help="Name of the environment (hopper-medium-v2, etc.)",
     )
 
     parser.add_argument(
+        "-p",
         "--pairs",
         type=str,
         default=DEFAULT_PAIRS,
-        help="Name of the file to load the preference pairs to",
+        help="Name of the trajectory pair file (full_preference_pairs, etc.)",
     )
 
     parser.add_argument(
+        "-r",
         "--reward_model",
         type=str,
         default=DEFAULT_REWARD_MODEL,
-        help="Name of the file to load the preference pairs to",
+        help="Name of reward model (MLP, etc.)",
     )
-    # -2: helper evaluate reward model
-    # -1: helper analyze d4rl
-    # 0: do nothing
-    # 1: load and save d4rl
-    # 2: load and save preference pairs from full_scripted_teacher
-    # 3: train reward model
-    # 4: change reward
+
     parser.add_argument(
+        "-f",
         "--function_number",
         type=int,
         default=0,
-        help="Number of the function to execute",
+        help=(
+            "-2: helper evaluate reward model\n"
+            "-1: helper analyze d4rl\n"
+            " 0: do nothing\n"
+            " 1: load and save d4rl\n"
+            " 2: load and save preference pairs\n"
+            " 3: train reward model\n"
+            " 4: change reward\n"
+            " 5: train policy\n"
+            "Provide the number corresponding to the function you want to execute."
+        ),
     )
 
     args = parser.parse_args()
