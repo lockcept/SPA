@@ -42,14 +42,54 @@ class BradleyTerryLoss(nn.Module):
         return loss
 
 
-def learn(model, optimizer, data_loader, loss_fn, num_epochs=10):
+def evaluate(model, data_loader, loss_fn):
+    model.eval()
+    epoch_loss = 0.0
+    num_batches = 0
+
+    with torch.no_grad():
+        for batch in data_loader:
+            (
+                s0_obs_batch,
+                s0_act_batch,
+                s0_obs_next_batch,
+                s1_obs_batch,
+                s1_act_batch,
+                s1_obs_next_batch,
+                mu_batch,
+            ) = batch
+
+            rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
+            rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
+
+            loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
+
+            epoch_loss += loss.item()
+            num_batches += 1
+
+    avg_epoch_loss = epoch_loss / num_batches
+    return avg_epoch_loss
+
+
+def learn(
+    model,
+    optimizer,
+    train_data_loader,
+    test_data_loader,
+    loss_fn,
+    model_path,
+    num_epochs=10,
+):
+    best_loss = float("inf")
     loss_history = []
+    test_loss_history = []
 
     for epoch in range(num_epochs):
+        model.train()
         epoch_loss = 0.0
         num_batches = 0
 
-        for batch in data_loader:
+        for batch in train_data_loader:
             (
                 s0_obs_batch,
                 s0_act_batch,
@@ -74,7 +114,18 @@ def learn(model, optimizer, data_loader, loss_fn, num_epochs=10):
 
         avg_epoch_loss = epoch_loss / num_batches
         loss_history.append(avg_epoch_loss)
-        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_epoch_loss:.4f}")
+
+        test_loss = evaluate(model, test_data_loader, loss_fn)
+        test_loss_history.append(test_loss)
+
+        print(
+            f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Test Loss: {test_loss:.4f}"
+        )
+
+        if test_loss < best_loss:
+            best_loss = test_loss
+            torch.save(model.state_dict(), model_path)
+            print(f"New best model saved with test loss: {test_loss:.4f}")
 
     return loss_history
 
@@ -84,6 +135,7 @@ def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001, path=None):
     if path is not None:
         if os.path.isfile(path):
             model.load_state_dict(torch.load(path, weights_only=True))
+            print(f"Model loaded from {path}")
 
     optimizer = optim.Adam(model.parameters(), lr=lr)
 

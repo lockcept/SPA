@@ -6,6 +6,7 @@ import torch
 
 DEFAULT_ENV = "hopper-medium-v2"
 DEFAULT_PAIRS = "full_preference_pairs"
+DEFAULT_TEST_PAIRS = "test_full_preference_pairs"
 DEFAULT_REWARD_MODEL = "MLP"
 
 
@@ -31,6 +32,14 @@ if __name__ == "__main__":
         type=str,
         default=DEFAULT_PAIRS,
         help="Name of the trajectory pair file (full_preference_pairs, etc.)",
+    )
+
+    parser.add_argument(
+        "-tp",
+        "--test_pairs",
+        type=str,
+        default=DEFAULT_TEST_PAIRS,
+        help="Name of the trajectory pair file to use for test (test_full_preference_pairs, etc.)",
     )
 
     parser.add_argument(
@@ -70,6 +79,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     env_name = args.env
     pair_name = args.pairs
+    test_pair_name = args.test_pairs
     reward_model_name = args.reward_model
     function_number = args.function_number
     use_normalized_mu = args.normalized_mu
@@ -88,7 +98,7 @@ if __name__ == "__main__":
             save_path = f"model/{env_name}/{pair_name}_MLP.pth"
             if use_normalized_mu:
                 save_path = f"model/{env_name}/{pair_name}_MLP_normalized_mu.pth"
-            evaluate_reward_model_MLP(env_name, pair_name, save_path)
+            evaluate_reward_model_MLP(env_name, test_pair_name, save_path)
 
     elif function_number == 1:
         from src.data_loading.load_d4rl import load
@@ -97,7 +107,7 @@ if __name__ == "__main__":
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_and_save
 
-        generate_and_save(env_name, pair_name, 5000)
+        generate_and_save(env_name, pair_name, 1000)
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
@@ -114,28 +124,35 @@ if __name__ == "__main__":
             )
 
         data_loader, obs_dim, act_dim = get_dataloader(
-            env_name=env_name, pair_name=pair_name
+            env_name=env_name, pair_name=pair_name, use_normalized_mu=use_normalized_mu
+        )
+
+        test_data_loader, _, _ = get_dataloader(
+            env_name=env_name,
+            pair_name=test_pair_name,
+            use_normalized_mu=use_normalized_mu,
         )
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
+
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
         if reward_model_name == "MLP":
             model, optimizer = initialize_network(obs_dim, act_dim, path=save_path)
             loss_fn = BradleyTerryLoss()
 
-            num_epochs = 30
+            num_epochs = 100
             loss_history = learn(
                 model,
                 optimizer,
                 data_loader,
+                test_data_loader,
                 loss_fn,
+                model_path=save_path,
                 num_epochs=num_epochs,
             )
-
-            save_dir = os.path.dirname(save_path)
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            torch.save(model.state_dict(), save_path)
 
             print("Training completed. Loss history:", loss_history)
     elif function_number == 4:
