@@ -70,8 +70,15 @@ def collate_fn(batch):
     )
 
 
-def get_dataloader(env_name, pair_name, batch_size=32, shuffle=True, drop_last=True):
-    processed_data = get_processed_data(env_name, pair_name)
+def get_dataloader(
+    env_name,
+    pair_name,
+    batch_size=32,
+    use_normalized_mu=False,
+    shuffle=True,
+    drop_last=True,
+):
+    processed_data = get_processed_data(env_name, pair_name, use_normalized_mu)
 
     dataset = PreferenceDataset(processed_data)
 

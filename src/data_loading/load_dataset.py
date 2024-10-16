@@ -24,7 +24,7 @@ mu is a float
 """
 
 
-def get_processed_data(env_name, pair_name):
+def get_processed_data(env_name, pair_name, use_normalized_mu=False):
     dataset = load_d4rl_dataset(env_name)
     observations = dataset["observations"]
     actions = dataset["actions"]
@@ -34,13 +34,21 @@ def get_processed_data(env_name, pair_name):
     processed_data = []
 
     for entry in pair["data"]:
-        s0_idx, s1_idx, mu = entry["s0"], entry["s1"], entry["mu"]
+        s0_idx, s1_idx, mu, normalized_mu = (
+            entry["s0"],
+            entry["s1"],
+            entry["mu"],
+            entry["normalized_mu"],
+        )
 
         s0_obs = observations[s0_idx[0] : s0_idx[1]]
         s0_act = actions[s0_idx[0] : s0_idx[1]]
         s1_obs = observations[s1_idx[0] : s1_idx[1]]
         s1_act = actions[s1_idx[0] : s1_idx[1]]
         mu = mu
+
+        if use_normalized_mu:
+            mu = normalized_mu
 
         s0 = np.array(
             list(zip(observations, s0_act)),

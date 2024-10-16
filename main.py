@@ -42,6 +42,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-nm",
+        "--normalized_mu",
+        action="store_true",
+        default=False,
+        help="Whether to normalize mu or not",
+    )
+
+    parser.add_argument(
         "-f",
         "--function_number",
         type=int,
@@ -64,6 +72,7 @@ if __name__ == "__main__":
     pair_name = args.pairs
     reward_model_name = args.reward_model
     function_number = args.function_number
+    use_normalized_mu = args.normalized_mu
 
     if function_number == 0:
         print("Pass")
@@ -76,7 +85,10 @@ if __name__ == "__main__":
         from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
 
         if reward_model_name == "MLP":
-            evaluate_reward_model_MLP(env_name, pair_name)
+            save_path = f"model/{env_name}/{pair_name}_MLP.pth"
+            if use_normalized_mu:
+                save_path = f"model/{env_name}/{pair_name}_MLP_normalized_mu.pth"
+            evaluate_reward_model_MLP(env_name, pair_name, save_path)
 
     elif function_number == 1:
         from src.data_loading.load_d4rl import load
@@ -85,7 +97,7 @@ if __name__ == "__main__":
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_and_save
 
-        generate_and_save(env_name, pair_name, 1000)
+        generate_and_save(env_name, pair_name, 5000)
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
@@ -95,6 +107,11 @@ if __name__ == "__main__":
         )
 
         save_path = f"model/{env_name}/{pair_name}_{reward_model_name}.pth"
+
+        if use_normalized_mu:
+            save_path = (
+                f"model/{env_name}/{pair_name}_{reward_model_name}_normalized_mu.pth"
+            )
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name, pair_name=pair_name

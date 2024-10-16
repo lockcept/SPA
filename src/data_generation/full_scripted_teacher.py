@@ -1,4 +1,6 @@
 import numpy as np
+import numpy.lib.recfunctions as rfn
+
 import random
 
 
@@ -34,16 +36,6 @@ def trajectory_from_index(dataset, start, end):
     return trajectory
 
 
-def compare_trajectories(traj0, traj1):
-    reward_sum_0 = np.sum(traj0["rewards"])
-    reward_sum_1 = np.sum(traj1["rewards"])
-
-    if reward_sum_0 > reward_sum_1:
-        return 0
-    else:
-        return 1
-
-
 def generate_preference_pair(dataset, indices):
     min_length = 10
 
@@ -64,13 +56,12 @@ def generate_preference_pair(dataset, indices):
 
         traj0 = trajectory_from_index(dataset, start0, end0)
         traj1 = trajectory_from_index(dataset, start1, end1)
+        reward_sum_0 = np.sum(traj0["rewards"])
+        reward_sum_1 = np.sum(traj1["rewards"])
+        mu = reward_sum_0 < reward_sum_1
+        avg_diff = (reward_sum_1 - reward_sum_0) / min(length0, length1)
 
-        winner = compare_trajectories(traj0, traj1)
-
-        preference_pair = np.array(
-            ((start0, end0), (start1, end1), winner),
-            dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "i4")],
-        )
+        preference_pair = ((start0, end0), (start1, end1), mu, avg_diff)
 
         return preference_pair
 
@@ -84,11 +75,34 @@ def generate_and_save(env, path, num_pairs=10):
     dataset = load_d4rl_dataset(env)
 
     indices = extract_trajectory_indices(dataset)
+    print("trajectory counts", len(indices))
 
     preference_pairs = []
     for _ in tqdm(range(num_pairs), desc="Generating preference pairs"):
         preference_pair = generate_preference_pair(dataset, indices)
         preference_pairs.append(preference_pair)
 
+    preference_pairs_np = np.array(
+        preference_pairs,
+        dtype=[
+            ("s0", "i4", (2,)),
+            ("s1", "i4", (2,)),
+            ("mu", "i4"),
+            ("avg_diff", "f4"),
+        ],
+    )
+
+    print(preference_pairs_np[:5])
+
+    max_abs_diff = np.max(np.abs(preference_pairs_np["avg_diff"]))
+    normalized_diff = preference_pairs_np["avg_diff"] / max_abs_diff
+    mu_values = 0.5 + 0.5 * normalized_diff
+    preference_pairs_np = rfn.append_fields(
+        preference_pairs_np, "normalized_mu", mu_values, dtypes=float
+    )
+    preference_pairs_np = rfn.drop_fields(preference_pairs_np, "avg_diff")
+
+    print(preference_pairs_np[:5])
+
     save_path = f"dataset/{env}/{path}.npz"
-    save_preference_pairs(save_path, preference_pairs)
+    save_preference_pairs(save_path, preference_pairs_np)
