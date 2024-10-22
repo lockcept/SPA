@@ -101,7 +101,7 @@ if __name__ == "__main__":
     elif function_number == -2:
         from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
 
-        if reward_model_name == "MLP":
+        if reward_model == "MLP":
             evaluate_reward_model_MLP(
                 env_name, reward_model_path, eval_pair_name=eval_pair_name
             )
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
-        generate_pairs(env_name, pair, 100)
+        generate_pairs(env_name, pair, 5000)
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
@@ -138,7 +138,7 @@ if __name__ == "__main__":
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        if reward_model_name == "MLP":
+        if reward_model == "MLP":
             model, optimizer = initialize_network(
                 obs_dim, act_dim, path=reward_model_path
             )

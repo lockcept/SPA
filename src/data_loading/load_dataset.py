@@ -49,22 +49,21 @@ def get_processed_data(env_name, pair_name, include_reward=False):
         s1_rew = rewards[s1_idx[0] : s1_idx[1]] if include_reward else None
         mu = mu
 
-        s0 = np.array(
-            list(zip(observations, s0_act)),
-            dtype=[
-                ("observations", "f4", (s0_obs.shape[1],)),
-                ("actions", "f4", (s0_act.shape[1],)),
-                ("rewards", "f4", (s0_rew.shape[1],)) if include_reward else [],
-            ],
-        )
-        s1 = np.array(
-            list(zip(observations, s1_act)),
-            dtype=[
-                ("observations", "f4", (s1_obs.shape[1],)),
-                ("actions", "f4", (s1_act.shape[1],)),
-                ("rewards", "f4", (s1_rew.shape[1],)) if include_reward else [],
-            ],
-        )
+        dtype_list_s0 = [
+            ("observations", "f4", (s0_obs.shape[1],)),
+            ("actions", "f4", (s0_act.shape[1],)),
+        ]
+        if include_reward:
+            dtype_list_s0.append(("rewards", "f4", (s0_rew.shape[1],)))
+        s0 = np.array(list(zip(observations, s0_act)), dtype=dtype_list_s0)
+
+        dtype_list_s1 = [
+            ("observations", "f4", (s1_obs.shape[1],)),
+            ("actions", "f4", (s1_act.shape[1],)),
+        ]
+        if include_reward:
+            dtype_list_s1.append(("rewards", "f4", (s1_rew.shape[1],)))
+        s1 = np.array(list(zip(observations, s1_act)), dtype=dtype_list_s1)
 
         processed_data.append(
             (
