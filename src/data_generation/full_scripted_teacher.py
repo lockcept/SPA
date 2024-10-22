@@ -58,26 +58,34 @@ def generate_preference_pair(dataset, indices):
         traj1 = trajectory_from_index(dataset, start1, end1)
         reward_sum_0 = np.sum(traj0["rewards"])
         reward_sum_1 = np.sum(traj1["rewards"])
-        mu = reward_sum_0 < reward_sum_1
-        avg_diff = (reward_sum_1 - reward_sum_0) / min(length0, length1)
 
-        preference_pair = ((start0, end0), (start1, end1), mu, avg_diff)
+        preference_pair = ((start0, end0), (start1, end1), reward_sum_0, reward_sum_1)
 
         return preference_pair
 
 
 def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
-
     if mu_type == "binary":
-        pair_data = rfn.drop_fields(pair_data, "avg_diff")
-    elif mu_type == "continuous":
-        max_abs_diff = np.max(np.abs(pair_data["avg_diff"]))
-        normalized_diff = pair_data["avg_diff"] / max_abs_diff
-        mu_values = 0.5 + 0.5 * normalized_diff
-        pair_data = rfn.drop_fields(pair_data, "mu")
+        mu_values = np.where(
+            pair_data["reward_sum_0"] > pair_data["reward_sum_1"], 0, 1
+        )
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
-        pair_data = rfn.drop_fields(pair_data, "avg_diff")
+    elif mu_type == "continuous":
+        length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
+        print(length_values)
+        diff = (pair_data["reward_sum_1"] - pair_data["reward_sum_0"]) / length_values
+        max_diff = np.max(np.abs(diff))
+        print(max_diff)
+        normalized_diff = diff / max_diff
+        mu_values = 0.5 + 0.5 * normalized_diff
+        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
+    elif mu_type == "sigmoid":
+        diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
+        sigmoid_values = 1 / (1 + np.exp(-diff_values))
+        pair_data = rfn.append_fields(pair_data, "mu", sigmoid_values, dtypes=float)
 
+    pair_data = rfn.drop_fields(pair_data, "reward_sum_0")
+    pair_data = rfn.drop_fields(pair_data, "reward_sum_1")
     print(pair_data[:5])
 
     save_path = f"pair/{env}/{pair}_{mu_type}.npz"
@@ -88,7 +96,7 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
     print(f"Preference pairs saved at {save_path}")
 
 
-def generate_pairs(env, pair, num_pairs):
+def generate_pairs(env, pair, num_pairs, mu_types=["binary", "continuous"]):
     dataset = load_d4rl_dataset(env)
 
     indices = extract_trajectory_indices(dataset)
@@ -104,12 +112,12 @@ def generate_pairs(env, pair, num_pairs):
         dtype=[
             ("s0", "i4", (2,)),
             ("s1", "i4", (2,)),
-            ("mu", "i4"),
-            ("avg_diff", "f4"),
+            ("reward_sum_0", "f4"),
+            ("reward_sum_1", "f4"),
         ],
     )
 
     print(preference_pairs_np[:5])
 
-    save_pairs_by_mu_type(env, pair, "binary", preference_pairs_np)
-    save_pairs_by_mu_type(env, pair, "continuous", preference_pairs_np)
+    for mu_type in mu_types:
+        save_pairs_by_mu_type(env, pair, mu_type, preference_pairs_np)
