@@ -24,11 +24,10 @@ mu is a float
 """
 
 
-def get_processed_data(env_name, pair_name, include_reward=False):
+def get_processed_data(env_name, pair_name):
     dataset = load_d4rl_dataset(env_name)
     observations = dataset["observations"]
     actions = dataset["actions"]
-    rewards = dataset["rewards"]
 
     pair = load_pair(env_name, pair_name)
 
@@ -43,27 +42,21 @@ def get_processed_data(env_name, pair_name, include_reward=False):
 
         s0_obs = observations[s0_idx[0] : s0_idx[1]]
         s0_act = actions[s0_idx[0] : s0_idx[1]]
-        s0_rew = rewards[s0_idx[0] : s0_idx[1]] if include_reward else None
         s1_obs = observations[s1_idx[0] : s1_idx[1]]
         s1_act = actions[s1_idx[0] : s1_idx[1]]
-        s1_rew = rewards[s1_idx[0] : s1_idx[1]] if include_reward else None
         mu = mu
 
         dtype_list_s0 = [
             ("observations", "f4", (s0_obs.shape[1],)),
             ("actions", "f4", (s0_act.shape[1],)),
         ]
-        if include_reward:
-            dtype_list_s0.append(("rewards", "f4", (s0_rew.shape[1],)))
-        s0 = np.array(list(zip(observations, s0_act)), dtype=dtype_list_s0)
+        s0 = np.array(list(zip(s0_obs, s0_act)), dtype=dtype_list_s0)
 
         dtype_list_s1 = [
             ("observations", "f4", (s1_obs.shape[1],)),
             ("actions", "f4", (s1_act.shape[1],)),
         ]
-        if include_reward:
-            dtype_list_s1.append(("rewards", "f4", (s1_rew.shape[1],)))
-        s1 = np.array(list(zip(observations, s1_act)), dtype=dtype_list_s1)
+        s1 = np.array(list(zip(s1_obs, s1_act)), dtype=dtype_list_s1)
 
         processed_data.append(
             (
