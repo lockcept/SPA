@@ -74,14 +74,16 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
         max_abs_diff = np.max(np.abs(pair_data["avg_diff"]))
         normalized_diff = pair_data["avg_diff"] / max_abs_diff
         mu_values = 0.5 + 0.5 * normalized_diff
-        pair_data = rfn.append_fields(
-            pair_data, "normalized_mu", mu_values, dtypes=float
-        )
+        pair_data = rfn.drop_fields(pair_data, "mu")
+        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
         pair_data = rfn.drop_fields(pair_data, "avg_diff")
 
     print(pair_data[:5])
 
     save_path = f"pair/{env}/{pair}_{mu_type}.npz"
+    save_dir = os.path.dirname(save_path)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     np.savez(save_path, data=pair_data)
     print(f"Preference pairs saved at {save_path}")
 
