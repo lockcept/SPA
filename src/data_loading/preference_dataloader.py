@@ -74,11 +74,13 @@ def get_dataloader(
     env_name,
     pair_name,
     batch_size=32,
-    use_normalized_mu=False,
+    include_reward=False,
     shuffle=True,
     drop_last=True,
 ):
-    processed_data = get_processed_data(env_name, pair_name, use_normalized_mu)
+    processed_data = get_processed_data(
+        env_name, pair_name, include_reward=include_reward
+    )
 
     dataset = PreferenceDataset(processed_data)
 

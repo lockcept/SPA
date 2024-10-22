@@ -2,14 +2,16 @@ import os
 import gym
 import d4rl  # import 해야 gym.make()에서 d4rl 환경을 불러올 수 있음
 import numpy as np
-import argparse
 
 
-def save_dataset(env_name, dataset):
+def save_d4rl_dataset(env_name):
+    env = gym.make(env_name)
+    dataset = env.get_dataset()
+
     save_dir = f"dataset/{env_name}"
     os.makedirs(save_dir, exist_ok=True)
 
-    file_path = os.path.join(save_dir, "d4rl_dataset.npz")
+    file_path = os.path.join(save_dir, "d4rl.npz")
 
     save_data = {
         "observations": dataset["observations"],
@@ -26,12 +28,3 @@ def save_dataset(env_name, dataset):
     np.savez(file_path, **save_data)
 
     print(f"Dataset saved with keys: {save_data.keys()}")
-
-
-def load(env_name):
-    env = gym.make(env_name)
-    dataset = env.get_dataset()
-
-    save_dataset(env_name, dataset)
-
-    return dataset

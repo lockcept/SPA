@@ -66,12 +66,27 @@ def generate_preference_pair(dataset, indices):
         return preference_pair
 
 
-def save_preference_pairs(file_path, preference_pairs):
-    np.savez(file_path, data=preference_pairs)
-    print(f"Preference pairs saved at {file_path}")
+def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
+
+    if mu_type == "binary":
+        pair_data = rfn.drop_fields(pair_data, "avg_diff")
+    elif mu_type == "continuous":
+        max_abs_diff = np.max(np.abs(pair_data["avg_diff"]))
+        normalized_diff = pair_data["avg_diff"] / max_abs_diff
+        mu_values = 0.5 + 0.5 * normalized_diff
+        pair_data = rfn.append_fields(
+            pair_data, "normalized_mu", mu_values, dtypes=float
+        )
+        pair_data = rfn.drop_fields(pair_data, "avg_diff")
+
+    print(pair_data[:5])
+
+    save_path = f"pair/{env}/{pair}_{mu_type}.npz"
+    np.savez(save_path, data=pair_data)
+    print(f"Preference pairs saved at {save_path}")
 
 
-def generate_and_save(env, path, num_pairs=10):
+def generate_pairs(env, pair, num_pairs):
     dataset = load_d4rl_dataset(env)
 
     indices = extract_trajectory_indices(dataset)
@@ -94,15 +109,5 @@ def generate_and_save(env, path, num_pairs=10):
 
     print(preference_pairs_np[:5])
 
-    max_abs_diff = np.max(np.abs(preference_pairs_np["avg_diff"]))
-    normalized_diff = preference_pairs_np["avg_diff"] / max_abs_diff
-    mu_values = 0.5 + 0.5 * normalized_diff
-    preference_pairs_np = rfn.append_fields(
-        preference_pairs_np, "normalized_mu", mu_values, dtypes=float
-    )
-    preference_pairs_np = rfn.drop_fields(preference_pairs_np, "avg_diff")
-
-    print(preference_pairs_np[:5])
-
-    save_path = f"dataset/{env}/{path}.npz"
-    save_preference_pairs(save_path, preference_pairs_np)
+    save_pairs_by_mu_type(env, pair, "binary", preference_pairs_np)
+    save_pairs_by_mu_type(env, pair, "continuous", preference_pairs_np)

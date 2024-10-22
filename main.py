@@ -1,12 +1,11 @@
 import argparse
 import os
 
-import torch
 
-
-DEFAULT_ENV = "hopper-medium-v2"
-DEFAULT_PAIRS = "full_preference_pairs"
-DEFAULT_TEST_PAIRS = "test_full_preference_pairs"
+DEFAULT_ENV = "maze2d-medium-dense-v1"
+DEFAULT_PAIR = "full"
+DEFAULT_TEST_PAIR = "test_full"
+DEFAULT_MU_TYPE = "binary"
 DEFAULT_REWARD_MODEL = "MLP"
 
 
@@ -23,23 +22,23 @@ if __name__ == "__main__":
         "--env",
         type=str,
         default=DEFAULT_ENV,
-        help="Name of the environment (hopper-medium-v2, etc.)",
+        help="Name of the environment (maze2d-medium-dense-v1, etc.)",
     )
 
     parser.add_argument(
         "-p",
-        "--pairs",
+        "--pair",
         type=str,
-        default=DEFAULT_PAIRS,
-        help="Name of the trajectory pair file (full_preference_pairs, etc.)",
+        default=DEFAULT_PAIR,
+        help="Name of the trajectory pair generation algorithm (full, etc.)",
     )
 
     parser.add_argument(
         "-tp",
-        "--test_pairs",
+        "--test_pair",
         type=str,
-        default=DEFAULT_TEST_PAIRS,
-        help="Name of the trajectory pair file to use for test (test_full_preference_pairs, etc.)",
+        default=DEFAULT_TEST_PAIR,
+        help="Name of the trajectory pair file to use for test or eval(test_full, etc.)",
     )
 
     parser.add_argument(
@@ -51,11 +50,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-nm",
-        "--normalized_mu",
-        action="store_true",
-        default=False,
-        help="Whether to normalize mu or not",
+        "-m",
+        "--mu",
+        type=str,
+        default=DEFAULT_MU_TYPE,
+        help="Type of Mu(binary, continuous)",
     )
 
     parser.add_argument(
@@ -78,11 +77,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     env_name = args.env
-    pair_name = args.pairs
-    test_pair_name = args.test_pairs
-    reward_model_name = args.reward_model
+    pair = args.pair
+    test_pair = args.test_pair
+    reward_model = args.reward_model
     function_number = args.function_number
-    use_normalized_mu = args.normalized_mu
+    mu_type = args.mu
+
+    pair_name = f"{pair}_{mu_type}"
+    pair_path = f"model/{env_name}/{pair_name}.npz"
+    test_pair_name = f"{test_pair}_{mu_type}"
+    test_pair_path = f"model/{env_name}/{test_pair_name}.npz"
+    eval_pair_name = test_pair
+    reward_model_name = f"{pair_name}_{reward_model}"
+    reward_model_path = f"model/{env_name}/{reward_model_name}.pth"
 
     if function_number == 0:
         print("Pass")
@@ -95,19 +102,18 @@ if __name__ == "__main__":
         from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
 
         if reward_model_name == "MLP":
-            save_path = f"model/{env_name}/{pair_name}_MLP.pth"
-            if use_normalized_mu:
-                save_path = f"model/{env_name}/{pair_name}_MLP_normalized_mu.pth"
-            evaluate_reward_model_MLP(env_name, test_pair_name, save_path)
+            evaluate_reward_model_MLP(
+                env_name, reward_model_path, eval_pair_name=eval_pair_name
+            )
 
     elif function_number == 1:
-        from src.data_loading.load_d4rl import load
+        from src.data_loading.load_d4rl import save_d4rl_dataset
 
-        load(env_name)
+        save_d4rl_dataset(env_name)
     elif function_number == 2:
-        from src.data_generation.full_scripted_teacher import generate_and_save
+        from src.data_generation.full_scripted_teacher import generate_pairs
 
-        generate_and_save(env_name, pair_name, 1000)
+        generate_pairs(env_name, pair, 100)
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
@@ -116,31 +122,26 @@ if __name__ == "__main__":
             learn,
         )
 
-        save_path = f"model/{env_name}/{pair_name}_{reward_model_name}.pth"
-
-        if use_normalized_mu:
-            save_path = (
-                f"model/{env_name}/{pair_name}_{reward_model_name}_normalized_mu.pth"
-            )
-
         data_loader, obs_dim, act_dim = get_dataloader(
-            env_name=env_name, pair_name=pair_name, use_normalized_mu=use_normalized_mu
+            env_name=env_name,
+            pair_name=pair_name,
         )
 
         test_data_loader, _, _ = get_dataloader(
             env_name=env_name,
             pair_name=test_pair_name,
-            use_normalized_mu=use_normalized_mu,
         )
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
-        save_dir = os.path.dirname(save_path)
+        save_dir = os.path.dirname(reward_model_path)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         if reward_model_name == "MLP":
-            model, optimizer = initialize_network(obs_dim, act_dim, path=save_path)
+            model, optimizer = initialize_network(
+                obs_dim, act_dim, path=reward_model_path
+            )
             loss_fn = BradleyTerryLoss()
 
             num_epochs = 100
@@ -150,7 +151,7 @@ if __name__ == "__main__":
                 data_loader,
                 test_data_loader,
                 loss_fn,
-                model_path=save_path,
+                model_path=reward_model_path,
                 num_epochs=num_epochs,
             )
 

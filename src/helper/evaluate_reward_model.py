@@ -7,12 +7,12 @@ from data_loading.preference_dataloader import get_dataloader
 from reward_learning.multilayer_perceptron import initialize_network
 
 
-def evaluate_reward_model_MLP(env_name, pair_name, save_path):
+def evaluate_reward_model_MLP(env_name, model_path, eval_pair_name):
     data_loader, obs_dim, act_dim = get_dataloader(
-        env_name=env_name, pair_name=pair_name
+        env_name=env_name, pair_name=eval_pair_name
     )
 
-    model, _ = initialize_network(obs_dim, act_dim, path=save_path)
+    model, _ = initialize_network(obs_dim, act_dim, path=model_path)
     model.eval()
 
     correct_predictions = 0
