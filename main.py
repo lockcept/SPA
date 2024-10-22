@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-f",
         "--function_number",
-        type=int,
+        type=float,
         default=0,
         help=(
             "-2: helper evaluate reward model\n"
@@ -87,7 +87,6 @@ if __name__ == "__main__":
     pair_path = f"model/{env_name}/{pair_name}.npz"
     test_pair_name = f"{test_pair}_{mu_type}"
     test_pair_path = f"model/{env_name}/{test_pair_name}.npz"
-    eval_pair_name = test_pair
     reward_model_name = f"{pair_name}_{reward_model}"
     reward_model_path = f"model/{env_name}/{reward_model_name}.pth"
 
@@ -103,7 +102,7 @@ if __name__ == "__main__":
 
         if reward_model == "MLP":
             evaluate_reward_model_MLP(
-                env_name, reward_model_path, eval_pair_name=eval_pair_name
+                env_name, reward_model_path, eval_pair_name="eval_full_sigmoid"
             )
 
     elif function_number == 1:
@@ -113,7 +112,11 @@ if __name__ == "__main__":
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
-        generate_pairs(env_name, pair, 5000)
+        generate_pairs(env_name, pair, 30)
+    elif function_number == 2.1:
+        from src.data_generation.full_scripted_teacher import generate_pairs
+
+        generate_pairs(env_name, "eval_full", 5000, ["sigmoid"])
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
