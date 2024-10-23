@@ -70,11 +70,6 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    is_already_exist = os.path.exists(save_path)
-    if is_already_exist:
-        print(f"Pair already exists at {save_path}")
-        return
-
     if mu_type == "binary":
         mu_values = np.where(
             pair_data["reward_sum_0"] > pair_data["reward_sum_1"], 0, 1
@@ -100,6 +95,14 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
 
 
 def generate_pairs(env, pair_name_base, num_pairs, mu_types=["binary"]):
+
+    for mu_type in mu_types:
+        save_path = f"pair/{env}/{pair_name_base}_{mu_type}.npz"
+        is_already_exist = os.path.exists(save_path)
+        if is_already_exist:
+            print(f"Pair already exists at {save_path}, cancel generating")
+            return
+
     dataset = load_d4rl_dataset(env)
 
     print("start generating preference pairs", env, pair_name_base, num_pairs)
