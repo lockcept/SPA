@@ -20,12 +20,14 @@ if __name__ == "__main__":
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
+    mu_types = ["binary", "continuous", "sigmoid", "sigmoid_0.1", "sigmoid_0.25"]
+
     for pair_count in [100, 200, 500, 1000]:
         pair_name_base = f"full_{pair_count}"
         test_pair_name_base = f"test_full"
-        generate_pairs(env_name, pair_name_base, pair_count, ["binary", "continuous"])
+        generate_pairs(env_name, pair_name_base, pair_count, mu_types=mu_types)
 
-        for mu_type in ["binary", "continuous"]:
+        for mu_type in mu_types:
             pair_name = f"{pair_name_base}_{mu_type}"
             test_pair_name = f"{test_pair_name_base}_{mu_type}"
             reward_model_name = f"{pair_name}_{reward_model_name_base}"

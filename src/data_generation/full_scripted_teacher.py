@@ -86,6 +86,22 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
         diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
         sigmoid_values = 1 / (1 + np.exp(-diff_values))
         pair_data = rfn.append_fields(pair_data, "mu", sigmoid_values, dtypes=float)
+    elif mu_type == "sigmoid_0.1":
+        diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
+        sigmoid_values = 1 / (1 + np.exp(-diff_values))
+        round_unit = 0.1
+        rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
+        pair_data = rfn.append_fields(
+            pair_data, "mu", rounded_sigmoid_values, dtypes=float
+        )
+    elif mu_type == "sigmoid_0.25":
+        diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
+        sigmoid_values = 1 / (1 + np.exp(-diff_values))
+        round_unit = 0.25
+        rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
+        pair_data = rfn.append_fields(
+            pair_data, "mu", rounded_sigmoid_values, dtypes=float
+        )
 
     pair_data = rfn.drop_fields(pair_data, "reward_sum_0")
     pair_data = rfn.drop_fields(pair_data, "reward_sum_1")
