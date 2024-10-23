@@ -65,6 +65,16 @@ def generate_preference_pair(dataset, indices):
 
 
 def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
+    save_path = f"pair/{env}/{pair}_{mu_type}.npz"
+    save_dir = os.path.dirname(save_path)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    is_already_exist = os.path.exists(save_path)
+    if is_already_exist:
+        print(f"Pair already exists at {save_path}")
+        return
+
     if mu_type == "binary":
         mu_values = np.where(
             pair_data["reward_sum_0"] > pair_data["reward_sum_1"], 0, 1
@@ -85,10 +95,6 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
     pair_data = rfn.drop_fields(pair_data, "reward_sum_0")
     pair_data = rfn.drop_fields(pair_data, "reward_sum_1")
 
-    save_path = f"pair/{env}/{pair}_{mu_type}.npz"
-    save_dir = os.path.dirname(save_path)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
     np.savez(save_path, data=pair_data)
     print(f"Preference pairs saved at {save_path}")
 
