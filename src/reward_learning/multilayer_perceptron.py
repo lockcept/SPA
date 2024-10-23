@@ -140,3 +140,25 @@ def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001, path=None):
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     return model, optimizer
+
+
+def train(data_loader, test_data_loader, reward_model_path, obs_dim, act_dim):
+    save_dir = os.path.dirname(reward_model_path)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+        model, optimizer = initialize_network(obs_dim, act_dim, path=reward_model_path)
+        loss_fn = BradleyTerryLoss()
+
+        num_epochs = 100
+        loss_history = learn(
+            model,
+            optimizer,
+            data_loader,
+            test_data_loader,
+            loss_fn,
+            model_path=reward_model_path,
+            num_epochs=num_epochs,
+        )
+
+        print("Training completed. Loss history:", loss_history)

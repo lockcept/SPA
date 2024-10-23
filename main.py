@@ -77,17 +77,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     env_name = args.env
-    pair = args.pair
-    test_pair = args.test_pair
-    reward_model = args.reward_model
+    pair_name_base = args.pair
+    test_pair_name_base = args.test_pair
+    reward_model_name_base = args.reward_model
     function_number = args.function_number
     mu_type = args.mu
 
-    pair_name = f"{pair}_{mu_type}"
+    pair_name = f"{pair_name_base}_{mu_type}"
     pair_path = f"model/{env_name}/{pair_name}.npz"
-    test_pair_name = f"{test_pair}_{mu_type}"
+    test_pair_name = f"{test_pair_name_base}_{mu_type}"
     test_pair_path = f"model/{env_name}/{test_pair_name}.npz"
-    reward_model_name = f"{pair_name}_{reward_model}"
+    reward_model_name = f"{pair_name}_{reward_model_name_base}"
     reward_model_path = f"model/{env_name}/{reward_model_name}.pth"
 
     if function_number == 0:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     elif function_number == -2:
         from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
 
-        if reward_model == "MLP":
+        if reward_model_name == "MLP":
             evaluate_reward_model_MLP(
                 env_name, reward_model_path, eval_pair_name="eval_full_sigmoid"
             )
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
-        generate_pairs(env_name, pair, 30, ["binary", "continuous"])
+        generate_pairs(env_name, pair_name_base, 30, ["binary", "continuous"])
     elif function_number == 2.1:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
@@ -121,9 +121,7 @@ if __name__ == "__main__":
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
-            BradleyTerryLoss,
-            initialize_network,
-            learn,
+            train,
         )
 
         data_loader, obs_dim, act_dim = get_dataloader(
@@ -138,28 +136,15 @@ if __name__ == "__main__":
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
-        save_dir = os.path.dirname(reward_model_path)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
-        if reward_model == "MLP":
-            model, optimizer = initialize_network(
-                obs_dim, act_dim, path=reward_model_path
-            )
-            loss_fn = BradleyTerryLoss()
-
-            num_epochs = 100
-            loss_history = learn(
-                model,
-                optimizer,
-                data_loader,
-                test_data_loader,
-                loss_fn,
-                model_path=reward_model_path,
-                num_epochs=num_epochs,
+        if reward_model_name_base == "MLP":
+            train(
+                data_loader=data_loader,
+                test_data_loader=test_data_loader,
+                reward_model_path=reward_model_path,
+                obs_dim=obs_dim,
+                act_dim=act_dim,
             )
 
-            print("Training completed. Loss history:", loss_history)
     elif function_number == 4:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import initialize_network

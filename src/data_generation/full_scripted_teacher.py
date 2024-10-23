@@ -96,10 +96,10 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
     print(f"Preference pairs saved at {save_path}")
 
 
-def generate_pairs(env, pair, num_pairs, mu_types=["binary"]):
+def generate_pairs(env, pair_name_base, num_pairs, mu_types=["binary"]):
     dataset = load_d4rl_dataset(env)
 
-    print("start generating preference pairs", env, pair, num_pairs)
+    print("start generating preference pairs", env, pair_name_base, num_pairs)
 
     indices = extract_trajectory_indices(dataset)
     print("trajectory counts", len(indices))
@@ -124,4 +124,4 @@ def generate_pairs(env, pair, num_pairs, mu_types=["binary"]):
     print(preference_pairs_np[:5])
 
     for mu_type in mu_types:
-        save_pairs_by_mu_type(env, pair, mu_type, preference_pairs_np)
+        save_pairs_by_mu_type(env, pair_name_base, mu_type, preference_pairs_np)
