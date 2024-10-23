@@ -1,3 +1,6 @@
+import os
+
+
 if __name__ == "__main__":
     from src.data_loading.load_d4rl import save_d4rl_dataset
     from src.data_generation.full_scripted_teacher import generate_pairs
@@ -11,6 +14,11 @@ if __name__ == "__main__":
     reward_model_name_base = "MLP"
 
     save_d4rl_dataset(env_name)
+
+    log_path = "log/experiment.log"
+    save_dir = os.path.dirname(log_path)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
     for pair_count in [100, 200, 500, 1000]:
         pair_name_base = f"full_{pair_count}"
@@ -41,6 +49,11 @@ if __name__ == "__main__":
                 act_dim=act_dim,
             )
 
-            evaluate_reward_model_MLP(
+            accuracy, mse, pcc = evaluate_reward_model_MLP(
                 env_name, reward_model_path, eval_pair_name="eval_full_sigmoid"
             )
+
+            with open(log_path, "a") as log_file:
+                log_file.write(
+                    f"{env_name}, {pair_name_base}, {mu_type}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
+                )

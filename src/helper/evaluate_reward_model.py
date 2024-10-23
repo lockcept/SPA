@@ -34,9 +34,7 @@ def calculate_pearson_correlation_with_d4rl(env_name, model):
         predicted_rewards_np.flatten(), actual_rewards_np.flatten()
     )
 
-    print(
-        f"Pearson correlation between predicted rewards and actual rewards: {pearson_corr:.4f}"
-    )
+    return pearson_corr
 
 
 def evaluate_reward_model_MLP(env_name, model_path, eval_pair_name):
@@ -88,10 +86,14 @@ def evaluate_reward_model_MLP(env_name, model_path, eval_pair_name):
 
     accuracy = correct_predictions / total_samples if total_samples > 0 else 0
     avg_mse = cumulative_mse / total_samples if total_samples > 0 else 0
+    pearson_corr = calculate_pearson_correlation_with_d4rl(env_name, model)
 
     print(f"Correct predictions: {correct_predictions}")
     print(f"Total samples: {total_samples}")
     print(f"Accuracy: {accuracy:.4f}")
     print(f"Mean Squared Error (MSE): {avg_mse:.6f}")
+    print(
+        f"Pearson correlation between predicted rewards and actual rewards: {pearson_corr:.4f}"
+    )
 
-    calculate_pearson_correlation_with_d4rl(env_name, model)
+    return accuracy, avg_mse, pearson_corr
