@@ -100,7 +100,7 @@ if __name__ == "__main__":
     elif function_number == -2:
         from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
 
-        if reward_model_name == "MLP":
+        if reward_model_name_base == "MLP":
             evaluate_reward_model_MLP(
                 env_name, reward_model_path, eval_pair_name="eval_full_sigmoid"
             )
