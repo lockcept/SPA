@@ -37,10 +37,10 @@ def calculate_pearson_correlation_with_d4rl(env_name, model):
     return pearson_corr
 
 
-def evaluate_reward_model_MLP(env_name, model_path, eval_pair_name):
+def evaluate_reward_model_MLP(env_name, model_path, test_pair_name):
     data_loader, obs_dim, act_dim = get_dataloader(
         env_name=env_name,
-        pair_name=eval_pair_name,
+        pair_name=test_pair_name,
         drop_last=False,
     )
 

@@ -4,7 +4,7 @@ import os
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
 DEFAULT_PAIR = "full"
-DEFAULT_TEST_PAIR = "test_full"
+DEFAULT_EVAL_PAIR = "test_full"
 DEFAULT_MU_TYPE = "binary"
 DEFAULT_REWARD_MODEL = "MLP"
 
@@ -35,10 +35,10 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-tp",
-        "--test_pair",
+        "--eval_pair",
         type=str,
-        default=DEFAULT_TEST_PAIR,
-        help="Name of the trajectory pair file to use for test or eval(test_full, etc.)",
+        default=DEFAULT_EVAL_PAIR,
+        help="Name of the trajectory pair file to use for eval(eval_full, etc.)",
     )
 
     parser.add_argument(
@@ -78,15 +78,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     env_name = args.env
     pair_name_base = args.pair
-    test_pair_name_base = args.test_pair
+    eval_pair_name_base = args.eval_pair
     reward_model_name_base = args.reward_model
     function_number = args.function_number
     mu_type = args.mu
 
     pair_name = f"{pair_name_base}_{mu_type}"
     pair_path = f"model/{env_name}/{pair_name}.npz"
-    test_pair_name = f"{test_pair_name_base}_{mu_type}"
-    test_pair_path = f"model/{env_name}/{test_pair_name}.npz"
+    eval_pair_name = f"{eval_pair_name_base}_{mu_type}"
+    eval_pair_path = f"model/{env_name}/{eval_pair_name}.npz"
     reward_model_name = f"{pair_name}_{reward_model_name_base}"
     reward_model_path = f"model/{env_name}/{reward_model_name}.pth"
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
         if reward_model_name_base == "MLP":
             evaluate_reward_model_MLP(
-                env_name, reward_model_path, eval_pair_name="eval_full_sigmoid"
+                env_name, reward_model_path, test_pair_name="test_full_sigmoid"
             )
 
     elif function_number == 1:
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     elif function_number == 2.1:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
-        print("Generating preference pairs for eval_full_sigmoid")
-        generate_pairs(env_name, "eval_full", 5000, ["sigmoid"])
+        print("Generating preference pairs for test_full_sigmoid")
+        generate_pairs(env_name, "test_full", 5000, ["sigmoid"])
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
@@ -129,9 +129,9 @@ if __name__ == "__main__":
             pair_name=pair_name,
         )
 
-        test_data_loader, _, _ = get_dataloader(
+        eval_data_loader, _, _ = get_dataloader(
             env_name=env_name,
-            pair_name=test_pair_name,
+            pair_name=eval_pair_name,
         )
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         if reward_model_name_base == "MLP":
             train(
                 data_loader=data_loader,
-                test_data_loader=test_data_loader,
+                eval_data_loader=eval_data_loader,
                 reward_model_path=reward_model_path,
                 obs_dim=obs_dim,
                 act_dim=act_dim,

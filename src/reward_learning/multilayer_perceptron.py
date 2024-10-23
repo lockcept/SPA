@@ -140,7 +140,7 @@ def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001, path=None):
     return model, optimizer
 
 
-def train(data_loader, test_data_loader, reward_model_path, obs_dim, act_dim):
+def train(data_loader, eval_data_loader, reward_model_path, obs_dim, act_dim):
     save_dir = os.path.dirname(reward_model_path)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -155,7 +155,7 @@ def train(data_loader, test_data_loader, reward_model_path, obs_dim, act_dim):
         model,
         optimizer,
         data_loader,
-        test_data_loader,
+        eval_data_loader,
         loss_fn,
         model_path=reward_model_path,
         num_epochs=num_epochs,
