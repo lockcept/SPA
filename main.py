@@ -112,10 +112,11 @@ if __name__ == "__main__":
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
-        generate_pairs(env_name, pair, 30)
+        generate_pairs(env_name, pair, 30, ["binary", "continuous"])
     elif function_number == 2.1:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
+        print("Generating preference pairs for eval_full_sigmoid")
         generate_pairs(env_name, "eval_full", 5000, ["sigmoid"])
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader

@@ -86,7 +86,7 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
 
     pair_data = rfn.drop_fields(pair_data, "reward_sum_0")
     pair_data = rfn.drop_fields(pair_data, "reward_sum_1")
-    print(pair_data[:5])
+    print(pair_data[:3])
 
     save_path = f"pair/{env}/{pair}_{mu_type}.npz"
     save_dir = os.path.dirname(save_path)
@@ -96,8 +96,10 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
     print(f"Preference pairs saved at {save_path}")
 
 
-def generate_pairs(env, pair, num_pairs, mu_types=["binary", "continuous"]):
+def generate_pairs(env, pair, num_pairs, mu_types=["binary"]):
     dataset = load_d4rl_dataset(env)
+
+    print("start generating preference pairs", env, pair, num_pairs)
 
     indices = extract_trajectory_indices(dataset)
     print("trajectory counts", len(indices))
@@ -106,6 +108,8 @@ def generate_pairs(env, pair, num_pairs, mu_types=["binary", "continuous"]):
     for _ in tqdm(range(num_pairs), desc="Generating preference pairs"):
         preference_pair = generate_preference_pair(dataset, indices)
         preference_pairs.append(preference_pair)
+
+    print("generating finished, start saving by mu type")
 
     preference_pairs_np = np.array(
         preference_pairs,

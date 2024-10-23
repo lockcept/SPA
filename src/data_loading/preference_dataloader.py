@@ -91,4 +91,6 @@ def get_dataloader(
 
     obs_dim, act_dim = dataset.get_dimensions()
 
+    print(f"Loaded {pair_name} dataset with {len(dataset)} samples")
+
     return dataloader, obs_dim, act_dim
