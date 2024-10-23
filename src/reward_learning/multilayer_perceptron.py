@@ -127,8 +127,6 @@ def learn(
             torch.save(model.state_dict(), model_path)
             print(f"New best model saved with test loss: {test_loss:.4f}")
 
-    return loss_history
-
 
 def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001, path=None):
     model = RewardNetwork(obs_dim, act_dim, hidden_size)
@@ -147,18 +145,20 @@ def train(data_loader, test_data_loader, reward_model_path, obs_dim, act_dim):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-        model, optimizer = initialize_network(obs_dim, act_dim, path=reward_model_path)
-        loss_fn = BradleyTerryLoss()
+    model, optimizer = initialize_network(obs_dim, act_dim, path=reward_model_path)
+    loss_fn = BradleyTerryLoss()
 
-        num_epochs = 100
-        loss_history = learn(
-            model,
-            optimizer,
-            data_loader,
-            test_data_loader,
-            loss_fn,
-            model_path=reward_model_path,
-            num_epochs=num_epochs,
-        )
+    print("[Train started] reward_model_path:", reward_model_path)
 
-        print("Training completed. Loss history:", loss_history)
+    num_epochs = 100
+    learn(
+        model,
+        optimizer,
+        data_loader,
+        test_data_loader,
+        loss_fn,
+        model_path=reward_model_path,
+        num_epochs=num_epochs,
+    )
+
+    print("Training completed")

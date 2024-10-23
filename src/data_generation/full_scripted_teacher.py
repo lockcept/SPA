@@ -72,10 +72,8 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "continuous":
         length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
-        print(length_values)
         diff = (pair_data["reward_sum_1"] - pair_data["reward_sum_0"]) / length_values
         max_diff = np.max(np.abs(diff))
-        print(max_diff)
         normalized_diff = diff / max_diff
         mu_values = 0.5 + 0.5 * normalized_diff
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
@@ -86,7 +84,6 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
 
     pair_data = rfn.drop_fields(pair_data, "reward_sum_0")
     pair_data = rfn.drop_fields(pair_data, "reward_sum_1")
-    print(pair_data[:3])
 
     save_path = f"pair/{env}/{pair}_{mu_type}.npz"
     save_dir = os.path.dirname(save_path)
@@ -120,8 +117,6 @@ def generate_pairs(env, pair_name_base, num_pairs, mu_types=["binary"]):
             ("reward_sum_1", "f4"),
         ],
     )
-
-    print(preference_pairs_np[:5])
 
     for mu_type in mu_types:
         save_pairs_by_mu_type(env, pair_name_base, mu_type, preference_pairs_np)
