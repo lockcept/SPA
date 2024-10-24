@@ -112,7 +112,12 @@ if __name__ == "__main__":
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
-        generate_pairs(env_name, pair_name_base, 30, ["binary", "continuous"])
+        generate_pairs(
+            env_name,
+            pair_name_base,
+            1000,
+            ["binary", "continuous", "sigmoid", "sigmoid_0.1", "sigmoid_0.25"],
+        )
     elif function_number == 2.1:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
