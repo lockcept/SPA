@@ -1,14 +1,17 @@
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/")))
 
 
 if __name__ == "__main__":
-    from src.data_loading.load_d4rl import save_d4rl_dataset
-    from src.data_generation.full_scripted_teacher import generate_pairs
-    from src.data_loading.preference_dataloader import get_dataloader
-    from src.reward_learning.multilayer_perceptron import (
+    from data_loading.load_d4rl import save_d4rl_dataset
+    from data_generation.full_scripted_teacher import generate_pairs
+    from data_loading.preference_dataloader import get_dataloader
+    from reward_learning.multilayer_perceptron import (
         train,
     )
-    from src.helper.evaluate_reward_model import (
+    from helper.evaluate_reward_model import (
         evaluate_reward_model_MLP,
     )
 
