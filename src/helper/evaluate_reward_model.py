@@ -5,10 +5,12 @@ from scipy.stats import pearsonr
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-from src.data_loading.load_dataset import load_d4rl_dataset
+from data_loading.load_dataset import load_d4rl_dataset
 from data_loading.preference_dataloader import get_dataloader
 from reward_learning.multilayer_perceptron import initialize_network
 
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def calculate_pearson_correlation_with_d4rl(env_name, model):
     dataset = load_d4rl_dataset(env_name)
@@ -18,9 +20,9 @@ def calculate_pearson_correlation_with_d4rl(env_name, model):
     next_obs = dataset["observations"][1:]
     rewards = dataset["rewards"][:-1]
 
-    obs_tensor = torch.tensor(observations, dtype=torch.float32)
-    act_tensor = torch.tensor(actions, dtype=torch.float32)
-    next_obs_tensor = torch.tensor(next_obs, dtype=torch.float32)
+    obs_tensor = torch.tensor(observations, dtype=torch.float32).to(device)
+    act_tensor = torch.tensor(actions, dtype=torch.float32).to(device)
+    next_obs_tensor = torch.tensor(next_obs, dtype=torch.float32).to(device)
 
     with torch.no_grad():
         predicted_rewards = model(obs_tensor, act_tensor, next_obs_tensor)
@@ -52,6 +54,7 @@ def evaluate_reward_model_MLP(env_name, model_path, test_pair_name):
     mse_loss = torch.nn.MSELoss()
     cumulative_mse = 0
 
+
     with torch.no_grad():
         for batch in data_loader:
             (
@@ -62,7 +65,7 @@ def evaluate_reward_model_MLP(env_name, model_path, test_pair_name):
                 s1_act_batch,
                 s1_obs_next_batch,
                 mu_batch,
-            ) = batch
+            ) = [x.to(device) for x in batch]
 
             rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
             rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)

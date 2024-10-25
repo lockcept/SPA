@@ -1,5 +1,4 @@
 import argparse
-import os
 
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"

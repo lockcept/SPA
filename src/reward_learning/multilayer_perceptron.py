@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class RewardNetwork(nn.Module):
     def __init__(self, obs_dim, act_dim, hidden_dim):
@@ -57,7 +58,7 @@ def evaluate(model, data_loader, loss_fn):
                 s1_act_batch,
                 s1_obs_next_batch,
                 mu_batch,
-            ) = batch
+            ) = [x.to(device) for x in batch]
 
             rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
             rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
@@ -98,7 +99,7 @@ def learn(
                 s1_act_batch,
                 s1_obs_next_batch,
                 mu_batch,
-            ) = batch
+            ) = [x.to(device) for x in batch]
 
             rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
             rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
@@ -130,6 +131,7 @@ def learn(
 
 def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001, path=None):
     model = RewardNetwork(obs_dim, act_dim, hidden_size)
+    model = model.to(device)
     if path is not None:
         if os.path.isfile(path):
             model.load_state_dict(torch.load(path, weights_only=True))
