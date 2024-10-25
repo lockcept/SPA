@@ -88,6 +88,7 @@ if __name__ == "__main__":
     eval_pair_path = f"model/{env_name}/{eval_pair_name}.npz"
     reward_model_name = f"{pair_name}_{reward_model_name_base}"
     reward_model_path = f"model/{env_name}/{reward_model_name}.pth"
+    new_dataset_path = f"dataset/{env_name}/{reward_model_name}_dataset.npz"
 
     if function_number == 0:
         print("Pass")
@@ -154,20 +155,16 @@ if __name__ == "__main__":
         from src.reward_learning.multilayer_perceptron import initialize_network
         from src.policy_learning.change_reward import change_reward
 
-        save_path = f"model/{env_name}/{pair_name}_{reward_model_name}.pth"
-        dataset_path = f"dataset/{env_name}/{reward_model_name}_dataset.npz"
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name, pair_name=pair_name
         )
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
-        if reward_model_name == "MLP":
-            model, _ = initialize_network(obs_dim, act_dim, path=save_path)
-            change_reward(env_name, model, dataset_path)
+        if reward_model_name_base == "MLP":
+            model, _ = initialize_network(obs_dim=obs_dim, act_dim=act_dim, path=reward_model_path)
+            change_reward(env_name=env_name, model=model, dataset_path=new_dataset_path)
     elif function_number == 5:
         from src.policy_learning.iql import train
 
-        dataset_path = f"dataset/{env_name}/{reward_model_name}_dataset.npz"
-
-        train(env_name=env_name, dataset_path=dataset_path)
+        train(env_name=env_name, dataset_path=new_dataset_path)

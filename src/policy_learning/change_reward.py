@@ -8,12 +8,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from data_loading.load_dataset import load_d4rl_dataset
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def change_reward(env_name, model, dataset_path):
     dataset = load_d4rl_dataset(env_name)
 
-    observations = torch.tensor(dataset["observations"])
-    actions = torch.tensor(dataset["actions"])
+    observations = torch.tensor(dataset["observations"]).to(device)
+    actions = torch.tensor(dataset["actions"]).to(device)
 
     s_t = observations[:-1]
     s_t_next = observations[1:]
