@@ -1,0 +1,3 @@
+[submodule "OfflineRL-Kit"]
+	path = OfflineRL-Kit
+	url = https://github.com/yihaosun1124/OfflineRL-Kit.git

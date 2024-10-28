@@ -19,9 +19,8 @@ pip install -e .
 install OfflineRL-Kit
 
 ```bash
-git clone https://github.com/yihaosun1124/OfflineRL-Kit.git
 cd OfflineRL-Kit
-python setup.py install
+pip install -e .
 ```
 
 ## Run
