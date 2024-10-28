@@ -87,7 +87,8 @@ if __name__ == "__main__":
     eval_pair_name = f"{eval_pair_name_base}_{mu_type}"
     eval_pair_path = f"model/{env_name}/{eval_pair_name}.npz"
     reward_model_name = f"{pair_name}_{reward_model_name_base}"
-    reward_model_path = f"model/{env_name}/{reward_model_name}.pth"
+    reward_model_path = f"model/{env_name}/reward/{reward_model_name}.pth"
+    policy_model_dir_path = f"model/{env_name}/policy/{reward_model_name}"
     new_dataset_path = f"dataset/{env_name}/{reward_model_name}_dataset.npz"
 
     if function_number == 0:
@@ -167,4 +168,4 @@ if __name__ == "__main__":
     elif function_number == 5:
         from src.policy_learning.iql import train
 
-        train(env_name=env_name, dataset_path=new_dataset_path)
+        train(env_name=env_name, dataset_path=new_dataset_path, log_dir = policy_model_dir_path)

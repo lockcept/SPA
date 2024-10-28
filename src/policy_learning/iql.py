@@ -1,6 +1,5 @@
-import argparse
-import os
 import random
+import os
 
 import gym
 import d4rl
@@ -36,7 +35,7 @@ def get_configs():
     tau = 0.005
     expectile = 0.7
     temperature = 3.0
-    epoch = 1000
+    epoch = 5
     step_per_epoch = 1000
     eval_episodes = 10
     batch_size = 256
@@ -111,7 +110,7 @@ def normalize_rewards(dataset):
     return dataset
 
 
-def train(env_name, dataset_path):
+def train(env_name, dataset_path, log_dir):
     configs = get_configs()
     # create env and dataset
     env = gym.make(env_name)
@@ -226,7 +225,10 @@ def train(env_name, dataset_path):
     buffer.load_dataset(dataset)
 
     # log
-    log_dirs = make_log_dirs(env_name, configs["algo_name"], configs["seed"], configs)
+    # log_dirs = make_log_dirs(env_name, configs["algo_name"], configs["seed"], configs)
+    log_dirs = log_dir
+    if not os.path.exists(log_dirs):
+        os.makedirs(log_dirs)
     output_config = {
         "consoleout_backup": "stdout",
         "policy_training_progress": "csv",
