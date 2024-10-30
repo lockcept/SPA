@@ -1,22 +1,28 @@
 # Makefile
 
 # Variables
-ENV=-e halfcheetah-medium-v2
+ENV=halfcheetah-medium-v2
+MU_ALGOS=binary sigmoid sigmoid_0.25 sigmoid_0.5
 
 d4rl:
-	python main.py -f 1 $(ENV)
+	python main.py -f 1 -e $(ENV)
 
 common_pair:
-	python main.py -f 2 $(ENV) -n 100 -p eval_full
-	python main.py -f 2.1 $(ENV) -n 100
+	python main.py -f 2 -e $(ENV) -n 1000 -p eval_full
+	python main.py -f 2.1 -e $(ENV) -n 2000
 
 define full_commands
-	python main.py -f 2 $(ENV) -n 50 -p full_$(1)
-	python main.py -f 3 $(ENV) -p full_$(1) -rt 00
-	python main.py -f 3 $(ENV) -p full_$(1) -rt 01
-	python main.py -f 3 $(ENV) -p full_$(1) -rt 02
-	python main.py -f 4 $(ENV) -p full_$(1)
-	python main.py -f 5 $(ENV) -p full_$(1)
+	python main.py -f 2 -e $(ENV) -n 500 -p full_$(1)
+
+	$(foreach algo, $(MU_ALGOS), \
+		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo); \
+		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 01 -ma $(algo); \
+		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 02 -ma $(algo); \
+		python main.py -f -2 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo); \
+		python main.py -f -2 -e $(ENV) -p full_$(1) -rt 01 -ma $(algo); \
+		python main.py -f -2 -e $(ENV) -p full_$(1) -rt 02 -ma $(algo); \
+		python main.py -f 4 -e $(ENV) -p full_$(1) -ma $(algo); \
+		python main.py -f 5 -e $(ENV) -p full_$(1) -ma $(algo);)
 endef
 
 full_00:

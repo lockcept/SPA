@@ -124,10 +124,18 @@ if __name__ == "__main__":
     elif function_number == -2:
         from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
 
+        log_path = "log/main_evaluate_reward.log"
+
+
         if reward_model_algo == "MLP":
-            evaluate_reward_model_MLP(
+            accuracy, mse, pcc = evaluate_reward_model_MLP(
                 env_name, reward_model_path, test_pair_name="test_full_sigmoid"
             )
+
+            with open(log_path, "a") as log_file:
+                log_file.write(
+                    f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
+                )
     elif function_number == -3:
         from src.helper.plotter import plot
 
