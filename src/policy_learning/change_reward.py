@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-
 import os
 import sys
 
@@ -11,7 +10,7 @@ from data_loading.load_dataset import load_d4rl_dataset
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def change_reward(env_name, model, dataset_path):
+def change_reward(env_name, model_list, dataset_path):
     dataset = load_d4rl_dataset(env_name)
 
     observations = torch.tensor(dataset["observations"]).to(device)
@@ -21,9 +20,13 @@ def change_reward(env_name, model, dataset_path):
     s_t_next = observations[1:]
     a_t = actions[:-1]
 
-    predicted_rewards = model(s_t, a_t, s_t_next)
-    predicted_rewards = predicted_rewards.detach().cpu().numpy()
-    rewards = np.append(np.array(predicted_rewards), 0)
+    model_outputs = []
+    for model in model_list:
+        model_output = model(s_t, a_t, s_t_next)
+        model_outputs.append(model_output.detach().cpu().numpy())
+
+    predicted_rewards = np.mean(model_outputs, axis=0)
+    rewards = np.append(predicted_rewards, 0)
 
     terminals = dataset["terminals"] | dataset["timeouts"]
     mask = terminals == 1

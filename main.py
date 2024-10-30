@@ -1,11 +1,14 @@
 import argparse
+import glob
 
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
 DEFAULT_PAIR = "full"
 DEFAULT_EVAL_PAIR = "eval_full"
-DEFAULT_MU_TYPE = "binary"
-DEFAULT_REWARD_MODEL = "MLP"
+DEFAULT_MU_ALGO = "binary"
+DEFAULT_REWARD_MODEL_ALGO = "MLP"
+DEFAULT_REWARD_MODEL_TAG = "-"
+
 
 
 if __name__ == "__main__":
@@ -25,6 +28,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-n",
+        "--num",
+        type=int,
+        default=1000,
+        help="Number of pairs",
+    )
+
+    parser.add_argument(
         "-p",
         "--pair",
         type=str,
@@ -33,7 +44,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-tp",
+        "-ep",
         "--eval_pair",
         type=str,
         default=DEFAULT_EVAL_PAIR,
@@ -41,19 +52,26 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-r",
-        "--reward_model",
+        "-ra",
+        "--reward_model_algo",
         type=str,
-        default=DEFAULT_REWARD_MODEL,
-        help="Name of reward model (MLP, etc.)",
+        default=DEFAULT_REWARD_MODEL_ALGO,
+        help="Algorithm of reward model (MLP, etc.)",
+    )
+    parser.add_argument(
+        "-rt",
+        "--reward_model_tag",
+        type=str,
+        default=DEFAULT_REWARD_MODEL_TAG,
+        help="Tag of reward model",
     )
 
     parser.add_argument(
-        "-m",
-        "--mu",
+        "-ma",
+        "--mu_algo",
         type=str,
-        default=DEFAULT_MU_TYPE,
-        help="Type of Mu(binary, continuous)",
+        default=DEFAULT_MU_ALGO,
+        help="Algorithm of Mu(binary, continuous)",
     )
 
     parser.add_argument(
@@ -62,6 +80,7 @@ if __name__ == "__main__":
         type=float,
         default=0,
         help=(
+            "-3: helper policy evalutaion\n"
             "-2: helper evaluate reward model\n"
             "-1: helper analyze d4rl\n"
             " 0: do nothing\n"
@@ -76,20 +95,24 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     env_name = args.env
+    num = args.num
     pair_name_base = args.pair
     eval_pair_name_base = args.eval_pair
-    reward_model_name_base = args.reward_model
+    reward_model_algo = args.reward_model_algo
+    reward_model_tag = args.reward_model_tag
     function_number = args.function_number
-    mu_type = args.mu
+    mu_algo = args.mu_algo
 
-    pair_name = f"{pair_name_base}_{mu_type}"
+    pair_name = f"{pair_name_base}_{mu_algo}"
+    eval_pair_name = f"{eval_pair_name_base}_{mu_algo}"
+    new_dataset_name = f"{pair_name}_{reward_model_algo}"
+    reward_model_name = f"{new_dataset_name}_{reward_model_tag}"
+
     pair_path = f"model/{env_name}/{pair_name}.npz"
-    eval_pair_name = f"{eval_pair_name_base}_{mu_type}"
     eval_pair_path = f"model/{env_name}/{eval_pair_name}.npz"
-    reward_model_name = f"{pair_name}_{reward_model_name_base}"
     reward_model_path = f"model/{env_name}/reward/{reward_model_name}.pth"
-    policy_model_dir_path = f"model/{env_name}/policy/{reward_model_name}"
-    new_dataset_path = f"dataset/{env_name}/{reward_model_name}_dataset.npz"
+    new_dataset_path = f"dataset/{env_name}/{new_dataset_name}_dataset.npz"
+    policy_model_dir_path = f"model/{env_name}/policy/{new_dataset_name}"
 
     if function_number == 0:
         print("Pass")
@@ -101,7 +124,7 @@ if __name__ == "__main__":
     elif function_number == -2:
         from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
 
-        if reward_model_name_base == "MLP":
+        if reward_model_algo == "MLP":
             evaluate_reward_model_MLP(
                 env_name, reward_model_path, test_pair_name="test_full_sigmoid"
             )
@@ -122,16 +145,16 @@ if __name__ == "__main__":
         from src.data_generation.full_scripted_teacher import generate_pairs
 
         generate_pairs(
-            env_name,
-            pair_name_base,
-            100,
-            ["binary", "continuous", "sigmoid", "sigmoid_0.1", "sigmoid_0.25"],
+            env=env_name,
+            pair_name_base=pair_name_base,
+            num_pairs=num,
+            mu_types=["binary", "continuous", "sigmoid", "sigmoid_0.1", "sigmoid_0.25","sigmoid_0.5"],
         )
     elif function_number == 2.1:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
         print("Generating preference pairs for test_full_sigmoid")
-        generate_pairs(env_name, "test_full", 5000, ["sigmoid"])
+        generate_pairs(env=env_name, pair_name_base= "test_full", num_pairs=num, mu_types=["sigmoid"])
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.multilayer_perceptron import (
@@ -150,7 +173,7 @@ if __name__ == "__main__":
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
-        if reward_model_name_base == "MLP":
+        if reward_model_algo == "MLP":
             train(
                 data_loader=data_loader,
                 eval_data_loader=eval_data_loader,
@@ -170,9 +193,16 @@ if __name__ == "__main__":
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
-        if reward_model_name_base == "MLP":
-            model, _ = initialize_network(obs_dim=obs_dim, act_dim=act_dim, path=reward_model_path)
-            change_reward(env_name=env_name, model=model, dataset_path=new_dataset_path)
+        if reward_model_algo == "MLP":
+            model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
+            model_files = glob.glob(model_path_pattern)
+
+            model_list = []
+            for model_file in model_files:
+                model, _ = initialize_network(obs_dim=obs_dim, act_dim=act_dim, path=model_file)
+                model_list.append(model)
+
+            change_reward(env_name=env_name, model_list=model_list, dataset_path=new_dataset_path)
     elif function_number == 5:
         from src.policy_learning.iql import train
 
