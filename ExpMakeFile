@@ -1,0 +1,38 @@
+# Makefile
+
+# Variables
+ENV=-e halfcheetah-medium-v2
+
+d4rl:
+	python main.py -f 1 $(ENV)
+
+common_pair:
+	python main.py -f 2 $(ENV) -n 100 -p eval_full
+	python main.py -f 2.1 $(ENV) -n 100
+
+define full_commands
+	python main.py -f 2 $(ENV) -n 50 -p full_$(1)
+	python main.py -f 3 $(ENV) -p full_$(1) -rt 00
+	python main.py -f 3 $(ENV) -p full_$(1) -rt 01
+	python main.py -f 3 $(ENV) -p full_$(1) -rt 02
+	python main.py -f 4 $(ENV) -p full_$(1)
+	python main.py -f 5 $(ENV) -p full_$(1)
+endef
+
+full_00:
+	$(call full_commands,00)
+
+full_01:
+	$(call full_commands,01)
+
+full_02:
+	$(call full_commands,02)
+
+full_03:
+	$(call full_commands,03)
+
+full_04:
+	$(call full_commands,04)
+
+# Run all commands
+all: d4rl common_pair full_00 full_01 full_02 full_03 full_04
