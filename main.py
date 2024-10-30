@@ -3,7 +3,7 @@ import argparse
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
 DEFAULT_PAIR = "full"
-DEFAULT_EVAL_PAIR = "test_full"
+DEFAULT_EVAL_PAIR = "eval_full"
 DEFAULT_MU_TYPE = "binary"
 DEFAULT_REWARD_MODEL = "MLP"
 
@@ -105,6 +105,14 @@ if __name__ == "__main__":
             evaluate_reward_model_MLP(
                 env_name, reward_model_path, test_pair_name="test_full_sigmoid"
             )
+    elif function_number == -3:
+        from src.helper.plotter import plot
+
+        plot(progress_path_list=["model/hopper-medium-v2/policy/full_binary_MLP",
+                                 "model/hopper-medium-v2/policy/full_sigmoid_MLP",
+                                 "model/maze2d-medium-dense-v1/policy/full_1000_binary_MLP",
+                                 "model/maze2d-medium-dense-v1/policy/full_1000_sigmoid_MLP"])
+
 
     elif function_number == 1:
         from src.data_loading.load_d4rl import save_d4rl_dataset
@@ -116,7 +124,7 @@ if __name__ == "__main__":
         generate_pairs(
             env_name,
             pair_name_base,
-            1000,
+            100,
             ["binary", "continuous", "sigmoid", "sigmoid_0.1", "sigmoid_0.25"],
         )
     elif function_number == 2.1:
