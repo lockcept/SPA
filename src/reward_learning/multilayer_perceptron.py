@@ -88,7 +88,6 @@ def learn(
     for epoch in range(num_epochs):
         model.train()
         epoch_loss = 0.0
-        num_batches = 0
 
         for batch in train_data_loader:
             (
@@ -111,9 +110,8 @@ def learn(
             optimizer.step()
 
             epoch_loss += loss.item()
-            num_batches += 1
 
-        avg_epoch_loss = epoch_loss / num_batches
+        avg_epoch_loss = epoch_loss / len(train_data_loader)
         loss_history.append(avg_epoch_loss)
 
         test_loss = evaluate(model, test_data_loader, loss_fn)
