@@ -1,5 +1,6 @@
 import argparse
 import glob
+import os
 
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
@@ -139,11 +140,18 @@ if __name__ == "__main__":
     elif function_number == -3:
         from src.helper.plotter import plot
 
-        plot(progress_path_list=["model/hopper-medium-v2/policy/full_binary_MLP",
-                                 "model/hopper-medium-v2/policy/full_sigmoid_MLP",
-                                 "model/maze2d-medium-dense-v1/policy/full_1000_binary_MLP",
-                                 "model/maze2d-medium-dense-v1/policy/full_1000_sigmoid_MLP"])
+        env_list = ['halfcheetah-medium-v2','hopper-medium-v2','walker2d-medium-v2']
+        mu_algo_list = ['binary','sigmoid','sigmoid_0.25','sigmoid_0.5']
 
+        for env in env_list:
+            path_list = []
+            for mu_algo in mu_algo_list:
+                path = f"model/{env}/policy/full_00_{mu_algo}_MLP"
+                if os.path.isdir(path):
+                    path_list.append(path)
+            print(path_list)
+            plot(progress_path_list=path_list, output_path=f"figure_{env}.png")
+        
 
     elif function_number == 1:
         from src.data_loading.load_d4rl import save_d4rl_dataset

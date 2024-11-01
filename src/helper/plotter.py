@@ -79,7 +79,7 @@ def plot_figure(
 ):
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     if color_list == None:
-        color_list = [COLORS[i] for i in range(len(results))]
+        color_list = [COLORS[i % 6] for i in range(len(results))]
     else:
         assert len(color_list) == len(results)
     for i, (algo_name, csv_file) in enumerate(results.items()):
@@ -93,7 +93,7 @@ def plot_figure(
     ax.set_ylabel(y_label)
     ax.legend()
 
-def plot(progress_path_list=[]):
+def plot(progress_path_list=[], output_path="figure.png"):
 
     query_file = "policy_training_progress.csv"
     x_label = "timestep"
@@ -115,7 +115,7 @@ def plot(progress_path_list=[]):
         dpi=200,
     )
 
-    plt.savefig('./figure.png', bbox_inches='tight')
+    plt.savefig(output_path, bbox_inches='tight')
     plt.show()
     
 
