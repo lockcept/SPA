@@ -93,7 +93,7 @@ def plot_figure(
     ax.set_ylabel(y_label)
     ax.legend()
 
-def plot(progress_path_list=[], output_path="figure.png"):
+def plot(progress_path_list=[], output_name="name"):
 
     query_file = "policy_training_progress.csv"
     x_label = "timestep"
@@ -114,7 +114,7 @@ def plot(progress_path_list=[], output_path="figure.png"):
         figsize=(5,5),
         dpi=200,
     )
-
+    output_path = f"log/policy_{output_name}.png"
     plt.savefig(output_path, bbox_inches='tight')
     plt.show()
     

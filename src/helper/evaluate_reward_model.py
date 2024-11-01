@@ -1,6 +1,7 @@
 import torch
 import os
 import sys
+import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
 
@@ -12,7 +13,7 @@ from reward_learning.multilayer_perceptron import initialize_network
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def calculate_pearson_correlation_with_d4rl(env_name, model):
+def calculate_pearson_correlation_with_d4rl(env_name, model, output_name):
     dataset = load_d4rl_dataset(env_name)
 
     observations = dataset["observations"][:-1]
@@ -36,10 +37,22 @@ def calculate_pearson_correlation_with_d4rl(env_name, model):
         predicted_rewards_np.flatten(), actual_rewards_np.flatten()
     )
 
+    plt.figure(figsize=(8, 6))
+    plt.scatter(actual_rewards_np, predicted_rewards_np, alpha=0.5, label=output_name)
+    plt.xlabel("Actual Rewards")
+    plt.ylabel("Predicted Rewards")
+    plt.title(f"Actual vs. Predicted Rewards\nPearson Correlation: {pearson_corr:.2f}")
+    plt.legend()
+    plt.grid(True)
+
+    output_path =f"log/reward_PCC_{output_name}.png"
+    plt.savefig(output_path, format='png')
+    plt.close()
+
     return pearson_corr
 
 
-def evaluate_reward_model_MLP(env_name, model_path, test_pair_name):
+def evaluate_reward_model_MLP(env_name, model_path, test_pair_name, output_name):
     data_loader, obs_dim, act_dim = get_dataloader(
         env_name=env_name,
         pair_name=test_pair_name,
@@ -89,7 +102,7 @@ def evaluate_reward_model_MLP(env_name, model_path, test_pair_name):
 
     accuracy = correct_predictions / total_samples if total_samples > 0 else 0
     avg_mse = cumulative_mse / total_samples if total_samples > 0 else 0
-    pearson_corr = calculate_pearson_correlation_with_d4rl(env_name, model)
+    pearson_corr = calculate_pearson_correlation_with_d4rl(env_name, model, output_name=output_name)
 
     print(f"Correct predictions: {correct_predictions}")
     print(f"Total samples: {total_samples}")

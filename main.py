@@ -127,10 +127,9 @@ if __name__ == "__main__":
 
         log_path = "log/main_evaluate_reward.log"
 
-
         if reward_model_algo == "MLP":
             accuracy, mse, pcc = evaluate_reward_model_MLP(
-                env_name, reward_model_path, test_pair_name="test_full_sigmoid"
+                env_name, reward_model_path, test_pair_name="test_full_sigmoid", output_name = f"{env_name}_{reward_model_name}"
             )
 
             with open(log_path, "a") as log_file:
@@ -150,7 +149,7 @@ if __name__ == "__main__":
                 if os.path.isdir(path):
                     path_list.append(path)
             print(path_list)
-            plot(progress_path_list=path_list, output_path=f"figure_{env}.png")
+            plot(progress_path_list=path_list, output_name=env)
         
 
     elif function_number == 1:
