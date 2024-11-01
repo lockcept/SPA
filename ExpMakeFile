@@ -8,11 +8,11 @@ d4rl:
 	python main.py -f 1 -e $(ENV)
 
 common_pair:
-	python main.py -f 2 -e $(ENV) -n 1000 -p eval_full
-	python main.py -f 2.1 -e $(ENV) -n 2000
+	python main.py -f 2 -e $(ENV) -n 500 -p eval_full
+	python main.py -f 2.1 -e $(ENV) -n 1000
 
 define full_commands
-	python main.py -f 2 -e $(ENV) -n 500 -p full_$(1)
+	python main.py -f 2 -e $(ENV) -n 100 -p full_$(1)
 
 	$(foreach algo, $(MU_ALGOS), \
 		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo); \
