@@ -8,7 +8,7 @@ if __name__ == "__main__":
     from data_loading.load_d4rl import save_d4rl_dataset
     from data_generation.full_scripted_teacher import generate_pairs
     from data_loading.preference_dataloader import get_dataloader
-    from reward_learning.multilayer_perceptron import (
+    from reward_learning.MLP import (
         train,
     )
     from helper.evaluate_reward_model import (

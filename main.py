@@ -172,7 +172,7 @@ if __name__ == "__main__":
         generate_pairs(env=env_name, pair_name_base= "test_full", num_pairs=num, mu_types=["sigmoid"])
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
-        from src.reward_learning.multilayer_perceptron import (
+        from reward_learning.MLP import (
             train,
         )
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
 
     elif function_number == 4:
         from src.data_loading.preference_dataloader import get_dataloader
-        from src.reward_learning.multilayer_perceptron import initialize_network
+        from reward_learning.MLP import initialize_network
         from src.policy_learning.change_reward import change_reward
 
         data_loader, obs_dim, act_dim = get_dataloader(

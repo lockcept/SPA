@@ -8,7 +8,7 @@ from scipy.stats import pearsonr
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_loading.load_dataset import load_d4rl_dataset
 from data_loading.preference_dataloader import get_dataloader
-from reward_learning.multilayer_perceptron import initialize_network
+from reward_learning.MLP import initialize_network
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
