@@ -5,7 +5,7 @@ import os
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
 DEFAULT_PAIR = "full"
-DEFAULT_EVAL_PAIR = "eval_full"
+DEFAULT_VAL_PAIR = "val_full"
 DEFAULT_MU_ALGO = "binary"
 DEFAULT_REWARD_MODEL_ALGO = "MLP"
 DEFAULT_REWARD_MODEL_TAG = "-"
@@ -44,11 +44,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-ep",
-        "--eval_pair",
+        "-vp",
+        "--val_pair",
         type=str,
-        default=DEFAULT_EVAL_PAIR,
-        help="Name of the trajectory pair file to use for eval(eval_full, etc.)",
+        default=DEFAULT_VAL_PAIR,
+        help="Name of the trajectory pair file to use for validate(val_full, etc.)",
     )
 
     parser.add_argument(
@@ -97,19 +97,19 @@ if __name__ == "__main__":
     env_name = args.env
     num = args.num
     pair_name_base = args.pair
-    eval_pair_name_base = args.eval_pair
+    val_pair_name_base = args.val_pair
     reward_model_algo = args.reward_model_algo
     reward_model_tag = args.reward_model_tag
     function_number = args.function_number
     mu_algo = args.mu_algo
 
     pair_name = f"{pair_name_base}_{mu_algo}"
-    eval_pair_name = f"{eval_pair_name_base}_{mu_algo}"
+    val_pair_name = f"{val_pair_name_base}_{mu_algo}"
     new_dataset_name = f"{pair_name}_{reward_model_algo}"
     reward_model_name = f"{new_dataset_name}_{reward_model_tag}"
 
     pair_path = f"model/{env_name}/{pair_name}.npz"
-    eval_pair_path = f"model/{env_name}/{eval_pair_name}.npz"
+    val_pair_path = f"model/{env_name}/{val_pair_name}.npz"
     reward_model_path = f"model/{env_name}/reward/{reward_model_name}.pth"
     new_dataset_path = f"dataset/{env_name}/{new_dataset_name}_dataset.npz"
     policy_model_dir_path = f"model/{env_name}/policy/{new_dataset_name}"
@@ -211,9 +211,9 @@ if __name__ == "__main__":
             pair_name=pair_name,
         )
 
-        eval_data_loader, _, _ = get_dataloader(
+        val_data_loader, _, _ = get_dataloader(
             env_name=env_name,
-            pair_name=eval_pair_name,
+            pair_name=val_pair_name,
         )
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
@@ -231,7 +231,7 @@ if __name__ == "__main__":
             )
 
         model.train_model(
-            train_loader=data_loader, eval_loader=eval_data_loader, optimizer=optimizer
+            train_loader=data_loader, val_loader=val_data_loader, optimizer=optimizer
         )
 
     elif function_number == 4:

@@ -37,7 +37,7 @@ class RewardModelBase(nn.Module):
         self,
         optimizer,
         train_data_loader,
-        eval_data_loader,
+        val_data_loader,
         loss_fn,
         num_epochs=10,
     ):
@@ -61,19 +61,19 @@ class RewardModelBase(nn.Module):
                 epoch_loss += loss.item()
 
             avg_epoch_loss = epoch_loss / len(train_data_loader)
-            eval_loss = self.evaluate(eval_data_loader, loss_fn)
+            val_loss = self.evaluate(val_data_loader, loss_fn)
 
             print(
-                f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Eval Loss: {eval_loss:.4f}"
+                f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Val Loss: {val_loss:.4f}"
             )
 
-            if eval_loss < best_loss:
-                best_loss = eval_loss
+            if val_loss < best_loss:
+                best_loss = val_loss
                 torch.save(self.state_dict(), self.path)
-                print(f"New best model saved with eval loss: {eval_loss:.4f}")
+                print(f"New best model saved with Val loss: {val_loss:.4f}")
 
-    def train_model(self, optimizer, train_loader, eval_loader, num_epochs=100):
+    def train_model(self, optimizer, train_loader, val_loader, num_epochs=100):
         loss_fn = nn.MSELoss()
         print(f"[Training started] Saving best model to {self.path}")
-        self._learn(optimizer, train_loader, eval_loader, loss_fn, num_epochs)
+        self._learn(optimizer, train_loader, val_loader, loss_fn, num_epochs)
         print("Training completed")

@@ -8,7 +8,7 @@ d4rl:
 	python main.py -f 1 -e $(ENV)
 
 common_pair:
-	python main.py -f 2 -e $(ENV) -n 1000 -p eval_full
+	python main.py -f 2 -e $(ENV) -n 1000 -p val_full
 	python main.py -f 2.1 -e $(ENV) -n 2000
 
 define full_commands

@@ -91,13 +91,13 @@ class MLP(RewardModelBase):
         self,
         optimizer,
         train_data_loader,
-        eval_data_loader,
+        val_data_loader,
         loss_fn,
         num_epochs=10,
     ):
         best_loss = float("inf")
         loss_history = []
-        eval_loss_history = []
+        val_loss_history = []
 
         for epoch in range(num_epochs):
             self.train()
@@ -134,19 +134,19 @@ class MLP(RewardModelBase):
             avg_epoch_loss = epoch_loss / len(train_data_loader)
             loss_history.append(avg_epoch_loss)
 
-            eval_loss = self.evaluate(data_loader=eval_data_loader, loss_fn=loss_fn)
-            eval_loss_history.append(eval_loss)
+            val_loss = self.evaluate(data_loader=val_data_loader, loss_fn=loss_fn)
+            val_loss_history.append(val_loss)
 
             print(
-                f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Test Loss: {eval_loss:.4f}"
+                f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Val Loss: {val_loss:.4f}"
             )
 
-            if eval_loss < best_loss:
-                best_loss = eval_loss
+            if val_loss < best_loss:
+                best_loss = val_loss
                 torch.save(self.state_dict(), self.path)
-                print(f"New best model saved with test loss: {eval_loss:.4f}")
+                print(f"New best model saved with Val loss: {val_loss:.4f}")
 
-    def train_model(self, optimizer, train_loader, eval_loader):
+    def train_model(self, optimizer, train_loader, val_loader):
         loss_fn = BradleyTerryLoss()
 
         print("[Train started] reward_model_path:", self.path)
@@ -154,7 +154,7 @@ class MLP(RewardModelBase):
         self._learn(
             optimizer=optimizer,
             train_data_loader=train_loader,
-            eval_data_loader=eval_loader,
+            val_data_loader=val_loader,
             loss_fn=loss_fn,
             num_epochs=100,
         )
