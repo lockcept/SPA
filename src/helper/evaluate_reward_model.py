@@ -8,10 +8,12 @@ from scipy.stats import pearsonr
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_loading.load_dataset import load_d4rl_dataset
 from data_loading.preference_dataloader import get_dataloader
-from reward_learning.MLP import initialize_network
+from reward_learning.reward_model_base import RewardModelBase
+from reward_learning.MLP import MLP
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def calculate_pearson_correlation_with_d4rl(env_name, model, output_name):
     dataset = load_d4rl_dataset(env_name)
@@ -45,8 +47,8 @@ def calculate_pearson_correlation_with_d4rl(env_name, model, output_name):
     plt.legend()
     plt.grid(True)
 
-    output_path =f"log/reward_PCC_{output_name}.png"
-    plt.savefig(output_path, format='png')
+    output_path = f"log/reward_PCC_{output_name}.png"
+    plt.savefig(output_path, format="png")
     plt.close()
 
     return pearson_corr
@@ -59,14 +61,15 @@ def evaluate_reward_model_MLP(env_name, model_path, test_pair_name, output_name)
         drop_last=False,
     )
 
-    model, _ = initialize_network(obs_dim, act_dim, path=model_path)
+    model, _ = MLP.initialize(
+        config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
+    )
     model.eval()
 
     correct_predictions = 0
     total_samples = 0
     mse_loss = torch.nn.MSELoss()
     cumulative_mse = 0
-
 
     with torch.no_grad():
         for batch in data_loader:
@@ -102,7 +105,9 @@ def evaluate_reward_model_MLP(env_name, model_path, test_pair_name, output_name)
 
     accuracy = correct_predictions / total_samples if total_samples > 0 else 0
     avg_mse = cumulative_mse / total_samples if total_samples > 0 else 0
-    pearson_corr = calculate_pearson_correlation_with_d4rl(env_name, model, output_name=output_name)
+    pearson_corr = calculate_pearson_correlation_with_d4rl(
+        env_name, model, output_name=output_name
+    )
 
     print(f"Correct predictions: {correct_predictions}")
     print(f"Total samples: {total_samples}")

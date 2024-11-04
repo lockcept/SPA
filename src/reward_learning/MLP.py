@@ -4,16 +4,43 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+from reward_learning.reward_model_base import RewardModelBase
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class RewardNetwork(nn.Module):
-    def __init__(self, obs_dim, act_dim, hidden_dim):
-        super(RewardNetwork, self).__init__()
+
+class MLP(RewardModelBase):
+
+    @staticmethod
+    def initialize(config, path=None):
+        obs_dim = config.get("obs_dim")
+        act_dim = config.get("act_dim")
+        hidden_size = config.get("hidden_size", 256)
+        lr = config.get("lr", 0.003)
+
+        model = MLP(
+            config={"obs_dim": obs_dim, "act_dim": act_dim, "hidden_size": hidden_size},
+            path=path,
+        )
+
+        if path is not None:
+            if os.path.isfile(path):
+                model.load_state_dict(torch.load(path, weights_only=True))
+                print(f"Model loaded from {path}")
+        model = model.to(device)
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+        return model, optimizer
+
+    def __init__(self, config, path):
+        super(MLP, self).__init__(config, path)
+
+        obs_dim = config.get("obs_dim")
+        act_dim = config.get("act_dim")
+        hidden_dim = config.get("hidden_size")
 
         self.obs_layer = nn.Linear(obs_dim, hidden_dim)
         self.act_layer = nn.Linear(act_dim, hidden_dim)
         self.obs_next_layer = nn.Linear(obs_dim, hidden_dim)
-
         self.fc = nn.Linear(hidden_dim * 3, 1)
 
     def forward(self, obs_t, act_t, obs_t_next):
@@ -25,6 +52,102 @@ class RewardNetwork(nn.Module):
 
         reward_t = self.fc(combined)
         return reward_t
+
+    def evaluate(self, data_loader, loss_fn):
+        self.eval()
+        epoch_loss = 0.0
+        num_batches = 0
+
+        with torch.no_grad():
+            for batch in data_loader:
+                (
+                    s0_obs_batch,
+                    s0_act_batch,
+                    s0_obs_next_batch,
+                    s1_obs_batch,
+                    s1_act_batch,
+                    s1_obs_next_batch,
+                    mu_batch,
+                ) = [x.to(device) for x in batch]
+
+                rewards_s0 = self(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
+                rewards_s1 = self(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
+
+                loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
+
+                epoch_loss += loss.item()
+                num_batches += 1
+
+        avg_epoch_loss = epoch_loss / num_batches
+        return avg_epoch_loss
+
+    def _learn(
+        self,
+        optimizer,
+        train_data_loader,
+        eval_data_loader,
+        loss_fn,
+        num_epochs=10,
+    ):
+        best_loss = float("inf")
+        loss_history = []
+        eval_loss_history = []
+
+        for epoch in range(num_epochs):
+            self.train()
+            epoch_loss = 0.0
+
+            for batch in train_data_loader:
+                (
+                    s0_obs_batch,
+                    s0_act_batch,
+                    s0_obs_next_batch,
+                    s1_obs_batch,
+                    s1_act_batch,
+                    s1_obs_next_batch,
+                    mu_batch,
+                ) = [x.to(device) for x in batch]
+
+                rewards_s0 = self(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
+                rewards_s1 = self(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
+
+                loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                epoch_loss += loss.item()
+
+            avg_epoch_loss = epoch_loss / len(train_data_loader)
+            loss_history.append(avg_epoch_loss)
+
+            eval_loss = self.evaluate(data_loader=eval_data_loader, loss_fn=loss_fn)
+            eval_loss_history.append(eval_loss)
+
+            print(
+                f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Test Loss: {eval_loss:.4f}"
+            )
+
+            if eval_loss < best_loss:
+                best_loss = eval_loss
+                torch.save(self.state_dict(), self.path)
+                print(f"New best model saved with test loss: {eval_loss:.4f}")
+
+    def train_model(self, optimizer, train_loader, eval_loader):
+        loss_fn = BradleyTerryLoss()
+
+        print("[Train started] reward_model_path:", self.path)
+
+        self._learn(
+            optimizer=optimizer,
+            train_data_loader=train_loader,
+            eval_data_loader=eval_loader,
+            loss_fn=loss_fn,
+            num_epochs=100,
+        )
+
+        print("Training completed")
 
 
 class BradleyTerryLoss(nn.Module):
@@ -41,124 +164,3 @@ class BradleyTerryLoss(nn.Module):
 
         loss = self.cross_entropy_loss(prob_s1_wins, mu)
         return loss
-
-
-def evaluate(model, data_loader, loss_fn):
-    model.eval()
-    epoch_loss = 0.0
-    num_batches = 0
-
-    with torch.no_grad():
-        for batch in data_loader:
-            (
-                s0_obs_batch,
-                s0_act_batch,
-                s0_obs_next_batch,
-                s1_obs_batch,
-                s1_act_batch,
-                s1_obs_next_batch,
-                mu_batch,
-            ) = [x.to(device) for x in batch]
-
-            rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
-            rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
-
-            loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
-
-            epoch_loss += loss.item()
-            num_batches += 1
-
-    avg_epoch_loss = epoch_loss / num_batches
-    return avg_epoch_loss
-
-
-def learn(
-    model,
-    optimizer,
-    train_data_loader,
-    test_data_loader,
-    loss_fn,
-    model_path,
-    num_epochs=10,
-):
-    best_loss = float("inf")
-    loss_history = []
-    test_loss_history = []
-
-    for epoch in range(num_epochs):
-        model.train()
-        epoch_loss = 0.0
-
-        for batch in train_data_loader:
-            (
-                s0_obs_batch,
-                s0_act_batch,
-                s0_obs_next_batch,
-                s1_obs_batch,
-                s1_act_batch,
-                s1_obs_next_batch,
-                mu_batch,
-            ) = [x.to(device) for x in batch]
-
-            rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
-            rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
-
-            loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            epoch_loss += loss.item()
-
-        avg_epoch_loss = epoch_loss / len(train_data_loader)
-        loss_history.append(avg_epoch_loss)
-
-        test_loss = evaluate(model, test_data_loader, loss_fn)
-        test_loss_history.append(test_loss)
-
-        print(
-            f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Test Loss: {test_loss:.4f}"
-        )
-
-        if test_loss < best_loss:
-            best_loss = test_loss
-            torch.save(model.state_dict(), model_path)
-            print(f"New best model saved with test loss: {test_loss:.4f}")
-
-
-def initialize_network(obs_dim, act_dim, hidden_size=64, lr=0.001, path=None):
-    model = RewardNetwork(obs_dim, act_dim, hidden_size)
-    model = model.to(device)
-    if path is not None:
-        if os.path.isfile(path):
-            model.load_state_dict(torch.load(path, weights_only=True))
-            print(f"Model loaded from {path}")
-
-    optimizer = optim.Adam(model.parameters(), lr=lr)
-
-    return model, optimizer
-
-
-def train(data_loader, eval_data_loader, reward_model_path, obs_dim, act_dim):
-    save_dir = os.path.dirname(reward_model_path)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    model, optimizer = initialize_network(obs_dim, act_dim, path=reward_model_path)
-    loss_fn = BradleyTerryLoss()
-
-    print("[Train started] reward_model_path:", reward_model_path)
-
-    num_epochs = 100
-    learn(
-        model,
-        optimizer,
-        data_loader,
-        eval_data_loader,
-        loss_fn,
-        model_path=reward_model_path,
-        num_epochs=num_epochs,
-    )
-
-    print("Training completed")

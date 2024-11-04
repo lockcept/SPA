@@ -11,7 +11,6 @@ DEFAULT_REWARD_MODEL_ALGO = "MLP"
 DEFAULT_REWARD_MODEL_TAG = "-"
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -129,7 +128,10 @@ if __name__ == "__main__":
 
         if reward_model_algo == "MLP":
             accuracy, mse, pcc = evaluate_reward_model_MLP(
-                env_name, reward_model_path, test_pair_name="test_full_sigmoid", output_name = f"{env_name}_{reward_model_name}"
+                env_name,
+                reward_model_path,
+                test_pair_name="test_full_sigmoid",
+                output_name=f"{env_name}_{reward_model_name}",
             )
 
             with open(log_path, "a") as log_file:
@@ -139,8 +141,8 @@ if __name__ == "__main__":
     elif function_number == -3:
         from src.helper.plotter import plot
 
-        env_list = ['halfcheetah-medium-v2','hopper-medium-v2','walker2d-medium-v2']
-        mu_algo_list = ['binary','sigmoid','sigmoid_0.25','sigmoid_0.5']
+        env_list = ["halfcheetah-medium-v2", "hopper-medium-v2", "walker2d-medium-v2"]
+        mu_algo_list = ["binary", "sigmoid", "sigmoid_0.25", "sigmoid_0.5"]
 
         for env in env_list:
             path_list = []
@@ -150,7 +152,6 @@ if __name__ == "__main__":
                     path_list.append(path)
             print(path_list)
             plot(progress_path_list=path_list, output_name=env)
-        
 
     elif function_number == 1:
         from src.data_loading.load_d4rl import save_d4rl_dataset
@@ -163,18 +164,29 @@ if __name__ == "__main__":
             env=env_name,
             pair_name_base=pair_name_base,
             num_pairs=num,
-            mu_types=["binary", "continuous", "sigmoid", "sigmoid_0.1", "sigmoid_0.25","sigmoid_0.5"],
+            mu_types=[
+                "binary",
+                "continuous",
+                "sigmoid",
+                "sigmoid_0.1",
+                "sigmoid_0.25",
+                "sigmoid_0.5",
+            ],
         )
     elif function_number == 2.1:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
         print("Generating preference pairs for test_full_sigmoid")
-        generate_pairs(env=env_name, pair_name_base= "test_full", num_pairs=num, mu_types=["sigmoid"])
+        generate_pairs(
+            env=env_name,
+            pair_name_base="test_full",
+            num_pairs=num,
+            mu_types=["sigmoid"],
+        )
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
-        from reward_learning.MLP import (
-            train,
-        )
+        from src.reward_learning.reward_model_base import RewardModelBase
+        from src.reward_learning.MLP import MLP
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name,
@@ -188,18 +200,22 @@ if __name__ == "__main__":
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
+        reward_model: RewardModelBase
+        optimizer = None
+
         if reward_model_algo == "MLP":
-            train(
-                data_loader=data_loader,
-                eval_data_loader=eval_data_loader,
-                reward_model_path=reward_model_path,
-                obs_dim=obs_dim,
-                act_dim=act_dim,
+            model, optimizer = MLP.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=reward_model_path
             )
+
+        model.train_model(
+            train_loader=data_loader, eval_loader=eval_data_loader, optimizer=optimizer
+        )
 
     elif function_number == 4:
         from src.data_loading.preference_dataloader import get_dataloader
-        from reward_learning.MLP import initialize_network
+        from src.reward_learning.reward_model_base import RewardModelBase
+        from src.reward_learning.MLP import MLP
         from src.policy_learning.change_reward import change_reward
 
         data_loader, obs_dim, act_dim = get_dataloader(
@@ -214,11 +230,19 @@ if __name__ == "__main__":
 
             model_list = []
             for model_file in model_files:
-                model, _ = initialize_network(obs_dim=obs_dim, act_dim=act_dim, path=model_file)
+                model, _ = MLP.initialize(
+                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
+                )
                 model_list.append(model)
 
-            change_reward(env_name=env_name, model_list=model_list, dataset_path=new_dataset_path)
+            change_reward(
+                env_name=env_name, model_list=model_list, dataset_path=new_dataset_path
+            )
     elif function_number == 5:
         from src.policy_learning.iql import train
 
-        train(env_name=env_name, dataset_path=new_dataset_path, log_dir = policy_model_dir_path)
+        train(
+            env_name=env_name,
+            dataset_path=new_dataset_path,
+            log_dir=policy_model_dir_path,
+        )
