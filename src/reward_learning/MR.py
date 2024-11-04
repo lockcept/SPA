@@ -138,7 +138,7 @@ class MR(RewardModelBase):
             train_data_loader=train_loader,
             val_data_loader=val_loader,
             loss_fn=loss_fn,
-            num_epochs=100,
+            num_epochs=1000,
         )
 
         print("Training completed")
