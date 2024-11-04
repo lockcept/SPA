@@ -122,25 +122,37 @@ if __name__ == "__main__":
 
         analyze(env_name)
     elif function_number == -2:
-        from src.helper.evaluate_reward_model import evaluate_reward_model_MLP
+        from src.helper.evaluate_reward_model import (
+            evaluate_reward_model_MLP,
+            evaluate_reward_model_MR,
+        )
 
         log_path = "log/main_evaluate_reward.log"
 
-        if reward_model_algo == "MLP":
-            model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
-            model_files = glob.glob(model_path_pattern)
+        model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
+        model_files = glob.glob(model_path_pattern)
+        accuarcy, mse, pcc = None, None, None
 
+        if reward_model_algo == "MLP":
             accuracy, mse, pcc = evaluate_reward_model_MLP(
                 env_name=env_name,
                 model_path_list=model_files,
                 test_pair_name="test_full_sigmoid",
                 output_name=f"{env_name}_{new_dataset_name}",
             )
+        elif reward_model_algo == "MR":
 
-            with open(log_path, "a") as log_file:
-                log_file.write(
-                    f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
-                )
+            accuracy, mse, pcc = evaluate_reward_model_MR(
+                env_name=env_name,
+                model_path_list=model_files,
+                test_pair_name="test_full_sigmoid",
+                output_name=f"{env_name}_{new_dataset_name}",
+            )
+
+        with open(log_path, "a") as log_file:
+            log_file.write(
+                f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
+            )
     elif function_number == -3:
         from src.helper.plotter import plot
 
@@ -192,6 +204,7 @@ if __name__ == "__main__":
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.reward_model_base import RewardModelBase
         from src.reward_learning.MLP import MLP
+        from src.reward_learning.MR import MR
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name,
@@ -210,6 +223,10 @@ if __name__ == "__main__":
 
         if reward_model_algo == "MLP":
             model, optimizer = MLP.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=reward_model_path
+            )
+        elif reward_model_algo == "MR":
+            model, optimizer = MR.initialize(
                 config={"obs_dim": obs_dim, "act_dim": act_dim}, path=reward_model_path
             )
 
