@@ -26,16 +26,11 @@ class PreferenceDataset(Dataset):
         s1_obs = s1["observations"]
         s1_act = s1["actions"]
 
-        s0_obs_next = s0_obs[1:]
-        s1_obs_next = s1_obs[1:]
-
         return (
-            torch.tensor(s0_obs[:-1], dtype=torch.float32),
-            torch.tensor(s0_act[:-1], dtype=torch.float32),
-            torch.tensor(s0_obs_next, dtype=torch.float32),
-            torch.tensor(s1_obs[:-1], dtype=torch.float32),
-            torch.tensor(s1_act[:-1], dtype=torch.float32),
-            torch.tensor(s1_obs_next, dtype=torch.float32),
+            torch.tensor(s0_obs, dtype=torch.float32),
+            torch.tensor(s0_act, dtype=torch.float32),
+            torch.tensor(s1_obs, dtype=torch.float32),
+            torch.tensor(s1_act, dtype=torch.float32),
             torch.tensor(mu, dtype=torch.float32),
         )
 
@@ -48,24 +43,20 @@ class PreferenceDataset(Dataset):
 
 # Collate function to handle variable-length sequences
 def collate_fn(batch):
-    s0_obs, s0_act, s0_obs_next, s1_obs, s1_act, s1_obs_next, mu = zip(*batch)
+    s0_obs, s0_act, s1_obs, s1_act, mu = zip(*batch)
 
     s0_obs_padded = rnn_utils.pad_sequence(s0_obs, batch_first=True)
     s0_act_padded = rnn_utils.pad_sequence(s0_act, batch_first=True)
-    s0_obs_next_padded = rnn_utils.pad_sequence(s0_obs_next, batch_first=True)
     s1_obs_padded = rnn_utils.pad_sequence(s1_obs, batch_first=True)
     s1_act_padded = rnn_utils.pad_sequence(s1_act, batch_first=True)
-    s1_obs_next_padded = rnn_utils.pad_sequence(s1_obs_next, batch_first=True)
 
     mu = torch.stack(mu)
 
     return (
         s0_obs_padded,
         s0_act_padded,
-        s0_obs_next_padded,
         s1_obs_padded,
         s1_act_padded,
-        s1_obs_next_padded,
         mu,
     )
 

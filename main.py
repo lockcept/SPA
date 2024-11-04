@@ -223,9 +223,7 @@ if __name__ == "__main__":
         from src.reward_learning.MLP import MLP
         from src.policy_learning.change_reward import change_reward
 
-        data_loader, obs_dim, act_dim = get_dataloader(
-            env_name=env_name, pair_name=pair_name
-        )
+        _, obs_dim, act_dim = get_dataloader(env_name=env_name, pair_name=pair_name)
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
 

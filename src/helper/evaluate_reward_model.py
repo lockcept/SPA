@@ -86,10 +86,8 @@ def evaluate_reward_model_MLP(env_name, model_path_list, test_pair_name, output_
             (
                 s0_obs_batch,
                 s0_act_batch,
-                s0_obs_next_batch,
                 s1_obs_batch,
                 s1_act_batch,
-                s1_obs_next_batch,
                 mu_batch,
             ) = [x.to(device) for x in batch]
 
@@ -97,6 +95,14 @@ def evaluate_reward_model_MLP(env_name, model_path_list, test_pair_name, output_
             rewards_s1_list = []
 
             for model in models:
+                s0_obs_next_batch = s0_obs_batch[:, 1:, :]
+                s1_obs_next_batch = s1_obs_batch[:, 1:, :]
+
+                s0_obs_batch = s0_obs_batch[:, :-1, :]
+                s0_act_batch = s0_act_batch[:, :-1, :]
+                s1_obs_batch = s1_obs_batch[:, :-1, :]
+                s1_act_batch = s1_act_batch[:, :-1, :]
+
                 rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
                 rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
 
@@ -126,7 +132,7 @@ def evaluate_reward_model_MLP(env_name, model_path_list, test_pair_name, output_
     accuracy = correct_predictions / total_samples if total_samples > 0 else 0
     avg_mse = cumulative_mse / total_samples if total_samples > 0 else 0
     pearson_corr = calculate_pearson_correlation_with_d4rl(
-        env_name, model, output_name=output_name
+        env_name, models, output_name=output_name
     )
 
     print(f"Correct predictions: {correct_predictions}")

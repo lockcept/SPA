@@ -63,12 +63,18 @@ class MLP(RewardModelBase):
                 (
                     s0_obs_batch,
                     s0_act_batch,
-                    s0_obs_next_batch,
                     s1_obs_batch,
                     s1_act_batch,
-                    s1_obs_next_batch,
                     mu_batch,
                 ) = [x.to(device) for x in batch]
+
+                s0_obs_next_batch = s0_obs_batch[:, 1:, :]
+                s1_obs_next_batch = s1_obs_batch[:, 1:, :]
+
+                s0_obs_batch = s0_obs_batch[:, :-1, :]
+                s0_act_batch = s0_act_batch[:, :-1, :]
+                s1_obs_batch = s1_obs_batch[:, :-1, :]
+                s1_act_batch = s1_act_batch[:, :-1, :]
 
                 rewards_s0 = self(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
                 rewards_s1 = self(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
@@ -101,12 +107,18 @@ class MLP(RewardModelBase):
                 (
                     s0_obs_batch,
                     s0_act_batch,
-                    s0_obs_next_batch,
                     s1_obs_batch,
                     s1_act_batch,
-                    s1_obs_next_batch,
                     mu_batch,
                 ) = [x.to(device) for x in batch]
+
+                s0_obs_next_batch = s0_obs_batch[:, 1:, :]
+                s1_obs_next_batch = s1_obs_batch[:, 1:, :]
+
+                s0_obs_batch = s0_obs_batch[:, :-1, :]
+                s0_act_batch = s0_act_batch[:, :-1, :]
+                s1_obs_batch = s1_obs_batch[:, :-1, :]
+                s1_act_batch = s1_act_batch[:, :-1, :]
 
                 rewards_s0 = self(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
                 rewards_s1 = self(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
