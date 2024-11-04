@@ -57,7 +57,7 @@ if __name__ == "__main__":
             )
 
             accuracy, mse, pcc = evaluate_reward_model_MLP(
-                env_name, reward_model_path, test_pair_name="test_full_sigmoid"
+                env_name, [reward_model_path], test_pair_name="test_full_sigmoid"
             )
 
             with open(log_path, "a") as log_file:

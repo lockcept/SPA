@@ -127,11 +127,14 @@ if __name__ == "__main__":
         log_path = "log/main_evaluate_reward.log"
 
         if reward_model_algo == "MLP":
+            model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
+            model_files = glob.glob(model_path_pattern)
+
             accuracy, mse, pcc = evaluate_reward_model_MLP(
-                env_name,
-                reward_model_path,
+                env_name=env_name,
+                model_path_list=model_files,
                 test_pair_name="test_full_sigmoid",
-                output_name=f"{env_name}_{reward_model_name}",
+                output_name=f"{env_name}_{new_dataset_name}",
             )
 
             with open(log_path, "a") as log_file:
@@ -147,10 +150,12 @@ if __name__ == "__main__":
         for env in env_list:
             path_list = []
             for mu_algo in mu_algo_list:
-                path = f"model/{env}/policy/full_00_{mu_algo}_MLP"
+                path = f"model/{env}/policy/{new_dataset_name}"
                 if os.path.isdir(path):
                     path_list.append(path)
-            print(path_list)
+            if not path_list:
+                continue
+
             plot(progress_path_list=path_list, output_name=env)
 
     elif function_number == 1:

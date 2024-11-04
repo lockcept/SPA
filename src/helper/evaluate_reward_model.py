@@ -15,7 +15,7 @@ from reward_learning.MLP import MLP
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def calculate_pearson_correlation_with_d4rl(env_name, model, output_name):
+def calculate_pearson_correlation_with_d4rl(env_name, models, output_name):
     dataset = load_d4rl_dataset(env_name)
 
     observations = dataset["observations"][:-1]
@@ -28,19 +28,26 @@ def calculate_pearson_correlation_with_d4rl(env_name, model, output_name):
     next_obs_tensor = torch.tensor(next_obs, dtype=torch.float32).to(device)
 
     with torch.no_grad():
-        predicted_rewards = model(obs_tensor, act_tensor, next_obs_tensor)
+        predicted_rewards_list = []
+        for model in models:
+            predicted_rewards = model(obs_tensor, act_tensor, next_obs_tensor)
+            predicted_rewards_list.append(predicted_rewards)
+
+        mean_predicted_rewards = torch.mean(torch.stack(predicted_rewards_list), dim=0)
 
     is_terminal = dataset["terminals"][:-1] | dataset["timeouts"][:-1]
 
     actual_rewards_np = rewards[~is_terminal]
-    predicted_rewards_np = predicted_rewards.cpu().numpy()[~is_terminal]
+    mean_predicted_rewards_np = mean_predicted_rewards.cpu().numpy()[~is_terminal]
 
     pearson_corr, _ = pearsonr(
-        predicted_rewards_np.flatten(), actual_rewards_np.flatten()
+        mean_predicted_rewards_np.flatten(), actual_rewards_np.flatten()
     )
 
     plt.figure(figsize=(8, 6))
-    plt.scatter(actual_rewards_np, predicted_rewards_np, alpha=0.5, label=output_name)
+    plt.scatter(
+        actual_rewards_np, mean_predicted_rewards_np, alpha=0.5, label=output_name
+    )
     plt.xlabel("Actual Rewards")
     plt.ylabel("Predicted Rewards")
     plt.title(f"Actual vs. Predicted Rewards\nPearson Correlation: {pearson_corr:.2f}")
@@ -54,17 +61,20 @@ def calculate_pearson_correlation_with_d4rl(env_name, model, output_name):
     return pearson_corr
 
 
-def evaluate_reward_model_MLP(env_name, model_path, test_pair_name, output_name):
+def evaluate_reward_model_MLP(env_name, model_path_list, test_pair_name, output_name):
     data_loader, obs_dim, act_dim = get_dataloader(
         env_name=env_name,
         pair_name=test_pair_name,
         drop_last=False,
     )
 
-    model, _ = MLP.initialize(
-        config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
-    )
-    model.eval()
+    models = []
+    for model_path in model_path_list:
+        model, _ = MLP.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
+        )
+        model.eval()
+        models.append(model)
 
     correct_predictions = 0
     total_samples = 0
@@ -83,11 +93,21 @@ def evaluate_reward_model_MLP(env_name, model_path, test_pair_name, output_name)
                 mu_batch,
             ) = [x.to(device) for x in batch]
 
-            rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
-            rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
+            rewards_s0_list = []
+            rewards_s1_list = []
 
-            sum_rewards_s0 = torch.sum(rewards_s0, dim=1)
-            sum_rewards_s1 = torch.sum(rewards_s1, dim=1)
+            for model in models:
+                rewards_s0 = model(s0_obs_batch, s0_act_batch, s0_obs_next_batch)
+                rewards_s1 = model(s1_obs_batch, s1_act_batch, s1_obs_next_batch)
+
+                rewards_s0_list.append(rewards_s0)
+                rewards_s1_list.append(rewards_s1)
+
+            mean_rewards_s0 = torch.mean(torch.stack(rewards_s0_list), dim=0)
+            mean_rewards_s1 = torch.mean(torch.stack(rewards_s1_list), dim=0)
+
+            sum_rewards_s0 = torch.sum(mean_rewards_s0, dim=1)
+            sum_rewards_s1 = torch.sum(mean_rewards_s1, dim=1)
 
             pred_probs_s1 = 1 / (1 + torch.exp(sum_rewards_s0 - sum_rewards_s1))
 
