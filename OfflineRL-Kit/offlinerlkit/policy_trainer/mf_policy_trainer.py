@@ -25,7 +25,7 @@ class MFPolicyTrainer:
         step_per_epoch: int = 1000,
         batch_size: int = 256,
         eval_episodes: int = 10,
-        lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None
+        lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
     ) -> None:
         self.policy = policy
         self.eval_env = eval_env
@@ -43,6 +43,9 @@ class MFPolicyTrainer:
 
         num_timesteps = 0
         last_10_performance = deque(maxlen=10)
+
+        best_norm_ep_rew_mean = -float("inf")
+
         # train loop
         for e in range(1, self._epoch + 1):
 
@@ -56,18 +59,26 @@ class MFPolicyTrainer:
 
                 for k, v in loss.items():
                     self.logger.logkv_mean(k, v)
-                
+
                 num_timesteps += 1
 
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
-            
+
             # evaluate current policy
             eval_info = self._evaluate()
-            normalized_rewards = [self.eval_env.get_normalized_score(reward) for reward in eval_info["eval/episode_reward"]]
-            norm_ep_rew_mean, norm_ep_rew_std = np.mean(normalized_rewards) * 100, np.std(normalized_rewards) * 100
+            normalized_rewards = [
+                self.eval_env.get_normalized_score(reward)
+                for reward in eval_info["eval/episode_reward"]
+            ]
+            norm_ep_rew_mean, norm_ep_rew_std = (
+                np.mean(normalized_rewards) * 100,
+                np.std(normalized_rewards) * 100,
+            )
 
-            ep_length_mean, ep_length_std = np.mean(eval_info["eval/episode_length"]), np.std(eval_info["eval/episode_length"])
+            ep_length_mean, ep_length_std = np.mean(
+                eval_info["eval/episode_length"]
+            ), np.std(eval_info["eval/episode_length"])
             last_10_performance.append(norm_ep_rew_mean)
             self.logger.logkv("eval/normalized_episode_reward", norm_ep_rew_mean)
             self.logger.logkv("eval/normalized_episode_reward_std", norm_ep_rew_std)
@@ -75,12 +86,26 @@ class MFPolicyTrainer:
             self.logger.logkv("eval/episode_length_std", ep_length_std)
             self.logger.set_timestep(num_timesteps)
             self.logger.dumpkvs()
-        
+
             # save checkpoint
-            torch.save(self.policy.state_dict(), os.path.join(self.logger.checkpoint_dir, "policy.pth"))
+            torch.save(
+                self.policy.state_dict(),
+                os.path.join(self.logger.checkpoint_dir, "policy.pth"),
+            )
+
+            # save best model
+            if norm_ep_rew_mean > best_norm_ep_rew_mean:
+                best_norm_ep_rew_mean = norm_ep_rew_mean
+                torch.save(
+                    self.policy.state_dict(),
+                    os.path.join(self.logger.model_dir, "best_policy.pth"),
+                )
 
         self.logger.log("total time: {:.2f}s".format(time.time() - start_time))
-        torch.save(self.policy.state_dict(), os.path.join(self.logger.model_dir, "policy.pth"))
+        torch.save(
+            self.policy.state_dict(),
+            os.path.join(self.logger.model_dir, "last_policy.pth"),
+        )
         self.logger.close()
 
         return {"last_10_performance": np.mean(last_10_performance)}
@@ -93,7 +118,7 @@ class MFPolicyTrainer:
         episode_reward, episode_length = 0, 0
 
         while num_episodes < self._eval_episodes:
-            action = self.policy.select_action(obs.reshape(1,-1), deterministic=True)
+            action = self.policy.select_action(obs.reshape(1, -1), deterministic=True)
             next_obs, reward, terminal, _ = self.eval_env.step(action.flatten())
             episode_reward += reward
             episode_length += 1
@@ -104,11 +129,15 @@ class MFPolicyTrainer:
                 eval_ep_info_buffer.append(
                     {"episode_reward": episode_reward, "episode_length": episode_length}
                 )
-                num_episodes +=1
+                num_episodes += 1
                 episode_reward, episode_length = 0, 0
                 obs = self.eval_env.reset()
-        
+
         return {
-            "eval/episode_reward": [ep_info["episode_reward"] for ep_info in eval_ep_info_buffer],
-            "eval/episode_length": [ep_info["episode_length"] for ep_info in eval_ep_info_buffer]
+            "eval/episode_reward": [
+                ep_info["episode_reward"] for ep_info in eval_ep_info_buffer
+            ],
+            "eval/episode_length": [
+                ep_info["episode_length"] for ep_info in eval_ep_info_buffer
+            ],
         }
