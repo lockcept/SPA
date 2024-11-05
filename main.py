@@ -223,16 +223,23 @@ if __name__ == "__main__":
 
         if reward_model_algo == "MLP":
             model, optimizer = MLP.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=reward_model_path
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=reward_model_path,
+                skip_if_exists=True,
             )
         elif reward_model_algo == "MR":
             model, optimizer = MR.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=reward_model_path
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=reward_model_path,
+                skip_if_exists=True,
             )
 
-        model.train_model(
-            train_loader=data_loader, val_loader=val_data_loader, optimizer=optimizer
-        )
+        if model is not None:
+            model.train_model(
+                train_loader=data_loader,
+                val_loader=val_data_loader,
+                optimizer=optimizer,
+            )
 
     elif function_number == 4:
         from src.data_loading.preference_dataloader import get_dataloader
