@@ -18,9 +18,7 @@ define full_commands
 		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo); \
 		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 01 -ma $(algo); \
 		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 02 -ma $(algo); \
-		python main.py -f -2 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo); \
-		python main.py -f -2 -e $(ENV) -p full_$(1) -rt 01 -ma $(algo); \
-		python main.py -f -2 -e $(ENV) -p full_$(1) -rt 02 -ma $(algo); \
+		python main.py -f -2 -e $(ENV) -p full_$(1) -ma $(algo); \
 		python main.py -f 4 -e $(ENV) -p full_$(1) -ma $(algo); \
 		python main.py -f 5 -e $(ENV) -p full_$(1) -ma $(algo);)
 endef

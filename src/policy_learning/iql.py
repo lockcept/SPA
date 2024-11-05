@@ -35,7 +35,7 @@ def get_configs():
     tau = 0.005
     expectile = 0.7
     temperature = 3.0
-    epoch = 2000
+    epoch = 1000
     step_per_epoch = 1000
     eval_episodes = 10
     batch_size = 256
