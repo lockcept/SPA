@@ -1,9 +1,11 @@
+import csv
 import os
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from tqdm import tqdm
 
 from reward_learning.reward_model_base import RewardModelBase
 
@@ -111,11 +113,15 @@ class MLP(RewardModelBase):
         loss_fn,
         num_epochs=10,
     ):
+        with open(self.log_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Epoch", "Train Loss", "Validation Loss"])
+
         best_loss = float("inf")
         loss_history = []
         val_loss_history = []
 
-        for epoch in range(num_epochs):
+        for epoch in tqdm(range(num_epochs), desc=f"learning MLP reward"):
             self.train()
             epoch_loss = 0.0
 
@@ -153,9 +159,9 @@ class MLP(RewardModelBase):
             val_loss = self.evaluate(data_loader=val_data_loader, loss_fn=loss_fn)
             val_loss_history.append(val_loss)
 
-            print(
-                f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Val Loss: {val_loss:.4f}"
-            )
+            with open(self.log_path, mode="a", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow([epoch + 1, avg_epoch_loss, val_loss])
 
             if val_loss < best_loss:
                 best_loss = val_loss

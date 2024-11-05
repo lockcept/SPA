@@ -1,7 +1,9 @@
+import csv
 import os
 import numpy as np
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 
 
 class RewardModelBase(nn.Module):
@@ -9,6 +11,7 @@ class RewardModelBase(nn.Module):
         super(RewardModelBase, self).__init__()
         self.config = config
         self.path = path
+        self.log_path = self.path.replace(".pth", ".csv")
 
         save_dir = os.path.dirname(path)
         if not os.path.exists(save_dir):
@@ -46,8 +49,13 @@ class RewardModelBase(nn.Module):
         loss_fn,
         num_epochs=10,
     ):
+        with open(self.log_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Epoch", "Train Loss", "Validation Loss"])
+
         best_loss = float("inf")
-        for epoch in range(num_epochs):
+
+        for epoch in tqdm(range(num_epochs), desc=f"learning MR reward"):
             self.train()
             epoch_loss = 0.0
 
@@ -68,9 +76,9 @@ class RewardModelBase(nn.Module):
             avg_epoch_loss = epoch_loss / len(train_data_loader)
             val_loss = self.evaluate(val_data_loader, loss_fn)
 
-            print(
-                f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_epoch_loss:.4f}, Val Loss: {val_loss:.4f}"
-            )
+            with open(self.log_path, mode="a", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow([epoch + 1, avg_epoch_loss, val_loss])
 
             if val_loss < best_loss:
                 best_loss = val_loss
