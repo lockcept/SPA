@@ -122,10 +122,10 @@ if __name__ == "__main__":
 
         analyze(env_name)
     elif function_number == -2:
-        from src.helper.evaluate_reward_model import (
-            evaluate_reward_model_MLP,
-            evaluate_reward_model_MR,
-        )
+        from src.data_loading.preference_dataloader import get_dataloader
+        from src.helper.evaluate_reward_model import evaluate_reward_model
+        from src.reward_learning.MLP import MLP
+        from src.reward_learning.MR import MR
 
         log_path = "log/main_evaluate_reward.log"
 
@@ -133,21 +133,32 @@ if __name__ == "__main__":
         model_files = glob.glob(model_path_pattern)
         accuarcy, mse, pcc = None, None, None
 
-        if reward_model_algo == "MLP":
-            accuracy, mse, pcc = evaluate_reward_model_MLP(
-                env_name=env_name,
-                model_path_list=model_files,
-                test_pair_name="test_full_sigmoid",
-                output_name=f"{env_name}_{new_dataset_name}",
-            )
-        elif reward_model_algo == "MR":
+        data_loader, obs_dim, act_dim = get_dataloader(
+            env_name=env_name,
+            pair_name="test_full_sigmoid",
+            drop_last=False,
+        )
 
-            accuracy, mse, pcc = evaluate_reward_model_MR(
-                env_name=env_name,
-                model_path_list=model_files,
-                test_pair_name="test_full_sigmoid",
-                output_name=f"{env_name}_{new_dataset_name}",
-            )
+        models = []
+
+        for model_file in model_files:
+            if reward_model_algo == "MLP":
+                model, _ = MLP.initialize(
+                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
+                )
+            elif reward_model_algo == "MR":
+                model, _ = MR.initialize(
+                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
+                )
+            model.eval()
+            models.append(model)
+
+        accuracy, mse, pcc = evaluate_reward_model(
+            env_name=env_name,
+            models=models,
+            data_loader=data_loader,
+            output_name=f"{env_name}_{new_dataset_name}",
+        )
 
         with open(log_path, "a") as log_file:
             log_file.write(
@@ -245,26 +256,32 @@ if __name__ == "__main__":
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.reward_model_base import RewardModelBase
         from src.reward_learning.MLP import MLP
+        from src.reward_learning.MR import MR
         from src.policy_learning.change_reward import change_reward
 
         _, obs_dim, act_dim = get_dataloader(env_name=env_name, pair_name=pair_name)
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
+        model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
+        model_files = glob.glob(model_path_pattern)
+        model_list = []
 
         if reward_model_algo == "MLP":
-            model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
-            model_files = glob.glob(model_path_pattern)
-
-            model_list = []
             for model_file in model_files:
                 model, _ = MLP.initialize(
                     config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
                 )
                 model_list.append(model)
+        elif reward_model_algo == "MR":
+            for model_file in model_files:
+                model, _ = MR.initialize(
+                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
+                )
+                model_list.append(model)
 
-            change_reward(
-                env_name=env_name, model_list=model_list, dataset_path=new_dataset_path
-            )
+        change_reward(
+            env_name=env_name, model_list=model_list, dataset_path=new_dataset_path
+        )
     elif function_number == 5:
         from src.policy_learning.iql import train
 

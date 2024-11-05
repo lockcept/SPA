@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -79,6 +80,10 @@ class MR(RewardModelBase):
 
         avg_epoch_loss = epoch_loss / num_batches
         return avg_epoch_loss
+
+    def batched_forward_trajectory(self, obs_batch, act_batch):
+        rewards_batch = self(obs_batch, act_batch)
+        return rewards_batch
 
     def _learn(
         self,

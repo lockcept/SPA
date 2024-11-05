@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -55,6 +56,18 @@ class MLP(RewardModelBase):
 
         reward_t = self.fc(combined)
         return reward_t
+
+    def batched_forward_trajectory(self, obs_batch, act_batch):
+        obs_next_batch = obs_batch[:, 1:, :]
+        obs_batch = obs_batch[:, :-1, :]
+        act_batch = act_batch[:, :-1, :]
+        rewards_batch = self(obs_batch, act_batch, obs_next_batch)
+
+        # add a dummy reward for the last step of tensor
+        rewards_batch = torch.cat(
+            [rewards_batch, torch.zeros(rewards_batch.shape[0], 1, 1)], dim=1
+        )
+        return rewards_batch
 
     def evaluate(self, data_loader, loss_fn):
         self.eval()
