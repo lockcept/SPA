@@ -114,11 +114,15 @@ if __name__ == "__main__":
     new_dataset_path = f"dataset/{env_name}/{new_dataset_name}_dataset.npz"
     policy_model_dir_path = f"model/{env_name}/policy/{new_dataset_name}"
 
+    print("main function started with args", args)
+
     if function_number == 0:
         print("Pass")
         pass
     elif function_number == -1:
         from src.helper.analyze_d4rl import analyze
+
+        print("Analyzing d4rl dataset")
 
         analyze(env_name)
     elif function_number == -2:
@@ -126,6 +130,8 @@ if __name__ == "__main__":
         from src.helper.evaluate_reward_model import evaluate_reward_model
         from src.reward_learning.MLP import MLP
         from src.reward_learning.MR import MR
+
+        print("Evaluating reward model", env_name, new_dataset_name)
 
         log_path = "log/main_evaluate_reward.log"
 
@@ -167,6 +173,8 @@ if __name__ == "__main__":
     elif function_number == -3:
         from src.helper.plotter import plot
 
+        print("Plotting policy evaluation")
+
         env_list = ["halfcheetah-medium-v2", "hopper-medium-v2", "walker2d-medium-v2"]
         mu_algo_list = ["binary", "sigmoid", "sigmoid_0.25", "sigmoid_0.5"]
 
@@ -184,9 +192,13 @@ if __name__ == "__main__":
     elif function_number == 1:
         from src.data_loading.load_d4rl import save_d4rl_dataset
 
+        print("Loading and saving d4rl dataset", env_name)
+
         save_d4rl_dataset(env_name)
     elif function_number == 2:
         from src.data_generation.full_scripted_teacher import generate_pairs
+
+        print("Generating preference pairs", env_name, pair_name_base, num)
 
         generate_pairs(
             env=env_name,
@@ -204,7 +216,8 @@ if __name__ == "__main__":
     elif function_number == 2.1:
         from src.data_generation.full_scripted_teacher import generate_pairs
 
-        print("Generating preference pairs for test_full_sigmoid")
+        print("Generating preference pairs for test_full_sigmoid", env_name, num)
+
         generate_pairs(
             env=env_name,
             pair_name_base="test_full",
@@ -216,6 +229,14 @@ if __name__ == "__main__":
         from src.reward_learning.reward_model_base import RewardModelBase
         from src.reward_learning.MLP import MLP
         from src.reward_learning.MR import MR
+
+        print(
+            "Training reward model",
+            env_name,
+            pair_name,
+            val_pair_name,
+            reward_model_algo,
+        )
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name,
@@ -259,6 +280,8 @@ if __name__ == "__main__":
         from src.reward_learning.MR import MR
         from src.policy_learning.change_reward import change_reward
 
+        print("Changing reward", env_name, new_dataset_name)
+
         _, obs_dim, act_dim = get_dataloader(env_name=env_name, pair_name=pair_name)
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
@@ -284,6 +307,8 @@ if __name__ == "__main__":
         )
     elif function_number == 5:
         from src.policy_learning.iql import train
+
+        print("Training policy", env_name, new_dataset_path)
 
         train(
             env_name=env_name,
