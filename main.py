@@ -175,19 +175,21 @@ if __name__ == "__main__":
 
         print("Plotting policy evaluation")
 
-        env_list = ["halfcheetah-medium-v2", "hopper-medium-v2", "walker2d-medium-v2"]
+        env_list = ["halfcheetah-random", "hopper-medium-v2", "walker2d-medium-v2"]
         mu_algo_list = ["binary", "sigmoid", "sigmoid_0.25", "sigmoid_0.5"]
+        pair_list = ["full_00", "full_01"]
 
-        for env in env_list:
+        for env, pair_base in zip(env_list,pair_list):
             path_list = []
             for mu_algo in mu_algo_list:
-                path = f"model/{env}/policy/{new_dataset_name}"
+                file_name = f"{pair_base}_{mu_algo}_MR"
+                path = f"model/{env}/policy/{file_name}"
                 if os.path.isdir(path):
                     path_list.append(path)
             if not path_list:
                 continue
 
-            plot(progress_path_list=path_list, output_name=env)
+            plot(progress_path_list=path_list, output_name=f"{env}_{pair_base}")
 
     elif function_number == 1:
         from src.data_loading.load_d4rl import save_d4rl_dataset
