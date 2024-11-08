@@ -171,25 +171,21 @@ if __name__ == "__main__":
                 f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
             )
     elif function_number == -3:
-        from src.helper.plotter import plot
+        from src.helper.plot_policy_model import plot
 
         print("Plotting policy evaluation")
 
         env_list = ["halfcheetah-random", "hopper-medium-v2", "walker2d-medium-v2"]
+        pair_list = ["full_00", "full_01", "full_02", "full_03", "full_04"]
         mu_algo_list = ["binary", "sigmoid", "sigmoid_0.25", "sigmoid_0.5"]
-        pair_list = ["full_00", "full_01"]
 
-        for env, pair_base in zip(env_list,pair_list):
-            path_list = []
-            for mu_algo in mu_algo_list:
-                file_name = f"{pair_base}_{mu_algo}_MR"
-                path = f"model/{env}/policy/{file_name}"
-                if os.path.isdir(path):
-                    path_list.append(path)
-            if not path_list:
-                continue
-
-            plot(progress_path_list=path_list, output_name=f"{env}_{pair_base}")
+        for env_name in env_list:
+            plot(
+                env_name=env_name,
+                pair_list=pair_list,
+                mu_algo_list=mu_algo_list,
+                output_name=f"policy_{env_name}_full_MR",
+            )
 
     elif function_number == 1:
         from src.data_loading.load_d4rl import save_d4rl_dataset
