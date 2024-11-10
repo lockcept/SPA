@@ -2,7 +2,7 @@
 
 # Variables
 ENV=halfcheetah-medium-v2
-MU_ALGOS=binary sigmoid sigmoid_0.25 sigmoid_0.5
+MU_ALGOS=binary sigmoid sigmoid-0.25 sigmoid-0.5
 
 d4rl:
 	python main.py -f 1 -e $(ENV)

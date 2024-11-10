@@ -9,7 +9,7 @@ from data_loading.load_dataset import get_processed_data
 
 if __name__ == "__main__":
     env_name_list = ["halfcheetah-random", "hopper-medium-v2", "walker2d-medium-v2"]
-    pair_name_list = ["val_full_sigmoid", "val_full_sigmoid_0.25"]
+    pair_name_list = ["val_full_sigmoid", "val_full_sigmoid-0.25"]
 
     for env_name in env_name_list:
         for pair_name in pair_name_list:

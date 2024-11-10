@@ -177,7 +177,7 @@ if __name__ == "__main__":
 
         env_list = ["halfcheetah-random", "hopper-medium-v2", "walker2d-medium-v2"]
         pair_list = ["full_00", "full_01", "full_02", "full_03", "full_04"]
-        mu_algo_list = ["binary", "sigmoid", "sigmoid_0.25", "sigmoid_0.5"]
+        mu_algo_list = ["binary", "sigmoid", "sigmoid-0.25", "sigmoid-0.5"]
 
         for env_name in env_list:
             plot(
@@ -206,9 +206,9 @@ if __name__ == "__main__":
                 "binary",
                 "continuous",
                 "sigmoid",
-                "sigmoid_0.1",
-                "sigmoid_0.25",
-                "sigmoid_0.5",
+                "sigmoid-0.1",
+                "sigmoid-0.25",
+                "sigmoid-0.5",
             ],
         )
     elif function_number == 2.1:
