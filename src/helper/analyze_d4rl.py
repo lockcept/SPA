@@ -43,10 +43,10 @@ def save_trajectory_lengths(dataset, env_name):
     plt.show()
 
 
-def show_reward_graph(dataset):
+def show_reward_graph(dataset, env_name):
     rewards = dataset["rewards"]
     plt.hist(rewards, bins=50)
-    plt.title("Reward graph")
+    plt.title(f"Reward graph of {env_name}")
     plt.xlabel("Reward")
     plt.ylabel("Frequency")
     plt.show()
@@ -56,4 +56,4 @@ def analyze(env_name):
     data = load_d4rl(env_name)
     print(data["observations"].shape)
     save_trajectory_lengths(data, env_name)
-    show_reward_graph(data)
+    show_reward_graph(data, env_name)
