@@ -56,38 +56,54 @@ def generate_preference_pair(dataset, indices):
 
         traj0 = trajectory_from_index(dataset, start0, end0)
         traj1 = trajectory_from_index(dataset, start1, end1)
-        reward_sum_0 = np.sum(traj0["rewards"])
-        reward_sum_1 = np.sum(traj1["rewards"])
+        rewards_0 = traj0["rewards"]
+        rewards_1 = traj1["rewards"]
 
-        preference_pair = ((start0, end0), (start1, end1), reward_sum_0, reward_sum_1)
+        preference_pair = ((start0, end0), (start1, end1), rewards_0, rewards_1)
 
         return preference_pair
 
 
-def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
-    save_path = f"pair/{env}/{pair}_{mu_type}.npz"
+def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)):
+    save_path = f"pair/{env_name}/{pair}_{mu_type}.npz"
     save_dir = os.path.dirname(save_path)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
+    reward_min, reward_max = reward_info
+    rewards_0 = pair_data["rewards_0"]
+    rewards_1 = pair_data["rewards_1"]
+    reward_sum_0 = np.array([np.sum(rewards) for rewards in rewards_0])
+    reward_sum_1 = np.array([np.sum(rewards) for rewards in rewards_1])
+    normalized_rewards_0 = np.array(
+        [(rewards - reward_min) / (reward_max - reward_min) for rewards in rewards_0]
+    )
+    normalized_rewards_1 = np.array(
+        [(rewards - reward_min) / (reward_max - reward_min) for rewards in rewards_1]
+    )
+    normalized_reward_sum_0 = np.array(
+        [np.sum(rewards) for rewards in normalized_rewards_0]
+    )
+    normalized_reward_sum_1 = np.array(
+        [np.sum(rewards) for rewards in normalized_rewards_1]
+    )
+
     if mu_type == "binary":
-        mu_values = np.where(
-            pair_data["reward_sum_0"] > pair_data["reward_sum_1"], 0, 1
-        )
+        mu_values = np.where(reward_sum_0 > reward_sum_1, 0, 1)
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "continuous":
         length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
-        diff = (pair_data["reward_sum_1"] - pair_data["reward_sum_0"]) / length_values
+        diff = (reward_sum_1 - reward_sum_0) / length_values
         max_diff = np.max(np.abs(diff))
         normalized_diff = diff / max_diff
         mu_values = 0.5 + 0.5 * normalized_diff
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "sigmoid":
-        diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
+        diff_values = reward_sum_1 - reward_sum_0
         sigmoid_values = 1 / (1 + np.exp(-diff_values))
         pair_data = rfn.append_fields(pair_data, "mu", sigmoid_values, dtypes=float)
     elif mu_type == "sigmoid-0.1":
-        diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
+        diff_values = reward_sum_1 - reward_sum_0
         sigmoid_values = 1 / (1 + np.exp(-diff_values))
         round_unit = 0.1
         rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
@@ -95,7 +111,7 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
             pair_data, "mu", rounded_sigmoid_values, dtypes=float
         )
     elif mu_type == "sigmoid-0.25":
-        diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
+        diff_values = reward_sum_1 - reward_sum_0
         sigmoid_values = 1 / (1 + np.exp(-diff_values))
         round_unit = 0.25
         rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
@@ -103,33 +119,42 @@ def save_pairs_by_mu_type(env, pair, mu_type, pair_data):
             pair_data, "mu", rounded_sigmoid_values, dtypes=float
         )
     elif mu_type == "sigmoid-0.5":
-        diff_values = pair_data["reward_sum_1"] - pair_data["reward_sum_0"]
+        diff_values = reward_sum_1 - reward_sum_0
         sigmoid_values = 1 / (1 + np.exp(-diff_values))
         round_unit = 0.5
         rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
         pair_data = rfn.append_fields(
             pair_data, "mu", rounded_sigmoid_values, dtypes=float
         )
+    elif mu_type == "linear":
+        mu_values = normalized_reward_sum_1 / (
+            normalized_reward_sum_0 + normalized_reward_sum_1
+        )
+        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
 
-    pair_data = rfn.drop_fields(pair_data, "reward_sum_0")
-    pair_data = rfn.drop_fields(pair_data, "reward_sum_1")
+    pair_data = rfn.drop_fields(pair_data, "rewards_0")
+    pair_data = rfn.drop_fields(pair_data, "rewards_1")
 
     np.savez(save_path, data=pair_data)
     print(f"Preference pairs saved at {save_path}")
 
 
-def generate_pairs(env, pair_name_base, num_pairs, mu_types=["binary"]):
+def generate_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]):
 
     for mu_type in mu_types:
-        save_path = f"pair/{env}/{pair_name_base}_{mu_type}.npz"
+        save_path = f"pair/{env_name}/{pair_name_base}_{mu_type}.npz"
         is_already_exist = os.path.exists(save_path)
         if is_already_exist:
             print(f"Pair already exists at {save_path}, cancel generating")
             return
 
-    dataset = load_d4rl_dataset(env)
+    dataset = load_d4rl_dataset(env_name=env_name)
 
-    print("start generating preference pairs", env, pair_name_base, num_pairs)
+    reward_min = np.min(dataset["rewards"])
+    reward_max = np.max(dataset["rewards"])
+    reward_info = (reward_min, reward_max)
+
+    print("start generating preference pairs", env_name, pair_name_base, num_pairs)
 
     indices = extract_trajectory_indices(dataset)
     print("trajectory counts", len(indices))
@@ -146,10 +171,16 @@ def generate_pairs(env, pair_name_base, num_pairs, mu_types=["binary"]):
         dtype=[
             ("s0", "i4", (2,)),
             ("s1", "i4", (2,)),
-            ("reward_sum_0", "f4"),
-            ("reward_sum_1", "f4"),
+            ("rewards_0", "O"),
+            ("rewards_1", "O"),
         ],
     )
 
     for mu_type in mu_types:
-        save_pairs_by_mu_type(env, pair_name_base, mu_type, preference_pairs_np)
+        save_pairs_by_mu_type(
+            env_name=env_name,
+            pair=pair_name_base,
+            mu_type=mu_type,
+            pair_data=preference_pairs_np,
+            reward_info=reward_info,
+        )

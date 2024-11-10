@@ -199,16 +199,13 @@ if __name__ == "__main__":
         print("Generating preference pairs", env_name, pair_name_base, num)
 
         generate_pairs(
-            env=env_name,
+            env_name=env_name,
             pair_name_base=pair_name_base,
             num_pairs=num,
             mu_types=[
                 "binary",
-                "continuous",
                 "sigmoid",
-                "sigmoid-0.1",
-                "sigmoid-0.25",
-                "sigmoid-0.5",
+                "linear",
             ],
         )
     elif function_number == 2.1:
