@@ -214,7 +214,7 @@ if __name__ == "__main__":
         print("Generating preference pairs for test_full_sigmoid", env_name, num)
 
         generate_pairs(
-            env=env_name,
+            env_name=env_name,
             pair_name_base="test_full",
             num_pairs=num,
             mu_types=["sigmoid"],
@@ -266,6 +266,7 @@ if __name__ == "__main__":
                 train_loader=data_loader,
                 val_loader=val_data_loader,
                 optimizer=optimizer,
+                num_epochs=num,
             )
 
     elif function_number == 4:
@@ -309,4 +310,5 @@ if __name__ == "__main__":
             env_name=env_name,
             dataset_path=new_dataset_path,
             log_dir=policy_model_dir_path,
+            num_epochs=num,
         )

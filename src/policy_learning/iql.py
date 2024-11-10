@@ -110,7 +110,7 @@ def normalize_rewards(dataset):
     return dataset
 
 
-def train(env_name, dataset_path, log_dir):
+def train(env_name, dataset_path, log_dir, num_epochs=1000):
     configs = get_configs()
     # create env and dataset
     env = gym.make(env_name)
@@ -243,7 +243,7 @@ def train(env_name, dataset_path, log_dir):
         eval_env=env,
         buffer=buffer,
         logger=logger,
-        epoch=configs["epoch"],
+        epoch=num_epochs,
         step_per_epoch=configs["step_per_epoch"],
         batch_size=configs["batch_size"],
         eval_episodes=configs["eval_episodes"],

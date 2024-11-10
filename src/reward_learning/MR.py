@@ -142,7 +142,7 @@ class MR(RewardModelBase):
                 torch.save(self.state_dict(), self.path)
                 print(f"New best model saved with Val loss: {val_loss:.4f}")
 
-    def train_model(self, optimizer, train_loader, val_loader):
+    def train_model(self, optimizer, train_loader, val_loader, num_epochs):
         loss_fn = BradleyTerryLoss()
 
         print("[Train started] reward_model_path:", self.path)
@@ -152,7 +152,7 @@ class MR(RewardModelBase):
             train_data_loader=train_loader,
             val_data_loader=val_loader,
             loss_fn=loss_fn,
-            num_epochs=1000,
+            num_epochs=num_epochs,
         )
 
         print("Training completed")
