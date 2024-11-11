@@ -55,6 +55,7 @@ class MR(RewardModelBase):
         combined = F.relu(self.hidden_layer_2(combined))
 
         reward_t = self.fc(combined)
+        reward_t = torch.tanh(reward_t)
         return reward_t
 
     def evaluate(self, data_loader, loss_fn):
