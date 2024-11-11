@@ -4,17 +4,18 @@
 ENV=halfcheetah-medium-v2
 MU_ALGOS=binary sigmoid linear
 REWARD_MODEL=MR
+PAIRS=full_00 full_01 full_02 full_03 full_04
 
 d4rl:
 	python main.py -f 1 -e $(ENV)
 
-common_pair:
-	python main.py -f 2 -e $(ENV) -n 1000 -p val_full
-	python main.py -f 2.1 -e $(ENV) -n 2000
+pairs:
+	python main.py -f 2 -e $(ENV) -n 2000 -p val-full
+	python main.py -f 2.1 -e $(ENV) -n 5000
+	$(foreach pair, $(PAIRS), \
+		python main.py -f 2 -e $(ENV) -n 1000 -p $(pair);)
 
 define full_commands
-	python main.py -f 2 -e $(ENV) -n 500 -p full_$(1)
-
 	$(foreach algo, $(MU_ALGOS), \
 		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo) -ra $(REWARD_MODEL); \
 		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 01 -ma $(algo) -ra $(REWARD_MODEL); \
@@ -40,4 +41,4 @@ full_04:
 	$(call full_commands,04)
 
 # Run all commands
-all: d4rl common_pair full_00 full_01 full_02 full_03 full_04
+all: d4rl pairs full_00 full_01 full_02 full_03 full_04
