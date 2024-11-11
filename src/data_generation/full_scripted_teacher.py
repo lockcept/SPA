@@ -3,7 +3,6 @@ import numpy.lib.recfunctions as rfn
 
 import random
 
-
 import os
 import sys
 
@@ -138,7 +137,7 @@ def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)
     print(f"Preference pairs saved at {save_path}")
 
 
-def generate_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]):
+def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]):
 
     for mu_type in mu_types:
         save_path = f"pair/{env_name}/{pair_name_base}_{mu_type}.npz"

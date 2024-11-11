@@ -9,7 +9,14 @@ from data_loading.load_dataset import get_processed_data
 
 if __name__ == "__main__":
     env_name_list = ["hammer-cloned-v0"]
-    pair_name_list = ["full_binary", "full_sigmoid", "full_linear"]
+    pair_name_list = [
+        "full_binary",
+        "full_sigmoid",
+        "full_linear",
+        "list_list-2",
+        "list_list-3",
+        "list_list-5",
+    ]
 
     for env_name in env_name_list:
         for pair_name in pair_name_list:

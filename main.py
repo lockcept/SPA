@@ -198,26 +198,34 @@ if __name__ == "__main__":
 
         save_d4rl_dataset(env_name)
     elif function_number == 2:
-        from src.data_generation.full_scripted_teacher import generate_pairs
+        from src.data_generation.full_scripted_teacher import generate_full_pairs
+        from src.data_generation.list_scripted_teacher import generate_list_pairs
 
         print("Generating preference pairs", env_name, pair_name_base, num)
 
-        generate_pairs(
+        # generate_full_pairs(
+        #     env_name=env_name,
+        #     pair_name_base=pair_name_base,
+        #     num_pairs=num,
+        #     mu_types=[
+        #         "binary",
+        #         "sigmoid",
+        #         "linear",
+        #     ],
+        # )
+
+        generate_list_pairs(
             env_name=env_name,
             pair_name_base=pair_name_base,
-            num_pairs=num,
-            mu_types=[
-                "binary",
-                "sigmoid",
-                "linear",
-            ],
+            num_trajectories=num,
+            mu_types=["list-2", "list-3", "list-5", "list-11"],
         )
     elif function_number == 2.1:
-        from src.data_generation.full_scripted_teacher import generate_pairs
+        from src.data_generation.full_scripted_teacher import generate_full_pairs
 
         print("Generating preference pairs for test_full_sigmoid", env_name, num)
 
-        generate_pairs(
+        generate_full_pairs(
             env_name=env_name,
             pair_name_base="test_full",
             num_pairs=num,
