@@ -27,13 +27,8 @@ def extract_trajectory_indices(dataset):
     return indices
 
 
-def trajectory_from_index(dataset, start, end):
-    trajectory = {
-        "observations": dataset["observations"][start:end],
-        "actions": dataset["actions"][start:end],
-        "rewards": dataset["rewards"][start:end],
-    }
-    return trajectory
+def rewards_from_index(dataset, start, end):
+    return dataset["rewards"][start:end]
 
 
 def generate_preference_pair(dataset, indices):
@@ -54,10 +49,8 @@ def generate_preference_pair(dataset, indices):
         else:
             end1 = start1 + length0
 
-        traj0 = trajectory_from_index(dataset, start0, end0)
-        traj1 = trajectory_from_index(dataset, start1, end1)
-        rewards_0 = traj0["rewards"]
-        rewards_1 = traj1["rewards"]
+        rewards_0 = rewards_from_index(dataset, start0, end0)
+        rewards_1 = rewards_from_index(dataset, start1, end1)
 
         preference_pair = ((start0, end0), (start1, end1), rewards_0, rewards_1)
 
@@ -82,10 +75,10 @@ def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)
         [(rewards - reward_min) / (reward_max - reward_min) for rewards in rewards_1]
     )
     normalized_reward_sum_0 = np.array(
-        [np.sum(rewards) for rewards in normalized_rewards_0]
+        [np.sum(rewards) + np.finfo(float).eps for rewards in normalized_rewards_0]
     )
     normalized_reward_sum_1 = np.array(
-        [np.sum(rewards) for rewards in normalized_rewards_1]
+        [np.sum(rewards) + np.finfo(float).eps for rewards in normalized_rewards_1]
     )
 
     if mu_type == "binary":
