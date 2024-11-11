@@ -154,6 +154,12 @@ if __name__ == "__main__":
                 model, _ = MR.initialize(
                     config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
                 )
+            elif reward_model_algo == "MR-linear":
+                model, _ = MR.initialize(
+                    config={"obs_dim": obs_dim, "act_dim": act_dim},
+                    path=model_file,
+                    linear_loss=True,
+                )
             model.eval()
             models.append(model)
 
@@ -251,6 +257,13 @@ if __name__ == "__main__":
                 path=reward_model_path,
                 skip_if_exists=True,
             )
+        elif reward_model_algo == "MR-linear":
+            model, optimizer = MR.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=reward_model_path,
+                linear_loss=True,
+                skip_if_exists=True,
+            )
 
         if model is not None:
             model.train_model(
@@ -279,6 +292,14 @@ if __name__ == "__main__":
             for model_file in model_files:
                 model, _ = MR.initialize(
                     config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
+                )
+                model_list.append(model)
+        elif reward_model_algo == "MR-linear":
+            for model_file in model_files:
+                model, _ = MR.initialize(
+                    config={"obs_dim": obs_dim, "act_dim": act_dim},
+                    path=model_file,
+                    linear_loss=True,
                 )
                 model_list.append(model)
 

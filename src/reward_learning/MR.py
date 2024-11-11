@@ -15,7 +15,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class MR(RewardModelBase):
 
     @staticmethod
-    def initialize(config, path=None, skip_if_exists=False):
+    def initialize(config, path=None, skip_if_exists=False, linear_loss=False):
         obs_dim = config.get("obs_dim")
         act_dim = config.get("act_dim")
         hidden_size = config.get("hidden_size", 256)
@@ -24,6 +24,7 @@ class MR(RewardModelBase):
         model = MR(
             config={"obs_dim": obs_dim, "act_dim": act_dim, "hidden_size": hidden_size},
             path=path,
+            linear_loss=linear_loss,
         )
 
         if path is not None:
@@ -37,8 +38,9 @@ class MR(RewardModelBase):
         optimizer = optim.Adam(model.parameters(), lr=lr)
         return model, optimizer
 
-    def __init__(self, config, path):
+    def __init__(self, config, path, linear_loss=False):
         super(MR, self).__init__(config, path)
+        self.linear_loss = linear_loss
 
         obs_dim = config.get("obs_dim")
         act_dim = config.get("act_dim")
@@ -55,7 +57,10 @@ class MR(RewardModelBase):
         combined = F.relu(self.hidden_layer_2(combined))
 
         reward_t = self.fc(combined)
-        reward_t = torch.tanh(reward_t)
+        if self.linear_loss:
+            reward_t = 1 + torch.tanh(reward_t)
+        else:
+            reward_t = torch.tanh(reward_t)
         return reward_t
 
     def evaluate(self, data_loader, loss_fn):
@@ -144,7 +149,12 @@ class MR(RewardModelBase):
                 print(f"New best model saved with Val loss: {val_loss:.4f}")
 
     def train_model(self, optimizer, train_loader, val_loader, num_epochs):
-        loss_fn = BradleyTerryLoss()
+        loss_fn = None
+
+        if self.linear_loss:
+            loss_fn = LinearLoss()
+        else:
+            loss_fn = BradleyTerryLoss()
 
         print("[Train started] reward_model_path:", self.path)
 
@@ -172,4 +182,20 @@ class BradleyTerryLoss(nn.Module):
         prob_s1_wins = prob_s1_wins.squeeze()
 
         loss = self.cross_entropy_loss(prob_s1_wins, mu)
+        return loss
+
+
+class LinearLoss(nn.Module):
+    def __init__(self):
+        super(LinearLoss, self).__init__()
+        self.mse_loss = nn.MSELoss()
+
+    def forward(self, rewards_s0, rewards_s1, mu):
+        reward_s0_sum = torch.sum(rewards_s0, dim=1)
+        reward_s1_sum = torch.sum(rewards_s1, dim=1)
+
+        linear_ratio = (reward_s1_sum) / (reward_s1_sum + reward_s0_sum + 1e-6)
+        linear_ratio = linear_ratio.squeeze()
+
+        loss = self.mse_loss(linear_ratio, mu)
         return loss
