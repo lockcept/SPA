@@ -11,7 +11,20 @@ from data_loading.load_dataset import get_processed_data
 # Custom Dataset for handling structured (s0, s1, mu) pairs
 class PreferenceDataset(Dataset):
     def __init__(self, processed_data):
-        self.processed_data = processed_data
+        self.processed_data = [
+            {
+                "s0": {
+                    "observations": torch.tensor(item["s0"]["observations"], dtype=torch.float32),
+                    "actions": torch.tensor(item["s0"]["actions"], dtype=torch.float32)
+                },
+                "s1": {
+                    "observations": torch.tensor(item["s1"]["observations"], dtype=torch.float32),
+                    "actions": torch.tensor(item["s1"]["actions"], dtype=torch.float32)
+                },
+                "mu": torch.tensor(item["mu"], dtype=torch.float32)
+            }
+            for item in processed_data
+        ]
 
     def __len__(self):
         return len(self.processed_data)
@@ -21,17 +34,12 @@ class PreferenceDataset(Dataset):
         s1 = self.processed_data[idx]["s1"]
         mu = self.processed_data[idx]["mu"]
 
-        s0_obs = s0["observations"]
-        s0_act = s0["actions"]
-        s1_obs = s1["observations"]
-        s1_act = s1["actions"]
-
         return (
-            torch.tensor(s0_obs, dtype=torch.float32),
-            torch.tensor(s0_act, dtype=torch.float32),
-            torch.tensor(s1_obs, dtype=torch.float32),
-            torch.tensor(s1_act, dtype=torch.float32),
-            torch.tensor(mu, dtype=torch.float32),
+            s0["observations"],
+            s0["actions"],
+            s1["observations"],
+            s1["actions"],
+            mu,
         )
 
     def get_dimensions(self):
