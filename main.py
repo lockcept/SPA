@@ -5,7 +5,7 @@ import os
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
 DEFAULT_PAIR = "full"
-DEFAULT_VAL_PAIR = "val_full"
+DEFAULT_VAL_PAIR = "val-full"
 DEFAULT_MU_ALGO = "binary"
 DEFAULT_REWARD_MODEL_ALGO = "MR"
 DEFAULT_REWARD_MODEL_TAG = "-"
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         "--val_pair",
         type=str,
         default=DEFAULT_VAL_PAIR,
-        help="Name of the trajectory pair file to use for validate(val_full, etc.)",
+        help="Name of the trajectory pair file to use for validate(val-full, etc.)",
     )
 
     parser.add_argument(
@@ -134,6 +134,9 @@ if __name__ == "__main__":
         print("Evaluating reward model", env_name, new_dataset_name)
 
         log_path = "log/main_evaluate_reward.log"
+        log_dir  = os.path.dirname(log_path)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
         model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
         model_files = glob.glob(model_path_pattern)
