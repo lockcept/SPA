@@ -179,16 +179,16 @@ if __name__ == "__main__":
 
         print("Plotting policy evaluation")
 
-        env_list = ["halfcheetah-random", "hopper-medium-v2", "walker2d-medium-v2"]
+        env_list = ["hammer-cloned-v0"]
         pair_list = ["full_00", "full_01", "full_02", "full_03", "full_04"]
-        mu_algo_list = ["binary", "sigmoid", "sigmoid-0.25", "sigmoid-0.5"]
+        postfix_list = ["binary_MR", "sigmoid_MR", "linear_MR", "linear_MR-linear"]
 
         for env_name in env_list:
             plot(
                 env_name=env_name,
                 pair_list=pair_list,
-                mu_algo_list=mu_algo_list,
-                output_name=f"policy_{env_name}_full_MR",
+                postfix_list=postfix_list,
+                output_name=f"policy_{env_name}_full",
             )
 
     elif function_number == 1:

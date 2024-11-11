@@ -55,16 +55,16 @@ def plot_and_save(df_list=[], output_name="name"):
     plt.close()
 
 
-def plot(env_name="", pair_list=[], mu_algo_list=[], output_name="name"):
+def plot(env_name="", pair_list=[], postfix_list=[], output_name="name"):
     label = "eval/normalized_episode_reward"
 
     csv_files = []
     df_list = []
 
-    for mu_algo in mu_algo_list:
+    for postfix in postfix_list:
         csv_files = []
         for pair_name in pair_list:
-            file_path = f"model/{env_name}/policy/{pair_name}_{mu_algo}_MR/record/policy_training_progress.csv"
+            file_path = f"model/{env_name}/policy/{pair_name}_{postfix}/record/policy_training_progress.csv"
             print(file_path)
             if os.path.exists(file_path):
                 csv_files.append(file_path)
@@ -76,7 +76,7 @@ def plot(env_name="", pair_list=[], mu_algo_list=[], output_name="name"):
             csv_files=csv_files,
             label=label,
         )
-        df_list.append((mu_algo, df))
+        df_list.append((postfix, df))
 
     if df_list:
         plot_and_save(df_list=df_list, output_name=output_name)
