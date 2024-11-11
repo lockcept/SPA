@@ -56,7 +56,7 @@ if __name__ == "__main__":
         "--reward_model_algo",
         type=str,
         default=DEFAULT_REWARD_MODEL_ALGO,
-        help="Algorithm of reward model (MLP, etc.)",
+        help="Algorithm of reward model (MR, etc.)",
     )
     parser.add_argument(
         "-rt",
@@ -128,13 +128,12 @@ if __name__ == "__main__":
     elif function_number == -2:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.helper.evaluate_reward_model import evaluate_reward_model
-        from src.reward_learning.MLP import MLP
         from src.reward_learning.MR import MR
 
         print("Evaluating reward model", env_name, new_dataset_name)
 
         log_path = "log/main_evaluate_reward.log"
-        log_dir  = os.path.dirname(log_path)
+        log_dir = os.path.dirname(log_path)
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
@@ -151,11 +150,7 @@ if __name__ == "__main__":
         models = []
 
         for model_file in model_files:
-            if reward_model_algo == "MLP":
-                model, _ = MLP.initialize(
-                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
-                )
-            elif reward_model_algo == "MR":
+            if reward_model_algo == "MR":
                 model, _ = MR.initialize(
                     config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
                 )
@@ -225,7 +220,6 @@ if __name__ == "__main__":
     elif function_number == 3:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.reward_model_base import RewardModelBase
-        from src.reward_learning.MLP import MLP
         from src.reward_learning.MR import MR
 
         print(
@@ -251,13 +245,7 @@ if __name__ == "__main__":
         reward_model: RewardModelBase
         optimizer = None
 
-        if reward_model_algo == "MLP":
-            model, optimizer = MLP.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim},
-                path=reward_model_path,
-                skip_if_exists=True,
-            )
-        elif reward_model_algo == "MR":
+        if reward_model_algo == "MR":
             model, optimizer = MR.initialize(
                 config={"obs_dim": obs_dim, "act_dim": act_dim},
                 path=reward_model_path,
@@ -275,7 +263,6 @@ if __name__ == "__main__":
     elif function_number == 4:
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.reward_model_base import RewardModelBase
-        from src.reward_learning.MLP import MLP
         from src.reward_learning.MR import MR
         from src.policy_learning.change_reward import change_reward
 
@@ -288,13 +275,7 @@ if __name__ == "__main__":
         model_files = glob.glob(model_path_pattern)
         model_list = []
 
-        if reward_model_algo == "MLP":
-            for model_file in model_files:
-                model, _ = MLP.initialize(
-                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
-                )
-                model_list.append(model)
-        elif reward_model_algo == "MR":
+        if reward_model_algo == "MR":
             for model_file in model_files:
                 model, _ = MR.initialize(
                     config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file

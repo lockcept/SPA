@@ -9,9 +9,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_loading.load_dataset import load_d4rl_dataset
 from data_loading.preference_dataloader import get_dataloader
 from reward_learning.reward_model_base import RewardModelBase
-from reward_learning.MLP import MLP
-from reward_learning.MR import MR
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

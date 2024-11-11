@@ -32,7 +32,6 @@ def change_reward(env_name, model_list: List[RewardModelBase], dataset_path):
     terminals = dataset["terminals"] | dataset["timeouts"]
     observations = dataset["observations"]
     actions = dataset["actions"]
-    predicted_rewards[terminals] = 0
     rewards = predicted_rewards.squeeze()
 
     print(
