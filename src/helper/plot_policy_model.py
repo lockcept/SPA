@@ -65,8 +65,12 @@ def plot(env_name="", pair_list=[], mu_algo_list=[], output_name="name"):
         csv_files = []
         for pair_name in pair_list:
             file_path = f"model/{env_name}/policy/{pair_name}_{mu_algo}_MR/record/policy_training_progress.csv"
+            print(file_path)
             if os.path.exists(file_path):
                 csv_files.append(file_path)
+
+        if not csv_files:
+            continue
 
         df = process_csv_files(
             csv_files=csv_files,
@@ -74,4 +78,7 @@ def plot(env_name="", pair_list=[], mu_algo_list=[], output_name="name"):
         )
         df_list.append((mu_algo, df))
 
-    plot_and_save(df_list=df_list, output_name=output_name)
+    if df_list:
+        plot_and_save(df_list=df_list, output_name=output_name)
+    else:
+        print("nothing to plot")
