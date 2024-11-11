@@ -2,7 +2,8 @@
 
 # Variables
 ENV=halfcheetah-medium-v2
-MU_ALGOS=binary sigmoid sigmoid-0.25 sigmoid-0.5
+MU_ALGOS=binary sigmoid linear
+REWARD_MODEL=MR
 
 d4rl:
 	python main.py -f 1 -e $(ENV)
@@ -15,12 +16,12 @@ define full_commands
 	python main.py -f 2 -e $(ENV) -n 500 -p full_$(1)
 
 	$(foreach algo, $(MU_ALGOS), \
-		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo); \
-		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 01 -ma $(algo); \
-		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 02 -ma $(algo); \
-		python main.py -f -2 -e $(ENV) -p full_$(1) -ma $(algo); \
-		python main.py -f 4 -e $(ENV) -p full_$(1) -ma $(algo); \
-		python main.py -f 5 -e $(ENV) -p full_$(1) -ma $(algo);)
+		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 00 -ma $(algo) -ra $(REWARD_MODEL); \
+		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 01 -ma $(algo) -ra $(REWARD_MODEL); \
+		python main.py -f 3 -e $(ENV) -p full_$(1) -rt 02 -ma $(algo) -ra $(REWARD_MODEL); \
+		python main.py -f -2 -e $(ENV) -p full_$(1) -ma $(algo) -ra $(REWARD_MODEL); \
+		python main.py -f 4 -e $(ENV) -p full_$(1) -ma $(algo) -ra $(REWARD_MODEL); \
+		python main.py -f 5 -e $(ENV) -p full_$(1) -ma $(algo) -ra $(REWARD_MODEL);)
 endef
 
 full_00:
