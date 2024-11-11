@@ -91,6 +91,12 @@ def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)
     if mu_type == "binary":
         mu_values = np.where(reward_sum_0 > reward_sum_1, 0, 1)
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
+    elif mu_type == "minus-binary":
+        mu_values = np.where(reward_sum_0 < reward_sum_1, 0, 1)
+        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
+    elif mu_type == "random":
+        mu_values = np.random.uniform(0, 1, len(reward_sum_0))
+        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "continuous":
         length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
         diff = (reward_sum_1 - reward_sum_0) / length_values
