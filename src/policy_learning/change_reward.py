@@ -16,8 +16,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def change_reward(env_name, model_list: List[RewardModelBase], dataset_path):
     dataset = load_d4rl_dataset(env_name)
 
-    observations = torch.tensor(dataset["observations"]).to(device)
-    actions = torch.tensor(dataset["actions"]).to(device)
+    observations = torch.tensor(dataset["observations"], dtype=torch.float32).to(device)
+    actions = torch.tensor(dataset["actions"], dtype=torch.float32).to(device)
 
     model_outputs = []
 
