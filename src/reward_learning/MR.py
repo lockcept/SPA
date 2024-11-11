@@ -1,6 +1,5 @@
 import csv
 import os
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -76,12 +75,13 @@ class MR(RewardModelBase):
                     s1_obs_batch,
                     s1_act_batch,
                     mu_batch,
+                    mask_batch,
                 ) = [x.to(device) for x in batch]
 
                 rewards_s0 = self(s0_obs_batch, s0_act_batch)
                 rewards_s1 = self(s1_obs_batch, s1_act_batch)
 
-                loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
+                loss = loss_fn(rewards_s0, rewards_s1, mu_batch, mask_batch)
 
                 epoch_loss += loss.item()
                 num_batches += 1
@@ -120,12 +120,13 @@ class MR(RewardModelBase):
                     s1_obs_batch,
                     s1_act_batch,
                     mu_batch,
+                    mask_batch,
                 ) = [x.to(device) for x in batch]
 
                 rewards_s0 = self(s0_obs_batch, s0_act_batch)
                 rewards_s1 = self(s1_obs_batch, s1_act_batch)
 
-                loss = loss_fn(rewards_s0, rewards_s1, mu_batch)
+                loss = loss_fn(rewards_s0, rewards_s1, mu_batch, mask_batch)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -174,9 +175,9 @@ class BradleyTerryLoss(nn.Module):
         super(BradleyTerryLoss, self).__init__()
         self.cross_entropy_loss = nn.BCELoss()
 
-    def forward(self, rewards_s0, rewards_s1, mu):
-        reward_s0_sum = torch.sum(rewards_s0, dim=1)
-        reward_s1_sum = torch.sum(rewards_s1, dim=1)
+    def forward(self, rewards_s0, rewards_s1, mu, mask):
+        reward_s0_sum = torch.sum(rewards_s0 * (1 - mask), dim=1)
+        reward_s1_sum = torch.sum(rewards_s1 * (1 - mask), dim=1)
 
         prob_s1_wins = torch.sigmoid(reward_s1_sum - reward_s0_sum)
         prob_s1_wins = prob_s1_wins.squeeze()
@@ -190,9 +191,9 @@ class LinearLoss(nn.Module):
         super(LinearLoss, self).__init__()
         self.mse_loss = nn.MSELoss()
 
-    def forward(self, rewards_s0, rewards_s1, mu):
-        reward_s0_sum = torch.sum(rewards_s0, dim=1)
-        reward_s1_sum = torch.sum(rewards_s1, dim=1)
+    def forward(self, rewards_s0, rewards_s1, mu, mask):
+        reward_s0_sum = torch.sum(rewards_s0 * (1 - mask), dim=1)
+        reward_s1_sum = torch.sum(rewards_s1 * (1 - mask), dim=1)
 
         linear_ratio = (reward_s1_sum) / (reward_s1_sum + reward_s0_sum + 1e-6)
         linear_ratio = linear_ratio.squeeze()

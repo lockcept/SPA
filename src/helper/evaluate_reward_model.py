@@ -77,6 +77,7 @@ def evaluate_reward_model(
                 s1_obs_batch,
                 s1_act_batch,
                 mu_batch,
+                mask_batch,
             ) = [x.to(device) for x in batch]
 
             rewards_s0_list = []
@@ -91,8 +92,8 @@ def evaluate_reward_model(
                     s1_obs_batch, s1_act_batch
                 )
 
-                rewards_s0_list.append(rewards_s0)
-                rewards_s1_list.append(rewards_s1)
+                rewards_s0_list.append(rewards_s0 * (1 - mask_batch))
+                rewards_s1_list.append(rewards_s1 * (1 - mask_batch))
 
             mean_rewards_s0 = torch.mean(torch.stack(rewards_s0_list), dim=0)
             mean_rewards_s1 = torch.mean(torch.stack(rewards_s1_list), dim=0)
@@ -109,7 +110,7 @@ def evaluate_reward_model(
                 | ((pred_probs_s1 >= 0.5) & (mu_batch >= 0.5))
             ).item()
 
-            mse_batch = mse_loss(pred_probs_s1, mu_batch.float())
+            mse_batch = mse_loss(pred_probs_s1, mu_batch)
             cumulative_mse += mse_batch.item() * mu_batch.size(0)
 
             total_samples += mu_batch.size(0)
