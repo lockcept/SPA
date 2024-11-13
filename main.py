@@ -207,11 +207,11 @@ if __name__ == "__main__":
 
     elif function_number == 1:
         # Load and save d4rl dataset
-        from src.data_loading.load_d4rl import save_d4rl_dataset
+        from src.data_loading.load_data import save_dataset
 
         print("Loading and saving d4rl dataset", env_name)
 
-        save_d4rl_dataset(env_name)
+        save_dataset(env_name)
     elif function_number == 2:
         # Generate preference pairs
         from src.data_generation.full_scripted_teacher import generate_full_pairs
