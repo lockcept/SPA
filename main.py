@@ -80,19 +80,21 @@ if __name__ == "__main__":
         type=float,
         default=0,
         help=(
-            "-3: helper policy evalutaion\n"
-            "-2: helper evaluate reward model\n"
-            "-1: helper analyze d4rl\n"
-            " 0: do nothing\n"
-            " 1: load and save d4rl\n"
-            " 2: load and save preference pairs\n"
-            " 3: train reward model\n"
-            " 4: change reward\n"
-            " 5: train policy\n"
+            "0: Do nothing\n"
+            "-1: Analyze d4rl dataset\n"
+            "-2: Evaluate reward model\n"
+            "-3: Plot policy evaluation\n"
+            "1: Load and save d4rl dataset\n"
+            "2: Generate preference pairs\n"
+            "2.1: Generate preference pairs for test reward model\n"
+            "3: Train reward model\n"
+            "4: Change reward and save dataset\n"
+            "5: Train policy\n"
             "Provide the number corresponding to the function you want to execute."
         ),
     )
 
+    # Parse arguments
     args = parser.parse_args()
     env_name = args.env
     num = args.num
@@ -103,11 +105,13 @@ if __name__ == "__main__":
     function_number = args.function_number
     mu_algo = args.mu_algo
 
+    # Derived variables
     pair_name = f"{pair_name_base}_{mu_algo}"
     val_pair_name = f"{val_pair_name_base}_{mu_algo}"
     new_dataset_name = f"{pair_name}_{reward_model_algo}"
     reward_model_name = f"{new_dataset_name}_{reward_model_tag}"
 
+    # Paths
     pair_path = f"model/{env_name}/{pair_name}.npz"
     val_pair_path = f"model/{env_name}/{val_pair_name}.npz"
     reward_model_path = f"model/{env_name}/reward/{reward_model_name}.pth"
@@ -116,16 +120,20 @@ if __name__ == "__main__":
 
     print("main function started with args", args)
 
+    # Execute function
     if function_number == 0:
+        # Do nothing
         print("Pass")
         pass
     elif function_number == -1:
+        # Analyze d4rl dataset
         from src.helper.analyze_d4rl import analyze
 
         print("Analyzing d4rl dataset")
 
         analyze(env_name)
     elif function_number == -2:
+        # Evaluate reward model
         from src.data_loading.preference_dataloader import get_dataloader
         from src.helper.evaluate_reward_model import evaluate_reward_model
         from src.reward_learning.MR import MR
@@ -143,7 +151,7 @@ if __name__ == "__main__":
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name,
-            pair_name="test_full_sigmoid",
+            pair_name="test_reward",
             drop_last=False,
         )
 
@@ -175,13 +183,19 @@ if __name__ == "__main__":
                 f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
             )
     elif function_number == -3:
+        # Plot policy evaluation
         from src.helper.plot_policy_model import plot
 
         print("Plotting policy evaluation")
 
         env_list = ["hammer-cloned-v0"]
-        pair_list = ["list-00","list-01","list-02","list-03","list-04"]
-        postfix_list = ["list-2_MR-linear","list-3_MR-linear","list-5_MR-linear","list-11_MR-linear"]
+        pair_list = ["list-00", "list-01", "list-02", "list-03", "list-04"]
+        postfix_list = [
+            "list-2_MR-linear",
+            "list-3_MR-linear",
+            "list-5_MR-linear",
+            "list-11_MR-linear",
+        ]
 
         for env_name in env_list:
             plot(
@@ -192,12 +206,14 @@ if __name__ == "__main__":
             )
 
     elif function_number == 1:
+        # Load and save d4rl dataset
         from src.data_loading.load_d4rl import save_d4rl_dataset
 
         print("Loading and saving d4rl dataset", env_name)
 
         save_d4rl_dataset(env_name)
     elif function_number == 2:
+        # Generate preference pairs
         from src.data_generation.full_scripted_teacher import generate_full_pairs
         from src.data_generation.list_scripted_teacher import generate_list_pairs
 
@@ -221,17 +237,19 @@ if __name__ == "__main__":
             mu_types=["list-2", "list-3", "list-5", "list-11"],
         )
     elif function_number == 2.1:
+        # Generate preference pairs for test reward model
         from src.data_generation.full_scripted_teacher import generate_full_pairs
 
         print("Generating preference pairs for test_full_sigmoid", env_name, num)
 
         generate_full_pairs(
             env_name=env_name,
-            pair_name_base="test_full",
+            pair_name_base="test_reward_sigmoid",
             num_pairs=num,
             mu_types=["sigmoid"],
         )
     elif function_number == 3:
+        # Train reward model
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.reward_model_base import RewardModelBase
         from src.reward_learning.MR import MR
@@ -282,6 +300,7 @@ if __name__ == "__main__":
             )
 
     elif function_number == 4:
+        # Change reward and save dataset
         from src.data_loading.preference_dataloader import get_dataloader
         from src.reward_learning.reward_model_base import RewardModelBase
         from src.reward_learning.MR import MR
@@ -315,6 +334,7 @@ if __name__ == "__main__":
             env_name=env_name, model_list=model_list, dataset_path=new_dataset_path
         )
     elif function_number == 5:
+        # Train policy
         from src.policy_learning.iql import train
 
         print("Training policy", env_name, new_dataset_path)
