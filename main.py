@@ -5,7 +5,7 @@ import os
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
 DEFAULT_PAIR = "full"
-DEFAULT_VAL_PAIR = "val-full"
+DEFAULT_VAL_PAIR = "val"
 DEFAULT_MU_ALGO = "binary"
 DEFAULT_REWARD_MODEL_ALGO = "MR"
 DEFAULT_REWARD_MODEL_TAG = "-"
@@ -180,15 +180,15 @@ if __name__ == "__main__":
         print("Plotting policy evaluation")
 
         env_list = ["hammer-cloned-v0"]
-        pair_list = ["full_00", "full_01", "full_02", "full_03", "full_04"]
-        postfix_list = ["binary_MR", "sigmoid_MR", "linear_MR", "linear_MR-linear"]
+        pair_list = ["list-00","list-01","list-02","list-03","list-04"]
+        postfix_list = ["list-2_MR-linear","list-3_MR-linear","list-5_MR-linear","list-11_MR-linear"]
 
         for env_name in env_list:
             plot(
                 env_name=env_name,
                 pair_list=pair_list,
                 postfix_list=postfix_list,
-                output_name=f"policy_{env_name}_full",
+                output_name=f"policy_{env_name}",
             )
 
     elif function_number == 1:
