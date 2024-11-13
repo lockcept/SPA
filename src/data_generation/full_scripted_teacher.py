@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-from data_loading.load_dataset import load_d4rl_dataset
+from data_loading.load_data import load_d4rl_dataset
 
 
 def extract_trajectory_indices(dataset):

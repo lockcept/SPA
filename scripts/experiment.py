@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/")))
 
-from data_loading.load_dataset import get_processed_data
+from data_loading.load_data import get_processed_data
 
 
 if __name__ == "__main__":

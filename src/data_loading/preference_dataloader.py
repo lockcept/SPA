@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, Dataset
 import torch.nn.utils.rnn as rnn_utils
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-from data_loading.load_dataset import get_processed_data
+from data_loading.load_data import get_processed_data
 
 
 # Custom Dataset for handling structured (s0, s1, mu) pairs

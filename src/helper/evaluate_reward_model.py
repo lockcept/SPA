@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-from data_loading.load_dataset import load_d4rl_dataset
+from data_loading.load_data import load_d4rl_dataset
 from data_loading.preference_dataloader import get_dataloader
 from reward_learning.reward_model_base import RewardModelBase
 
