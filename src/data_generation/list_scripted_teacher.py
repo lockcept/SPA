@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-from data_loading.load_data import load_d4rl_dataset
+from data_loading.load_data import load_dataset
 
 
 def generate_trajectories(dataset, trajectory_len, num_trajectories):
@@ -108,7 +108,7 @@ def generate_list_pairs(
             print(f"Pair already exists at {save_path}, cancel generating")
             return
 
-    dataset = load_d4rl_dataset(env_name=env_name)
+    dataset = load_dataset(env_name=env_name)
     trajectory_len = 25
 
     trajectories = generate_trajectories(

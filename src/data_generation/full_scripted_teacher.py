@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-from data_loading.load_data import load_d4rl_dataset
+from data_loading.load_data import load_dataset
 
 
 def extract_trajectory_indices(dataset):
@@ -146,7 +146,7 @@ def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]
             print(f"Pair already exists at {save_path}, cancel generating")
             return
 
-    dataset = load_d4rl_dataset(env_name=env_name)
+    dataset = load_dataset(env_name=env_name)
 
     reward_min = np.min(dataset["rewards"])
     reward_max = np.max(dataset["rewards"])

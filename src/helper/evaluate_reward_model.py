@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-from data_loading.load_data import load_d4rl_dataset
+from data_loading.load_data import load_dataset
 from data_loading.preference_dataloader import get_dataloader
 from reward_learning.reward_model_base import RewardModelBase
 
@@ -16,7 +16,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def calculate_pearson_correlation_with_d4rl(
     env_name, models: List[RewardModelBase], output_name
 ):
-    dataset = load_d4rl_dataset(env_name)
+    dataset = load_dataset(env_name)
 
     observations = dataset["observations"]
     actions = dataset["actions"]

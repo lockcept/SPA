@@ -12,7 +12,7 @@ from data_loading import load_data
 
 
 def load_d4rl(env_name):
-    return load_data.load_d4rl_dataset(env_name)
+    return load_data.load_dataset(env_name)
 
 
 def save_trajectory_lengths(dataset, env_name):

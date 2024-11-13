@@ -8,13 +8,13 @@ from reward_learning.reward_model_base import RewardModelBase
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-from data_loading.load_data import load_d4rl_dataset
+from data_loading.load_data import load_dataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def change_reward(env_name, model_list: List[RewardModelBase], dataset_path):
-    dataset = load_d4rl_dataset(env_name)
+    dataset = load_dataset(env_name)
 
     observations = torch.tensor(dataset["observations"], dtype=torch.float32).to(device)
     actions = torch.tensor(dataset["actions"], dtype=torch.float32).to(device)

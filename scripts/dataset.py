@@ -5,7 +5,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/")))
 
-from data_loading.load_data import get_processed_data, load_d4rl_dataset
+from data_loading.load_data import get_processed_data, load_dataset
 
 
 if __name__ == "__main__":
@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     for env_name in env_name_list:
         for pair_name in pair_name_list:
-            raw_data = load_d4rl_dataset(env_name)
+            raw_data = load_dataset(env_name)
 
             dir_path = f"dataset/{env_name}"
             dataset_name = f"{pair_name}_MR_dataset.npz"

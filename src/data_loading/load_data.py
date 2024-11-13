@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 
-def load_d4rl_dataset(env_name):
+def load_dataset(env_name):
     dir_path = f"dataset/{env_name}"
     dataset_name = "d4rl.npz"
     dataset = np.load(os.path.join(dir_path, dataset_name))
@@ -25,7 +25,7 @@ mu is a float
 
 
 def get_processed_data(env_name, pair_name):
-    dataset = load_d4rl_dataset(env_name)
+    dataset = load_dataset(env_name)
     observations = dataset["observations"]
     actions = dataset["actions"]
 
