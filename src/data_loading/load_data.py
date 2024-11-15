@@ -108,9 +108,9 @@ def save_metaworld_dataset(env_name, save_dir):
         "observations": dataset["observations"],
         "actions": dataset["actions"],
         "rewards": dataset["rewards"],
-        "terminals": dataset["dones"],
-        "timeouts": np.zeros_like(dataset["dones"]),
-        "success": dataset["success"],
+        "terminals": dataset["dones"].astype(bool),
+        "timeouts": np.zeros_like(dataset["dones"], dtype=bool),
+        "success": dataset["success"].astype(bool),
     }
 
     np.savez(npz_path, **save_data)
