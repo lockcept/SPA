@@ -81,10 +81,10 @@ if __name__ == "__main__":
         default=0,
         help=(
             "0: Do nothing\n"
-            "-1: Analyze d4rl dataset\n"
+            "-1: Analyze dataset\n"
             "-2: Evaluate reward model\n"
             "-3: Plot policy evaluation\n"
-            "1: Load and save d4rl dataset\n"
+            "1: Load and save dataset\n"
             "2: Generate preference pairs\n"
             "2.1: Generate preference pairs for test reward model\n"
             "3: Train reward model\n"
@@ -126,10 +126,10 @@ if __name__ == "__main__":
         print("Pass")
         pass
     elif function_number == -1:
-        # Analyze d4rl dataset
-        from src.helper.analyze_d4rl import analyze
+        # Analyze dataset
+        from src.helper.analyze_dataset import analyze
 
-        print("Analyzing d4rl dataset")
+        print("Analyzing dataset")
 
         analyze(env_name)
     elif function_number == -2:
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name,
-            pair_name="test_reward",
+            pair_name="test_reward_sigmoid",
             drop_last=False,
         )
 
@@ -206,10 +206,10 @@ if __name__ == "__main__":
             )
 
     elif function_number == 1:
-        # Load and save d4rl dataset
+        # Load and save dataset
         from src.data_loading.load_data import save_dataset
 
-        print("Loading and saving d4rl dataset", env_name)
+        print("Loading and saving dataset", env_name)
 
         save_dataset(env_name)
     elif function_number == 2:
@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
         generate_full_pairs(
             env_name=env_name,
-            pair_name_base="test_reward_sigmoid",
+            pair_name_base="test_reward",
             num_pairs=num,
             mu_types=["sigmoid"],
         )

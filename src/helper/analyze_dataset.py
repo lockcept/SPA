@@ -11,10 +11,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_loading import load_data
 
 
-def load_d4rl(env_name):
-    return load_data.load_dataset(env_name)
-
-
 def save_trajectory_lengths(dataset, env_name):
     terminals, timeouts = dataset["terminals"], dataset["timeouts"]
     indices = []
@@ -53,7 +49,7 @@ def show_reward_graph(dataset, env_name):
 
 
 def analyze(env_name):
-    data = load_d4rl(env_name)
+    data = load_data.load_dataset(env_name)
     print(data["observations"].shape)
     save_trajectory_lengths(data, env_name)
     show_reward_graph(data, env_name)
