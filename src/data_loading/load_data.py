@@ -1,4 +1,5 @@
 import os
+import random
 import numpy as np
 
 
@@ -16,6 +17,28 @@ metaworld_ids = {
     "sweep-into-v2": "1G3VghYKH5Mm2XHM69-oMl6uDNx7fdCxC",
     "sweep-v2": "1u7f5WZYQlqXSxyJGI56kWlafYluFrgJb",
 }
+
+
+class MetaworldEnvWrapper:
+    def __init__(self, env, tasks):
+        self.env = env
+        self.tasks = tasks
+
+    def reset(self):
+        task = random.choice(self.tasks)
+        self.env.set_task(task)
+        obs, _ = self.env.reset()
+        return obs
+
+    def step(self, action):
+        next_obs, reward, terminal, truncated, _ = self.env.step(action)
+        return (next_obs, reward, terminal | truncated, {})
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)
+
+    def get_normalized_score(self, reward):
+        return reward
 
 
 def save_d4rl_dataset(env_name, save_dir):
@@ -116,6 +139,24 @@ def save_metaworld_dataset(env_name, save_dir):
     np.savez(npz_path, **save_data)
 
     print(f"Dataset saved with keys: {save_data.keys()}")
+
+
+def get_env(env_name):
+    if env_name in metaworld_ids.keys():
+        import metaworld
+
+        ml1 = metaworld.ML1(env_name)
+
+        env = ml1.train_classes[env_name]()
+        env = MetaworldEnvWrapper(env, ml1.train_tasks)
+        env.reset()
+        return env
+    else:
+        import gym
+        import d4rl
+
+        env = gym.make(env_name)
+    return env
 
 
 def save_dataset(env_name):

@@ -58,7 +58,8 @@ def qlearning_dataset(env, dataset=None, terminate_on_end=False, **kwargs):
         if use_timeouts:
             final_timestep = dataset['timeouts'][i]
         else:
-            final_timestep = (episode_step == env._max_episode_steps - 1)
+            final_timestep = False
+
         if (not terminate_on_end) and final_timestep:
             # Skip this transition and don't apply terminals on the last step of an episode
             episode_step = 0

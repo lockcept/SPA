@@ -1,12 +1,14 @@
 import random
 import os
-
-import gym
-import d4rl
+import sys
 
 import numpy as np
 import torch
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
+
+
+from data_loading.load_data import get_env
 
 from offlinerlkit.nets import MLP
 from offlinerlkit.modules import ActorProb, Critic, DiagGaussian
@@ -113,7 +115,7 @@ def normalize_rewards(dataset):
 def train(env_name, dataset_path, log_dir, num_epochs=1000):
     configs = get_configs()
     # create env and dataset
-    env = gym.make(env_name)
+    env = get_env(env_name)
     dataset_npz = np.load(dataset_path)
     dataset = {key: dataset_npz[key] for key in dataset_npz}
     dataset = qlearning_dataset(env, dataset=dataset)
