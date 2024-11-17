@@ -40,7 +40,7 @@ if __name__ == "__main__":
         "--pair",
         type=str,
         default=DEFAULT_PAIR,
-        help="Name of the trajectory pair generation algorithm (full, etc.)",
+        help="Name of Experiment pair",
     )
 
     parser.add_argument(
@@ -219,23 +219,24 @@ if __name__ == "__main__":
 
         print("Generating preference pairs", env_name, pair_name_base, num)
 
-        # generate_full_pairs(
-        #     env_name=env_name,
-        #     pair_name_base=pair_name_base,
-        #     num_pairs=num,
-        #     mu_types=[
-        #         "binary",
-        #         "sigmoid",
-        #         "linear",
-        #     ],
-        # )
-
-        generate_list_pairs(
-            env_name=env_name,
-            pair_name_base=pair_name_base,
-            num_trajectories=num,
-            mu_types=["list-2", "list-3", "list-5", "list-11"],
-        )
+        if mu_algo in ["binary","sigmoid","linear"]: 
+            generate_full_pairs(
+                env_name=env_name,
+                pair_name_base=pair_name_base,
+                num_pairs=num,
+                mu_types=[
+                    "binary",
+                    "sigmoid",
+                    "linear",
+                ],
+            )
+        elif mu_algo in ["list-2","list-3","list-5","list-11"]:
+            generate_list_pairs(
+                env_name=env_name,
+                pair_name_base=pair_name_base,
+                num_trajectories=num,
+                mu_types=["list-2", "list-3", "list-5", "list-11"],
+            )
     elif function_number == 2.1:
         # Generate preference pairs for test reward model
         from src.data_generation.full_scripted_teacher import generate_full_pairs

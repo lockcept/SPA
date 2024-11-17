@@ -1,59 +1,34 @@
-# Makefile
-
 # Variables
-ENV=halfcheetah-medium-v2
-MU_ALGOS=binary sigmoid linear
-REWARD_MODEL=MR
-PAIRS=full-00 full-01 full-02 full-03 full-04
+ENV=box-close-v2
+ALGO_PAIRS ?= "binary:MR sigmoid:MR linear:MR-linear"
+PAIRS ?= full-00 full-01 full-02 full-03 full-04
+N ?= 300
 
-d4rl:
+# Default targets
+dataset:
 	python main.py -f 1 -e $(ENV)
 
 pairs:
 	python main.py -f 2 -e $(ENV) -n 2000 -p val
 	python main.py -f 2.1 -e $(ENV) -n 5000
 	$(foreach pair, $(PAIRS), \
-		python main.py -f 2 -e $(ENV) -n 1000 -p $(pair);)
+		python main.py -f 2 -e $(ENV) -n 1000 -p $(pair) -ma binary;)
 
 define learn_commands
-	$(foreach algo, $(MU_ALGOS), \
-		python main.py -f 3 -e $(ENV) -p $(1) -rt 00 -ma $(algo) -n 300 -ra $(REWARD_MODEL); \
-		python main.py -f 3 -e $(ENV) -p $(1) -rt 01 -ma $(algo) -n 300 -ra $(REWARD_MODEL); \
-		python main.py -f 3 -e $(ENV) -p $(1) -rt 02 -ma $(algo) -n 300 -ra $(REWARD_MODEL); \
-		python main.py -f -2 -e $(ENV) -p $(1) -ma $(algo) -ra $(REWARD_MODEL); \
-		python main.py -f 4 -e $(ENV) -p $(1) -ma $(algo) -ra $(REWARD_MODEL); \
-		python main.py -f 5 -e $(ENV) -p $(1) -ma $(algo) -ra $(REWARD_MODEL);)
+	$(foreach pair, $(PAIRS), \
+		$(foreach algo_pair, $(ALGO_PAIRS), \
+			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
+			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
+			python main.py -f 3 -e $(ENV) -p $(pair) -rt 00 -ma $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -p $(pair) -rt 01 -ma $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -p $(pair) -rt 02 -ma $(algo) -n $(N) -ra $(reward); \
+			python main.py -f -2 -e $(ENV) -p $(pair) -ma $(algo) -ra $(reward); \
+			python main.py -f 4 -e $(ENV) -p $(pair) -ma $(algo) -ra $(reward); \
+			python main.py -f 5 -e $(ENV) -p $(pair) -ma $(algo) -ra $(reward);)))
 endef
 
-full-00:
-	$(call learn_commands,full-00)
-
-full-01:
-	$(call learn_commands,full-01)
-
-full-02:
-	$(call learn_commands,full-02)
-
-full-03:
-	$(call learn_commands,full-03)
-
-full-04:
-	$(call learn_commands,full-04)
-
-list-00:
-	$(call learn_commands,list-00)
-
-list-01:
-	$(call learn_commands,list-01)
-
-list-02:
-	$(call learn_commands,list-02)
-
-list-03:
-	$(call learn_commands,list-03)
-
-list-04:
-	$(call learn_commands,list-04)
+learn:
+	$(call learn_commands)
 
 # Run all commands
-all: d4rl pairs full-00 full-01 full-02 full-03 full-04
+all: dataset pairs learn
