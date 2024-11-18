@@ -188,13 +188,12 @@ if __name__ == "__main__":
 
         print("Plotting policy evaluation")
 
-        env_list = ["hammer-cloned-v0"]
-        pair_list = ["list-00", "list-01", "list-02", "list-03", "list-04"]
+        env_list = ["box-close-v2"]
+        pair_list = ["full-00","full-01","full-02","full-03","full-04"]
         postfix_list = [
-            "list-2_MR-linear",
-            "list-3_MR-linear",
-            "list-5_MR-linear",
-            "list-11_MR-linear",
+            "binary_MR",
+            "sigmoid_MR",
+            "linear_MR-linear"
         ]
 
         for env_name in env_list:

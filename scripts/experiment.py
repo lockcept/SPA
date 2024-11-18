@@ -8,14 +8,11 @@ from data_loading.load_data import get_processed_data
 
 
 if __name__ == "__main__":
-    env_name_list = ["hammer-cloned-v0"]
+    env_name_list = ["box-close-v2"]
     pair_name_list = [
-        "full_binary",
-        "full_sigmoid",
-        "full_linear",
-        "list_list-2",
-        "list_list-3",
-        "list_list-5",
+        "val_binary",
+        "val_sigmoid",
+        "val_linear",
     ]
 
     for env_name in env_name_list:
