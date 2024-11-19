@@ -82,8 +82,11 @@ if __name__ == "__main__":
         help=(
             "0: Do nothing\n"
             "-1: Analyze dataset\n"
-            "-2: Evaluate reward model\n"
-            "-3: Plot policy evaluation\n"
+            "-2: Analyze Pairset (WIP)\n"
+            "-3: Evaluate reward model\n"
+            "-4: Analyze changed dataset(WIP)\n"
+            "-5: Plot policy evaluation\n"
+            "-5.1: Plot policy evaluation (List methods)\n"
             "1: Load and save dataset\n"
             "2: Generate preference pairs\n"
             "2.1: Generate preference pairs for test reward model\n"
@@ -132,7 +135,7 @@ if __name__ == "__main__":
         print("Analyzing dataset")
 
         analyze(env_name)
-    elif function_number == -2:
+    elif function_number == -3:
         # Evaluate reward model
         from src.data_loading.preference_dataloader import get_dataloader
         from src.helper.evaluate_reward_model import evaluate_reward_model
@@ -182,17 +185,18 @@ if __name__ == "__main__":
             log_file.write(
                 f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
             )
-    elif function_number == -3:
+    elif function_number == -5:
         # Plot policy evaluation
         from src.helper.plot_policy_model import plot
 
         print("Plotting policy evaluation")
 
-        env_list = ["box-close-v2"]
+        env_list = ["box-close-v2","lever-pull-v2","dial-turn-v2"]
         pair_list = ["full-00","full-01","full-02","full-03","full-04"]
         postfix_list = [
             "binary_MR",
             "sigmoid_MR",
+            "linear_MR",
             "linear_MR-linear"
         ]
 
@@ -201,7 +205,29 @@ if __name__ == "__main__":
                 env_name=env_name,
                 pair_list=pair_list,
                 postfix_list=postfix_list,
-                output_name=f"policy_{env_name}",
+                output_name=f"policy_full_{env_name}",
+            )
+    elif function_number == -5.1:
+        # Plot policy evaluation
+        from src.helper.plot_policy_model import plot
+
+        print("Plotting policy evaluation")
+
+        env_list = ["lever-pull-v2"]
+        pair_list = ["train-00","train-01","train-02","train-03","train-04"]
+        postfix_list = [
+            "list-2_MR-linear",
+            "list-3_MR-linear",
+            "list-5_MR-linear",
+            "list-11_MR-linear",
+        ]
+
+        for env_name in env_list:
+            plot(
+                env_name=env_name,
+                pair_list=pair_list,
+                postfix_list=postfix_list,
+                output_name=f"policy_train_{env_name}",
             )
 
     elif function_number == 1:
