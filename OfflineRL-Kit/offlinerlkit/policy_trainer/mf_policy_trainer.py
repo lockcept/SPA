@@ -112,7 +112,7 @@ class MFPolicyTrainer:
 
     def _evaluate(self) -> Dict[str, List[float]]:
         self.policy.eval()
-        obs = self.eval_env.reset()
+        obs = self.eval_env.reset(seed=0)
         eval_ep_info_buffer = []
         num_episodes = 0
         episode_reward, episode_length = 0, 0
@@ -131,7 +131,7 @@ class MFPolicyTrainer:
                 )
                 num_episodes += 1
                 episode_reward, episode_length = 0, 0
-                obs = self.eval_env.reset()
+                obs = self.eval_env.reset(seed=num_episodes)
 
         return {
             "eval/episode_reward": [

@@ -20,10 +20,13 @@ metaworld_ids = {
 
 
 class MetaworldEnvWrapper:
-    def __init__(self, env):
-        self.env = env
+    def __init__(self, env_gen):
+        self.env = None
+        self.env_gen = env_gen
 
-    def reset(self):
+    def reset(self, seed=None):
+        seed = seed if seed is not None else random.randint(0, 1000)
+        self.env = self.env_gen(seed=seed)
         obs, _ = self.env.reset()
         return obs
 
@@ -140,12 +143,10 @@ def save_metaworld_dataset(env_name, save_dir):
 
 def get_env(env_name):
     if env_name in metaworld_ids.keys():
-        import metaworld
+        from metaworld.envs import ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE
 
-        env = metaworld.envs.ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[
-            f"{env_name}-goal-observable"
-        ]()
-        env = MetaworldEnvWrapper(env)
+        env_gen = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[f"{env_name}-goal-observable"]
+        env = MetaworldEnvWrapper(env_gen=env_gen)
         env.reset()
         return env
     else:
