@@ -20,13 +20,10 @@ metaworld_ids = {
 
 
 class MetaworldEnvWrapper:
-    def __init__(self, env, tasks):
+    def __init__(self, env):
         self.env = env
-        self.tasks = tasks
 
     def reset(self):
-        task = random.choice(self.tasks)
-        self.env.set_task(task)
         obs, _ = self.env.reset()
         return obs
 
@@ -145,10 +142,10 @@ def get_env(env_name):
     if env_name in metaworld_ids.keys():
         import metaworld
 
-        ml1 = metaworld.ML1(env_name)
-
-        env = ml1.train_classes[env_name]()
-        env = MetaworldEnvWrapper(env, ml1.train_tasks)
+        env = metaworld.envs.ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[
+            f"{env_name}-goal-observable"
+        ]()
+        env = MetaworldEnvWrapper(env)
         env.reset()
         return env
     else:

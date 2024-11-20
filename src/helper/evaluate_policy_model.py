@@ -91,8 +91,6 @@ def evaluate_policy(env_name, model_path):
     # 모델에 가중치 적용
     policy.load_state_dict(state_dict)
 
-    print("Model successfully loaded!")
-
     policy.eval()
     obs = env.reset()
     eval_ep_info_buffer = []
