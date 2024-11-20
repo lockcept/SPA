@@ -87,6 +87,7 @@ if __name__ == "__main__":
             "-4: Analyze changed dataset(WIP)\n"
             "-5: Plot policy evaluation\n"
             "-5.1: Plot policy evaluation (List methods)\n"
+            "-5.2: Evaluate policy\n"
             "1: Load and save dataset\n"
             "2: Generate preference pairs\n"
             "2.1: Generate preference pairs for test reward model\n"
@@ -191,14 +192,9 @@ if __name__ == "__main__":
 
         print("Plotting policy evaluation")
 
-        env_list = ["box-close-v2","lever-pull-v2","dial-turn-v2"]
-        pair_list = ["full-00","full-01","full-02","full-03","full-04"]
-        postfix_list = [
-            "binary_MR",
-            "sigmoid_MR",
-            "linear_MR",
-            "linear_MR-linear"
-        ]
+        env_list = ["box-close-v2", "lever-pull-v2", "dial-turn-v2"]
+        pair_list = ["full-00", "full-01", "full-02", "full-03", "full-04"]
+        postfix_list = ["binary_MR", "sigmoid_MR", "linear_MR", "linear_MR-linear"]
 
         for env_name in env_list:
             plot(
@@ -214,7 +210,7 @@ if __name__ == "__main__":
         print("Plotting policy evaluation")
 
         env_list = ["lever-pull-v2"]
-        pair_list = ["train-00","train-01","train-02","train-03","train-04"]
+        pair_list = ["train-00", "train-01", "train-02", "train-03", "train-04"]
         postfix_list = [
             "list-2_MR-linear",
             "list-3_MR-linear",
@@ -229,6 +225,19 @@ if __name__ == "__main__":
                 postfix_list=postfix_list,
                 output_name=f"policy_train_{env_name}",
             )
+    elif function_number == -5.2:
+        # Evaluate policy
+        from src.helper.evaluate_policy_model import evaluate_policy
+
+        evaluate_policy(
+            env_name=env_name,
+            model_path=f"{policy_model_dir_path}/model/best_policy.pth",
+        )
+
+        evaluate_policy(
+            env_name=env_name,
+            model_path=f"{policy_model_dir_path}/model/last_policy.pth",
+        )
 
     elif function_number == 1:
         # Load and save dataset
@@ -244,7 +253,7 @@ if __name__ == "__main__":
 
         print("Generating preference pairs", env_name, pair_name_base, num)
 
-        if mu_algo in ["binary","sigmoid","linear"]: 
+        if mu_algo in ["binary", "sigmoid", "linear"]:
             generate_full_pairs(
                 env_name=env_name,
                 pair_name_base=pair_name_base,
@@ -255,7 +264,7 @@ if __name__ == "__main__":
                     "linear",
                 ],
             )
-        elif mu_algo in ["list-2","list-3","list-5","list-11"]:
+        elif mu_algo in ["list-2", "list-3", "list-5", "list-11"]:
             generate_list_pairs(
                 env_name=env_name,
                 pair_name_base=pair_name_base,
