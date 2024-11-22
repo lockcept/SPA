@@ -112,10 +112,10 @@ def normalize_rewards(dataset):
     return dataset
 
 
-def train(env_name, dataset_path, log_dir, num_epochs=1000):
+def train(env_name, dataset_path, log_dir, num_epochs=1000, is_goal_hidden=False):
     configs = get_configs()
     # create env and dataset
-    env = get_env(env_name)
+    env = get_env(env_name, is_hidden=is_goal_hidden)
     dataset_npz = np.load(dataset_path)
     dataset = {key: dataset_npz[key] for key in dataset_npz}
     dataset = qlearning_dataset(env, dataset=dataset)

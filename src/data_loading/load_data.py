@@ -141,14 +141,22 @@ def save_metaworld_dataset(env_name, save_dir):
     print(f"Dataset saved with keys: {save_data.keys()}")
 
 
-def get_env(env_name):
+def get_env(env_name, is_hidden=False):
     if env_name in metaworld_ids.keys():
-        from metaworld.envs import ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE
+        from metaworld.envs import (
+            ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE,
+            ALL_V2_ENVIRONMENTS_GOAL_HIDDEN,
+        )
 
-        env_gen = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[f"{env_name}-goal-observable"]
-        env = MetaworldEnvWrapper(env_gen=env_gen)
-        env.reset()
-        return env
+        if not is_hidden:
+            env_gen = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[f"{env_name}-goal-observable"]
+            env = MetaworldEnvWrapper(env_gen=env_gen)
+            env.reset()
+            return env
+        else:
+            env_gen = ALL_V2_ENVIRONMENTS_GOAL_HIDDEN[f"{env_name}-goal-hidden"]
+            env = MetaworldEnvWrapper(env_gen=env_gen)
+            env.reset()
     else:
         import gym
         import d4rl

@@ -28,6 +28,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-eh",
+        "--env-hidden",
+        action="store_true",
+        default=False,
+        help="is_hidden for environment (True, False)",
+    )
+
+    parser.add_argument(
         "-n",
         "--num",
         type=int,
@@ -101,6 +109,7 @@ if __name__ == "__main__":
     # Parse arguments
     args = parser.parse_args()
     env_name = args.env
+    env_hidden = args.env_hidden
     num = args.num
     pair_name_base = args.pair
     val_pair_name_base = args.val_pair
@@ -121,6 +130,8 @@ if __name__ == "__main__":
     reward_model_path = f"model/{env_name}/reward/{reward_model_name}.pth"
     new_dataset_path = f"dataset/{env_name}/{new_dataset_name}_dataset.npz"
     policy_model_dir_path = f"model/{env_name}/policy/{new_dataset_name}"
+    if env_hidden:
+        policy_model_dir_path = policy_model_dir_path + "_hidden"
 
     print("main function started with args", args)
 
@@ -379,4 +390,5 @@ if __name__ == "__main__":
             dataset_path=new_dataset_path,
             log_dir=policy_model_dir_path,
             num_epochs=num,
+            is_goal_hidden=env_hidden,
         )
