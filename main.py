@@ -2,6 +2,8 @@ import argparse
 import glob
 import os
 
+import numpy as np
+
 
 DEFAULT_ENV = "maze2d-medium-dense-v1"
 DEFAULT_PAIR = "full"
@@ -197,6 +199,20 @@ if __name__ == "__main__":
             log_file.write(
                 f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
             )
+    elif function_number == -4:
+        from src.helper.analyze_dataset import save_reward_graph
+
+        # Analyze changed dataset
+
+        dataset_path = new_dataset_path
+        dataset_npz = np.load(dataset_path)
+        dataset = {key: dataset_npz[key] for key in dataset_npz}
+
+        log_path = f"log/dataset_reward_distribution_{new_dataset_name}.png"
+
+        print("Analyzing changed dataset")
+
+        save_reward_graph(dataset, new_dataset_name, log_path)
     elif function_number == -5:
         # Plot policy evaluation
         from src.helper.plot_policy_model import plot

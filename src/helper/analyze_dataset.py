@@ -39,17 +39,20 @@ def save_trajectory_lengths(dataset, env_name):
     plt.show()
 
 
-def show_reward_graph(dataset, env_name):
+def save_reward_graph(dataset, graph_name, log_path=None):
     rewards = dataset["rewards"]
-    plt.hist(rewards, bins=50)
-    plt.title(f"Reward graph of {env_name}")
+    plt.hist(rewards, bins=100)
+    plt.title(f"Reward graph of {graph_name}")
     plt.xlabel("Reward")
     plt.ylabel("Frequency")
-    plt.show()
+    if log_path is not None:
+        plt.savefig(log_path, format="png")
+    else:
+        plt.show()
 
 
 def analyze(env_name):
     data = load_data.load_dataset(env_name)
     print(data["observations"].shape)
     save_trajectory_lengths(data, env_name)
-    show_reward_graph(data, env_name)
+    save_reward_graph(data, env_name)
