@@ -5,7 +5,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src/")))
 
-from data_loading.load_data import get_processed_data, load_dataset
+from data_loading.load_data import load_dataset
 
 
 if __name__ == "__main__":
