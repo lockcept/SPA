@@ -109,8 +109,39 @@ def generate_score_pairs(env_name, pair_name_base, num_pairs, pair_algos=["rnn"]
                 num_epochs=num_epochs,
             )
 
+        pairs = []
+
         # evaluate model with result data
+        observations = dataset["observations"]
+        actions = dataset["actions"]
+
+        for s0, s1 in result_pairs:
+            s0_obs = observations[s0[0] : s0[1]]
+            s0_act = actions[s0[0] : s0[1]]
+            s1_obs = observations[s1[0] : s1[1]]
+            s1_act = actions[s1[0] : s1[1]]
+
+            s0_state = np.concatenate([s0_obs, s0_act], axis=0)
+            s1_state = np.concatenate([s1_obs, s1_act], axis=0)
+
+            score_0 = model(s0_state)
+            score_1 = model(s1_state)
+
+            mu = 1 / (1 + np.exp(score_0 - score_1))
+            pairs.append((s0, s1, mu))
+
+        pairs_np = np.array(
+            pairs,
+            dtype=[
+                ("s0", "i4", (2,)),
+                ("s1", "i4", (2,)),
+                ("mu", "f"),
+            ],
+        )
 
         # save pairs
+        np.savez(
+            f"pair/{env_name}/{pair_name_base}_score-{pair_algo}.npz", data=pairs_np
+        )
 
     return
