@@ -92,7 +92,8 @@ if __name__ == "__main__":
         help=(
             "0: Do nothing\n"
             "-1: Analyze dataset\n"
-            "-2: Analyze Pairset\n"
+            "-2: Analyze Pairset, plot mu\n"
+            "-2.1: Analyze Pairset, mu accuracy\n"
             "-3: Evaluate reward model\n"
             "-4: Analyze changed dataset\n"
             "-5: Plot policy evaluation (Full methods)\n"
@@ -172,6 +173,25 @@ if __name__ == "__main__":
                 plt.title(f"{env_name}_{pair_name}")
                 plt.grid(True)
                 plt.savefig(f"log/mu_histogram_{env_name}_{pair_name}.png")
+
+    elif function_number == -2.1:
+        # Analyze Pairset
+        from src.data_loading.load_data import load_dataset, load_pair
+        import matplotlib.pyplot as plt
+
+        dataset = load_dataset(env_name)
+        data = load_pair(env_name, pair_name)
+
+        answer_count = 0
+        for s0, s1, mu in data["data"]:
+            rewards_sum_0 = np.sum(dataset["rewards"][s0[0] : s0[1]])
+            rewards_sum_1 = np.sum(dataset["rewards"][s1[0] : s1[1]])
+
+            if rewards_sum_0 < rewards_sum_1 and mu > 0.5:
+                answer_count += 1
+            elif rewards_sum_0 > rewards_sum_1 and mu < 0.5:
+                answer_count += 1
+        print(answer_count / len(data["data"]))
 
     elif function_number == -3:
         # Evaluate reward model
