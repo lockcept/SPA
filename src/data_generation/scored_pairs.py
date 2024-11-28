@@ -110,6 +110,7 @@ def generate_score_pairs(env_name, pair_name_base, num_pairs, pair_algos=["rnn"]
             )
 
         # evaluate model with result data
+
         # save pairs
 
     return

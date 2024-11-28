@@ -64,16 +64,16 @@ class RNN(nn.Module):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-    def forward(self, trajectory, lengths):
-        packed_trajectory = nn.utils.rnn.pack_padded_sequence(
-            trajectory, lengths.cpu(), batch_first=True, enforce_sorted=False
-        )
+    def forward(self, trajectory, lengths=None):
+        if lengths is not None:
+            packed_trajectory = nn.utils.rnn.pack_padded_sequence(
+                trajectory, lengths.cpu(), batch_first=True, enforce_sorted=False
+            )
+            _, h_n = self.rnn(packed_trajectory)
+        else:
+            _, h_n = self.rnn(trajectory)
 
-        packed_output, h_n = self.rnn(packed_trajectory)
-
-        output, _ = nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)
-
-        score = self.fc(h_n.squeeze(0))
+        score = self.fc(h_n)
         return score
 
     def evaluate(self, data_loader):
