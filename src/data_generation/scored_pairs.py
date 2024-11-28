@@ -2,6 +2,7 @@ import os
 import sys
 
 import numpy as np
+import torch
 from torch.utils.data import DataLoader, Dataset
 
 from data_generation.full_scripted_teacher import get_pairs_by_mu_type
@@ -12,6 +13,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_generation.score_rnn import RNN
 from data_generation.utils import extract_trajectory_indices
 from data_loading.load_data import load_dataset
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def save_pairs(env_name, pair, pair_algo, pair_data):
@@ -101,13 +104,16 @@ def generate_score_pairs(env_name, pair_name_base, num_pairs, pair_algos=["rnn"]
                 config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
             )
 
-        if model is not None:
-            model.train_model(
-                train_data_loader=train_data_loader,
-                val_data_loader=val_data_loader,
-                optimizer=optimizer,
-                num_epochs=num_epochs,
-            )
+        if model is None:
+            print(f"Model {pair_algo} is not supported")
+            continue
+
+        model.train_model(
+            train_data_loader=train_data_loader,
+            val_data_loader=val_data_loader,
+            optimizer=optimizer,
+            num_epochs=num_epochs,
+        )
 
         pairs = []
 
@@ -121,11 +127,14 @@ def generate_score_pairs(env_name, pair_name_base, num_pairs, pair_algos=["rnn"]
             s1_obs = observations[s1[0] : s1[1]]
             s1_act = actions[s1[0] : s1[1]]
 
-            s0_state = np.concatenate([s0_obs, s0_act], axis=0)
-            s1_state = np.concatenate([s1_obs, s1_act], axis=0)
+            s0_state = np.concatenate([s0_obs, s0_act], axis=1)
+            s1_state = np.concatenate([s1_obs, s1_act], axis=1)
 
-            score_0 = model(s0_state)
-            score_1 = model(s1_state)
+            s0_tensor = torch.tensor(s0_state, dtype=torch.float32).to(device)
+            s1_tensor = torch.tensor(s1_state, dtype=torch.float32).to(device)
+
+            score_0 = model(s0_tensor).item()
+            score_1 = model(s1_tensor).item()
 
             mu = 1 / (1 + np.exp(score_0 - score_1))
             pairs.append((s0, s1, mu))

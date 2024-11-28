@@ -239,5 +239,3 @@ def get_processed_data(env_name, pair_name):
         )
 
     return np.array(processed_data, dtype=[("s0", "O"), ("s1", "O"), ("mu", "f4")])
-
-    return get_processed_data_from_dataset_and_pair(dataset, pair)
