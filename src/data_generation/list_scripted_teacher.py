@@ -6,8 +6,6 @@ import random
 import os
 import sys
 
-from tqdm import tqdm
-
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
@@ -85,8 +83,8 @@ def generate_pairs(trajectories_with_groups, num_group):
     return np.array(pairs, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f")])
 
 
-def save_pairs(env_name, pair, mu_type, pair_data):
-    save_path = f"pair/{env_name}/{pair}_{mu_type}.npz"
+def save_pairs(env_name, pair, pair_algo, pair_data):
+    save_path = f"pair/{env_name}/{pair}_list-{pair_algo}.npz"
     save_dir = os.path.dirname(save_path)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -99,10 +97,10 @@ def generate_list_pairs(
     env_name,
     pair_name_base,
     num_trajectories,
-    mu_types=["list-2", "list-3", "list-5", "list-11"],
+    pair_algos=[2, 3, 5, 11],
 ):
-    for mu_type in mu_types:
-        save_path = f"pair/{env_name}/{pair_name_base}_{mu_type}.npz"
+    for pair_algo in pair_algos:
+        save_path = f"pair/{env_name}/{pair_name_base}_list-{pair_algo}.npz"
         is_already_exist = os.path.exists(save_path)
         if is_already_exist:
             print(f"Pair already exists at {save_path}, cancel generating")
@@ -117,9 +115,9 @@ def generate_list_pairs(
         num_trajectories=num_trajectories,
     )
 
-    # group num_pairs into M groups, with is defined by mu_types
-    for mu_type in mu_types:
-        num_group = int(mu_type.split("-")[-1])
+    # group num_pairs into M groups, with is defined by pair_algos
+    for pair_algo in pair_algos:
+        num_group = pair_algo
 
         trajectories_with_groups = divide_into_groups(trajectories, num_group)
 
@@ -128,7 +126,7 @@ def generate_list_pairs(
         )
 
         save_pairs(
-            env_name=env_name, pair=pair_name_base, mu_type=mu_type, pair_data=pairs
+            env_name=env_name, pair=pair_name_base, pair_algo=pair_algo, pair_data=pairs
         )
 
     print("finish generating preference pairs", env_name, pair_name_base)

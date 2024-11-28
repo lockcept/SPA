@@ -1,6 +1,6 @@
 # Variables
 ENV=box-close-v2
-ALGO_PAIRS ?= binary:MR sigmoid:MR linear:MR linear:MR-linear
+ALGO_PAIRS ?= full-binary:MR full-sigmoid:MR full-linear:MR full-linear:MR-linear
 PAIRS ?= full-00 full-01 full-02 full-03 full-04
 N ?= 300
 
@@ -9,25 +9,25 @@ load_dataset:
 	python main.py -f 1 -e $(ENV)
 
 pairs:
-	python main.py -f 2 -e $(ENV) -n 2000 -p val -ma binary
-	python main.py -f 2 -e $(ENV) -n 200 -p val -ma list-2
+	python main.py -f 2 -e $(ENV) -n 2000 -p val -pa full-binary
+	python main.py -f 2 -e $(ENV) -n 200 -p val -pa list-2
 	python main.py -f 2.1 -e $(ENV) -n 5000
 	$(foreach pair, $(PAIRS), \
-		python main.py -f 2 -e $(ENV) -n 1000 -p $(pair) -ma binary;)
+		python main.py -f 2 -e $(ENV) -n 1000 -p $(pair) -pa full-binary;)
 	$(foreach pair, $(PAIRS), \
-		python main.py -f 2 -e $(ENV) -n 200 -p $(pair) -ma list-2;)
+		python main.py -f 2 -e $(ENV) -n 200 -p $(pair) -pa list-2;)
 
 define learn_commands
 	$(foreach pair, $(PAIRS), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
 			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
-			python main.py -f 3 -e $(ENV) -p $(pair) -rt 00 -ma $(algo) -n $(N) -ra $(reward); \
-			python main.py -f 3 -e $(ENV) -p $(pair) -rt 01 -ma $(algo) -n $(N) -ra $(reward); \
-			python main.py -f 3 -e $(ENV) -p $(pair) -rt 02 -ma $(algo) -n $(N) -ra $(reward); \
-			python main.py -f -2 -e $(ENV) -p $(pair) -ma $(algo) -ra $(reward); \
-			python main.py -f 4 -e $(ENV) -p $(pair) -ma $(algo) -ra $(reward); \
-			python main.py -f 5 -e $(ENV) -p $(pair) -ma $(algo) -ra $(reward);))
+			python main.py -f 3 -e $(ENV) -p $(pair) -rt 00 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -p $(pair) -rt 01 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -p $(pair) -rt 02 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f -2 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
+			python main.py -f 4 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
+			python main.py -f 5 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward);))
 endef
 
 learn:

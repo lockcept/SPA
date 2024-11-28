@@ -5,10 +5,10 @@ import os
 import numpy as np
 
 
-DEFAULT_ENV = "maze2d-medium-dense-v1"
-DEFAULT_PAIR = "full"
-DEFAULT_VAL_PAIR = "val"
-DEFAULT_MU_ALGO = "binary"
+DEFAULT_ENV = "box-close-v2"
+DEFAULT_PAIR = "train"
+DEFAULT_PAIR_VAL = "val"
+DEFAULT_PAIR_ALGO = "full-binary"
 DEFAULT_REWARD_MODEL_ALGO = "MR"
 DEFAULT_REWARD_MODEL_TAG = "-"
 
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-eh",
-        "--env-hidden",
+        "--env_hidden",
         action="store_true",
         default=False,
         help="is_hidden for environment (True, False)",
@@ -54,11 +54,19 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-vp",
-        "--val_pair",
+        "-pv",
+        "--pair_val",
         type=str,
-        default=DEFAULT_VAL_PAIR,
+        default=DEFAULT_PAIR_VAL,
         help="Name of the trajectory pair file to use for validate(val-full, etc.)",
+    )
+
+    parser.add_argument(
+        "-pa",
+        "--pair_algo",
+        type=str,
+        default=DEFAULT_PAIR_ALGO,
+        help="Algorithm of generating pair (full-sigmoid, list-2, etc.)",
     )
 
     parser.add_argument(
@@ -77,14 +85,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-ma",
-        "--mu_algo",
-        type=str,
-        default=DEFAULT_MU_ALGO,
-        help="Algorithm of Mu(binary, continuous)",
-    )
-
-    parser.add_argument(
         "-f",
         "--function_number",
         type=float,
@@ -92,10 +92,10 @@ if __name__ == "__main__":
         help=(
             "0: Do nothing\n"
             "-1: Analyze dataset\n"
-            "-2: Analyze Pairset (WIP)\n"
+            "-2: Analyze Pairset\n"
             "-3: Evaluate reward model\n"
-            "-4: Analyze changed dataset(WIP)\n"
-            "-5: Plot policy evaluation\n"
+            "-4: Analyze changed dataset\n"
+            "-5: Plot policy evaluation (Full methods)\n"
             "-5.1: Plot policy evaluation (List methods)\n"
             "-5.2: Evaluate policy\n"
             "1: Load and save dataset\n"
@@ -114,26 +114,24 @@ if __name__ == "__main__":
     env_hidden = args.env_hidden
     num = args.num
     pair_name_base = args.pair
-    val_pair_name_base = args.val_pair
+    pair_val_name_base = args.pair_val
     reward_model_algo = args.reward_model_algo
     reward_model_tag = args.reward_model_tag
     function_number = args.function_number
-    mu_algo = args.mu_algo
+    pair_algo = args.pair_algo
 
     # Derived variables
-    pair_name = f"{pair_name_base}_{mu_algo}"
-    val_pair_name = f"{val_pair_name_base}_{mu_algo}"
+    pair_name = f"{pair_name_base}_{pair_algo}"
+    pair_val_name = f"{pair_val_name_base}_{pair_algo}"
     new_dataset_name = f"{pair_name}_{reward_model_algo}"
     reward_model_name = f"{new_dataset_name}_{reward_model_tag}"
 
     # Paths
-    pair_path = f"model/{env_name}/{pair_name}.npz"
-    val_pair_path = f"model/{env_name}/{val_pair_name}.npz"
     reward_model_path = f"model/{env_name}/reward/{reward_model_name}.pth"
     new_dataset_path = f"dataset/{env_name}/{new_dataset_name}_dataset.npz"
-    policy_model_dir_path = f"model/{env_name}/policy/{new_dataset_name}"
+    policy_model_dir = f"model/{env_name}/policy/{new_dataset_name}"
     if env_hidden:
-        policy_model_dir_path = policy_model_dir_path + "_hidden"
+        policy_model_dir = policy_model_dir + "_hidden"
 
     print("main function started with args", args)
 
@@ -149,6 +147,32 @@ if __name__ == "__main__":
         print("Analyzing dataset")
 
         analyze(env_name)
+    elif function_number == -2:
+        # Analyze Pairset
+        from data_loading.load_data import get_processed_data
+        import matplotlib.pyplot as plt
+
+        env_name_list = ["box-close-v2"]
+        pair_name_list = [
+            "val_binary",
+            "val_sigmoid",
+            "val_linear",
+        ]
+
+        for env_name in env_name_list:
+            for pair_name in pair_name_list:
+                data = get_processed_data(env_name, pair_name)
+
+                # histogram of mu values
+                mu_values = [item["mu"] for item in data]
+                plt.figure(figsize=(10, 6))
+                plt.hist(mu_values, bins=50, alpha=0.75)
+                plt.xlabel("Mu Values")
+                plt.ylabel("Frequency")
+                plt.title(f"{env_name}_{pair_name}")
+                plt.grid(True)
+                plt.savefig(f"log/mu_histogram_{env_name}_{pair_name}.png")
+
     elif function_number == -3:
         # Evaluate reward model
         from src.data_loading.preference_dataloader import get_dataloader
@@ -220,8 +244,13 @@ if __name__ == "__main__":
         print("Plotting policy evaluation")
 
         env_list = ["box-close-v2", "lever-pull-v2", "dial-turn-v2"]
-        pair_list = ["full-00", "full-01", "full-02", "full-03", "full-04"]
-        postfix_list = ["binary_MR", "sigmoid_MR", "linear_MR", "linear_MR-linear"]
+        pair_list = ["train-00", "train-01", "train-02", "train-03", "train-04"]
+        postfix_list = [
+            "full-binary_MR",
+            "full-sigmoid_MR",
+            "full-linear_MR",
+            "full-linear_MR-linear",
+        ]
 
         for env_name in env_list:
             plot(
@@ -258,12 +287,12 @@ if __name__ == "__main__":
 
         evaluate_policy(
             env_name=env_name,
-            model_path=f"{policy_model_dir_path}/model/best_policy.pth",
+            model_path=f"{policy_model_dir}/model/best_policy.pth",
         )
 
         evaluate_policy(
             env_name=env_name,
-            model_path=f"{policy_model_dir_path}/model/last_policy.pth",
+            model_path=f"{policy_model_dir}/model/last_policy.pth",
         )
 
     elif function_number == 1:
@@ -280,7 +309,9 @@ if __name__ == "__main__":
 
         print("Generating preference pairs", env_name, pair_name_base, num)
 
-        if mu_algo in ["binary", "sigmoid", "linear"]:
+        pair_algo_category = pair_algo.split("-")[0]
+
+        if pair_algo_category == "full":
             generate_full_pairs(
                 env_name=env_name,
                 pair_name_base=pair_name_base,
@@ -291,12 +322,12 @@ if __name__ == "__main__":
                     "linear",
                 ],
             )
-        elif mu_algo in ["list-2", "list-3", "list-5", "list-11"]:
+        elif pair_algo_category == "list":
             generate_list_pairs(
                 env_name=env_name,
                 pair_name_base=pair_name_base,
                 num_trajectories=num,
-                mu_types=["list-2", "list-3", "list-5", "list-11"],
+                pair_algos=["list-2", "list-3", "list-5", "list-11"],
             )
     elif function_number == 2.1:
         # Generate preference pairs for test reward model
@@ -320,7 +351,7 @@ if __name__ == "__main__":
             "Training reward model",
             env_name,
             pair_name,
-            val_pair_name,
+            pair_val_name,
             reward_model_algo,
         )
 
@@ -331,7 +362,7 @@ if __name__ == "__main__":
 
         val_data_loader, _, _ = get_dataloader(
             env_name=env_name,
-            pair_name=val_pair_name,
+            pair_name=pair_val_name,
         )
 
         print("obs_dim:", obs_dim, "act_dim:", act_dim)
@@ -404,7 +435,7 @@ if __name__ == "__main__":
         train(
             env_name=env_name,
             dataset_path=new_dataset_path,
-            log_dir=policy_model_dir_path,
+            log_dir=policy_model_dir,
             num_epochs=num,
             is_goal_hidden=env_hidden,
         )

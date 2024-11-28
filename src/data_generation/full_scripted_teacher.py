@@ -57,7 +57,7 @@ def generate_preference_pair(dataset, indices):
 
 
 def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)):
-    save_path = f"pair/{env_name}/{pair}_{mu_type}.npz"
+    save_path = f"pair/{env_name}/{pair}_full-{mu_type}.npz"
     save_dir = os.path.dirname(save_path)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -140,7 +140,7 @@ def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)
 def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]):
 
     for mu_type in mu_types:
-        save_path = f"pair/{env_name}/{pair_name_base}_{mu_type}.npz"
+        save_path = f"pair/{env_name}/{pair_name_base}_full-{mu_type}.npz"
         is_already_exist = os.path.exists(save_path)
         if is_already_exist:
             print(f"Pair already exists at {save_path}, cancel generating")
