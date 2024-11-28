@@ -25,7 +25,7 @@ define learn_commands
 			python main.py -f 3 -e $(ENV) -p $(pair) -rt 00 -pa $(algo) -n $(N) -ra $(reward); \
 			python main.py -f 3 -e $(ENV) -p $(pair) -rt 01 -pa $(algo) -n $(N) -ra $(reward); \
 			python main.py -f 3 -e $(ENV) -p $(pair) -rt 02 -pa $(algo) -n $(N) -ra $(reward); \
-			python main.py -f -2 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
+			python main.py -f -3 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
 			python main.py -f 4 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
 			python main.py -f 5 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward);))
 endef

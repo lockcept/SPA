@@ -3,10 +3,12 @@ import os
 from matplotlib import pyplot as plt
 import pandas as pd
 
+
 def remove_max_min(series):
-    if len(series) <= 2:
-        return series
-    return series.sort_values().iloc[1:-1]
+    # if len(series) <= 2:
+    #     return series
+    # return series.sort_values().iloc[1:-1]
+    return series
 
 
 def process_csv_files(csv_files, label):
@@ -23,8 +25,20 @@ def process_csv_files(csv_files, label):
             print(f"File {file} does not contain required columns: {selected_columns}")
 
     grouped = combined_df.groupby("timestep")
-    mean_df = grouped[label].apply(remove_max_min).groupby("timestep").mean().reset_index().rename(columns={label: "mean"})
-    std_df = grouped[f"{label}_std"].apply(lambda x: (x**2).mean() ** 0.5).reset_index().rename(columns={f"{label}_std": "std"})
+    mean_df = (
+        grouped[label]
+        .apply(remove_max_min)
+        .groupby("timestep")
+        .mean()
+        .reset_index()
+        .rename(columns={label: "mean"})
+    )
+    std_df = (
+        grouped[f"{label}_std"]
+        .apply(lambda x: ((x**2).mean() ** 0.5) / ((10 * len(x)) ** 0.5))
+        .reset_index()
+        .rename(columns={f"{label}_std": "std"})
+    )
 
     result = pd.merge(mean_df, std_df, on="timestep")
     result["smoothed_mean"] = result["mean"].ewm(alpha=0.5).mean()
@@ -46,7 +60,7 @@ def plot_and_save(df_list=[], output_name="name"):
             df["timestep"],
             mean_values - std_values,
             mean_values + std_values,
-            alpha=0.2,
+            alpha=0.4,
         )
     label = df_list[0][1].columns[1]
 

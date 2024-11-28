@@ -157,8 +157,6 @@ def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]
 
     for mu_type in mu_types:
         pair_data = get_pairs_by_mu_type(
-            env_name=env_name,
-            pair=pair_name_base,
             mu_type=mu_type,
             pair_data=preference_pairs_np,
             reward_info=reward_info,

@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from data_generation.full_scripted_teacher import get_pairs_by_mu_type
-from data_loading.preference_dataloader import PreferenceDataset, get_dataloader
+from data_loading.preference_dataloader import get_dataloader
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
