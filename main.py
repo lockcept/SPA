@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name,
-            pair_name="test_reward_sigmoid",
+            pair_name="test-reward_full-sigmoid",
             drop_last=False,
         )
 
@@ -361,11 +361,11 @@ if __name__ == "__main__":
         # Generate preference pairs for test reward model
         from src.data_generation.full_scripted_teacher import generate_full_pairs
 
-        print("Generating preference pairs for test_full_sigmoid", env_name, num)
+        print("Generating preference pairs for test-reward_full-sigmoid", env_name, num)
 
         generate_full_pairs(
             env_name=env_name,
-            pair_name_base="test_reward",
+            pair_name_base="test-reward",
             num_pairs=num,
             mu_types=["sigmoid"],
         )
