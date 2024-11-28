@@ -45,12 +45,7 @@ def generate_preference_pair(dataset, indices):
         return preference_pair
 
 
-def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)):
-    save_path = f"pair/{env_name}/{pair}_full-{mu_type}.npz"
-    save_dir = os.path.dirname(save_path)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
+def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
     reward_min, reward_max = reward_info
     rewards_0 = pair_data["rewards_0"]
     rewards_1 = pair_data["rewards_1"]
@@ -122,8 +117,7 @@ def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)
     pair_data = rfn.drop_fields(pair_data, "rewards_0")
     pair_data = rfn.drop_fields(pair_data, "rewards_1")
 
-    np.savez(save_path, data=pair_data)
-    print(f"Preference pairs saved at {save_path}")
+    return pair_data
 
 
 def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]):
@@ -162,10 +156,17 @@ def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]
     )
 
     for mu_type in mu_types:
-        save_pairs_by_mu_type(
+        pair_data = get_pairs_by_mu_type(
             env_name=env_name,
             pair=pair_name_base,
             mu_type=mu_type,
             pair_data=preference_pairs_np,
             reward_info=reward_info,
         )
+
+        save_path = f"pair/{env_name}/{pair_name_base}_full-{mu_type}.npz"
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        np.savez(save_path, data=pair_data)
+        print(f"Preference pairs saved at {save_path}")

@@ -64,8 +64,15 @@ class RNN(nn.Module):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-    def forward(self, trajectory):
-        _, h_n = self.rnn(trajectory)
+    def forward(self, trajectory, lengths):
+        packed_trajectory = nn.utils.rnn.pack_padded_sequence(
+            trajectory, lengths.cpu(), batch_first=True, enforce_sorted=False
+        )
+
+        packed_output, h_n = self.rnn(packed_trajectory)
+
+        output, _ = nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)
+
         score = self.fc(h_n.squeeze(0))
         return score
 
@@ -88,15 +95,12 @@ class RNN(nn.Module):
                 s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
                 s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-                valid_indices = torch.nonzero(mask_batch == 0, as_tuple=True)
-                s0_filtered = s0_batch[valid_indices]
-                s1_filtered = s1_batch[valid_indices]
-                mu_filtered = mu_batch[valid_indices]
+                lengths = (1 - mask_batch.squeeze()).sum(dim=1)
 
-                score_s0 = self.forward(s0_filtered)
-                score_s1 = self.forward(s1_filtered)
+                score_s0 = self.forward(s0_batch, lengths)
+                score_s1 = self.forward(s1_batch, lengths)
 
-                loss = self.loss_fn(score_s0, score_s1, mu_filtered)
+                loss = self.loss_fn(score_s0, score_s1, mu_batch)
 
                 epoch_loss += loss.item()
                 num_batches += 1
@@ -144,15 +148,12 @@ class RNN(nn.Module):
                 s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
                 s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-                valid_indices = torch.nonzero(mask_batch == 0, as_tuple=True)
-                s0_filtered = s0_batch[valid_indices]
-                s1_filtered = s1_batch[valid_indices]
-                mu_filtered = mu_batch[valid_indices]
+                lengths = (1 - mask_batch.squeeze()).sum(dim=1)
 
-                score_s0 = self.forward(s0_filtered)
-                score_s1 = self.forward(s1_filtered)
+                score_s0 = self.forward(s0_batch, lengths)
+                score_s1 = self.forward(s1_batch, lengths)
 
-                loss = self.loss_fn(score_s0, score_s1, mu_filtered)
+                loss = self.loss_fn(score_s0, score_s1, mu_batch)
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -181,7 +182,7 @@ class BradleyTerryLoss(nn.Module):
         super(BradleyTerryLoss, self).__init__()
         self.cross_entropy_loss = nn.BCELoss()
 
-    def forward(self, score_0, score_1, mu, mask):
+    def forward(self, score_0, score_1, mu):
         prob_s1_wins = torch.sigmoid(score_1 - score_0)
         prob_s1_wins = prob_s1_wins.squeeze()
 

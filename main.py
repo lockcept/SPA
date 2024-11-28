@@ -334,7 +334,7 @@ if __name__ == "__main__":
             generate_score_pairs(
                 env_name=env_name,
                 pair_name_base=pair_name_base,
-                num_trajectories=num,
+                num_pairs=num,
                 pair_algos=["rnn"],
             )
     elif function_number == 2.1:

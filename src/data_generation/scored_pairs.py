@@ -4,16 +4,14 @@ import sys
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
+from data_generation.full_scripted_teacher import get_pairs_by_mu_type
 from data_loading.preference_dataloader import PreferenceDataset, get_dataloader
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from data_generation.score_rnn import RNN
 from data_generation.utils import extract_trajectory_indices
-from data_loading.load_data import (
-    get_processed_data_from_dataset_and_pair,
-    load_dataset,
-)
+from data_loading.load_data import load_dataset
 
 
 def save_pairs(env_name, pair, pair_algo, pair_data):
@@ -57,25 +55,42 @@ def generate_score_pairs(env_name, pair_name_base, num_pairs, pair_algos=["rnn"]
     train_pairs = pair_elements(train_set)
     val_pairs = pair_elements(val_set)
 
-    obs_dim, act_dim = None, None
+    def get_dataloader_from_pairs(pairs):
+        preference_pairs = []
 
-    def get_data_loader_from_pairs(pairs):
-        processed_data = get_processed_data_from_dataset_and_pair(dataset, pairs)
-        dataset = PreferenceDataset(processed_data)
-        if (obs_dim, act_dim) == (None, None):
-            obs_dim, act_dim = dataset.get_dimensions()
-        return DataLoader(
-            dataset,
-            batch_size=32,
-            shuffle=True,
-            drop_last=True,
+        for s0, s1 in pairs:
+            r0 = np.sum(dataset["rewards"][s0[0] : s0[1]])
+            r1 = np.sum(dataset["rewards"][s1[0] : s1[1]])
+            preference_pairs.append((s0, s1, r0, r1))
+
+        preference_pairs_np = np.array(
+            preference_pairs,
+            dtype=[
+                ("s0", "i4", (2,)),
+                ("s1", "i4", (2,)),
+                ("rewards_0", "O"),
+                ("rewards_1", "O"),
+            ],
         )
 
-    train_data_loader = get_data_loader_from_pairs(train_pairs)
-    val_data_loader = get_data_loader_from_pairs(val_pairs)
-    result_data_loader = get_data_loader_from_pairs(result_pairs)
+        pair_data = get_pairs_by_mu_type(
+            mu_type="binary",
+            pair_data=preference_pairs_np,
+        )
 
-    val_data_loader = None
+        save_pair_name = f"{pair_name_base}_score-temp"
+        save_path = f"pair/{env_name}/{save_pair_name}.npz"
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        np.savez(save_path, data=pair_data)
+        print(f"Preference pairs saved at {save_path}")
+
+        return get_dataloader(env_name=env_name, pair_name=save_pair_name)
+
+    train_data_loader, obs_dim, act_dim = get_dataloader_from_pairs(train_pairs)
+    val_data_loader, _, _ = get_dataloader_from_pairs(val_pairs)
+
     num_epochs = 500
 
     for pair_algo in pair_algos:
@@ -88,8 +103,8 @@ def generate_score_pairs(env_name, pair_name_base, num_pairs, pair_algos=["rnn"]
 
         if model is not None:
             model.train_model(
-                train_loader=train_data_loader,
-                val_loader=val_data_loader,
+                train_data_loader=train_data_loader,
+                val_data_loader=val_data_loader,
                 optimizer=optimizer,
                 num_epochs=num_epochs,
             )
