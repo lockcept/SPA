@@ -2,7 +2,6 @@ import os
 import sys
 import torch
 from torch.utils.data import DataLoader, Dataset
-import torch.nn.utils.rnn as rnn_utils
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_loading.load_data import get_processed_data
@@ -26,7 +25,7 @@ class PreferenceDataset(Dataset):
                     "actions": None,
                 },
                 "mu": torch.tensor(item["mu"], dtype=torch.float32),
-                "mask": None
+                "mask": None,
             }
 
             s0_obs = torch.tensor(item["s0"]["observations"], dtype=torch.float32)

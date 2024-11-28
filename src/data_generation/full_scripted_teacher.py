@@ -11,19 +11,8 @@ from tqdm import tqdm
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
+from data_generation.utils import extract_trajectory_indices
 from data_loading.load_data import load_dataset
-
-
-def extract_trajectory_indices(dataset):
-    terminals, timeouts = dataset["terminals"], dataset["timeouts"]
-    indices = []
-    length = len(terminals)
-    start = 0
-    for i in range(length):
-        if terminals[i] or timeouts[i]:
-            indices.append((start, i + 1))
-            start = i + 1
-    return indices
 
 
 def rewards_from_index(dataset, start, end):
@@ -138,7 +127,6 @@ def save_pairs_by_mu_type(env_name, pair, mu_type, pair_data, reward_info=(0, 1)
 
 
 def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]):
-
     for mu_type in mu_types:
         save_path = f"pair/{env_name}/{pair_name_base}_full-{mu_type}.npz"
         is_already_exist = os.path.exists(save_path)
@@ -155,7 +143,6 @@ def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]
     print("start generating preference pairs", env_name, pair_name_base, num_pairs)
 
     indices = extract_trajectory_indices(dataset)
-    print("trajectory counts", len(indices))
 
     preference_pairs = []
     for _ in tqdm(range(num_pairs), desc="Generating preference pairs"):

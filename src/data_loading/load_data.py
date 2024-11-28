@@ -197,13 +197,9 @@ mu is a float
 """
 
 
-def get_processed_data(env_name, pair_name):
-    dataset = load_dataset(env_name)
+def get_processed_data_from_dataset_and_pair(dataset, pair):
     observations = dataset["observations"]
     actions = dataset["actions"]
-
-    pair = load_pair(env_name, pair_name)
-
     processed_data = []
 
     for entry in pair["data"]:
@@ -240,3 +236,10 @@ def get_processed_data(env_name, pair_name):
         )
 
     return np.array(processed_data, dtype=[("s0", "O"), ("s1", "O"), ("mu", "f4")])
+
+
+def get_processed_data(env_name, pair_name):
+    dataset = load_dataset(env_name)
+    pair = load_pair(env_name, pair_name)
+
+    return get_processed_data_from_dataset_and_pair(dataset, pair)

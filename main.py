@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
         with open(log_path, "a") as log_file:
             log_file.write(
-                f"{env_name}, {pair_name_base}, {mu_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
+                f"{env_name}, {pair_name_base}, {pair_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
             )
     elif function_number == -4:
         from src.helper.analyze_dataset import save_reward_graph
@@ -306,6 +306,7 @@ if __name__ == "__main__":
         # Generate preference pairs
         from src.data_generation.full_scripted_teacher import generate_full_pairs
         from src.data_generation.list_scripted_teacher import generate_list_pairs
+        from src.data_generation.scored_pairs import generate_score_pairs
 
         print("Generating preference pairs", env_name, pair_name_base, num)
 
@@ -328,6 +329,13 @@ if __name__ == "__main__":
                 pair_name_base=pair_name_base,
                 num_trajectories=num,
                 pair_algos=["list-2", "list-3", "list-5", "list-11"],
+            )
+        elif pair_algo_category == "score":
+            generate_score_pairs(
+                env_name=env_name,
+                pair_name_base=pair_name_base,
+                num_trajectories=num,
+                pair_algos=["rnn"],
             )
     elif function_number == 2.1:
         # Generate preference pairs for test reward model
