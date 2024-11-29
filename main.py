@@ -13,19 +13,18 @@ from src.helper.analyze_dataset import analyze_env_dataset, save_reward_graph
 from src.helper.evaluate_reward_model import evaluate_reward_model
 from src.helper.evaluate_policy_model import evaluate_policy
 from src.helper.plot_policy_model import plot
-from src.data_loading.load_data import (
+from src.data_loading import (
     get_processed_data,
     load_pair,
     load_dataset,
     save_dataset,
+    get_dataloader,
 )
-from src.data_loading.preference_dataloader import get_dataloader
 from src.data_generation.full_scripted_teacher import generate_full_pairs
 from src.data_generation.list_scripted_teacher import generate_list_pairs
 from src.data_generation.scored_pairs import generate_score_pairs
-from src.reward_learning.reward_model_base import RewardModelBase
-from src.reward_learning.MR import MR
-from src.policy_learning import train, change_reward
+from src.reward_learning import RewardModelBase, MR
+from src.policy_learning import train, change_reward_from_all_datasets
 
 
 DEFAULT_ENV = "box-close-v2"
@@ -422,31 +421,14 @@ if __name__ == "__main__":
         # Change reward and save dataset
         print("Changing reward", env_name, new_dataset_name)
 
-        _, obs_dim, act_dim = get_dataloader(env_name=env_name, pair_name=pair_name)
-
-        print("obs_dim:", obs_dim, "act_dim:", act_dim)
-        model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
-        model_files = glob.glob(model_path_pattern)
-        model_list = []
-
-        if reward_model_algo == "MR":
-            for model_file in model_files:
-                model, _ = MR.initialize(
-                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
-                )
-                model_list.append(model)
-        elif reward_model_algo == "MR-linear":
-            for model_file in model_files:
-                model, _ = MR.initialize(
-                    config={"obs_dim": obs_dim, "act_dim": act_dim},
-                    path=model_file,
-                    linear_loss=True,
-                )
-                model_list.append(model)
-
-        change_reward(
-            env_name=env_name, model_list=model_list, dataset_path=new_dataset_path
+        change_reward_from_all_datasets(
+            env_name=env_name,
+            pair_name=pair_name,
+            reward_model_algo=reward_model_algo,
+            dataset_name=new_dataset_name,
+            new_dataset_path=new_dataset_path,
         )
+
     elif function_number == 5:
         # Train policy
         print("Training policy", env_name, new_dataset_path)
