@@ -1,14 +1,10 @@
 from typing import List
 import torch
-import os
-import sys
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-from data_loading.load_data import load_dataset
-from data_loading.preference_dataloader import get_dataloader
-from reward_learning.reward_model_base import RewardModelBase
+from data_loading import load_dataset
+from reward_learning import RewardModelBase
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

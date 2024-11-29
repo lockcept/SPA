@@ -5,9 +5,15 @@ Offline PbRL Scripts
 import argparse
 import glob
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
+
+# pylint: disable=C0413
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 from src.helper import (
     analyze_env_dataset,
@@ -23,9 +29,7 @@ from src.data_loading import (
     save_dataset,
     get_dataloader,
 )
-from src.data_generation.full_scripted_teacher import generate_full_pairs
-from src.data_generation.list_scripted_teacher import generate_list_pairs
-from src.data_generation.scored_pairs import generate_score_pairs
+from src.data_generation import generate_all_algo_pairs
 from src.reward_learning import MR, train_reward_model
 from src.policy_learning import train, change_reward_from_all_datasets
 
@@ -283,52 +287,17 @@ if __name__ == "__main__":
 
     elif function_number == 1:
         # Load and save dataset
-
         print("Loading and saving dataset", env_name)
 
         save_dataset(env_name)
     elif function_number == 2:
         # Generate preference pairs
-
         print("Generating preference pairs", env_name, pair_name_base, num)
 
-        pair_algo_category = pair_algo.split("-")[0]
-
-        if pair_algo_category == "full":
-            generate_full_pairs(
-                env_name=env_name,
-                pair_name_base=pair_name_base,
-                num_pairs=num,
-                mu_types=[
-                    "binary",
-                    "sigmoid",
-                    "linear",
-                ],
-            )
-        elif pair_algo_category == "list":
-            generate_list_pairs(
-                env_name=env_name,
-                pair_name_base=pair_name_base,
-                num_trajectories=num,
-                pair_algos=["list-2", "list-3", "list-5", "list-11"],
-            )
-        elif pair_algo_category == "score":
-            generate_score_pairs(
-                env_name=env_name,
-                pair_name_base=pair_name_base,
-                num_pairs=num,
-                pair_algos=["rnn"],
-            )
+        generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=True)
     elif function_number == 3:
         # Train reward model
-
-        print(
-            "Training reward model",
-            env_name,
-            pair_name,
-            pair_val_name,
-            reward_model_algo,
-        )
+        print("Training reward model")
 
         train_reward_model(
             env_name=env_name,

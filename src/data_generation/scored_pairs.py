@@ -1,18 +1,12 @@
 import os
-import sys
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset
 
 from data_generation.full_scripted_teacher import get_pairs_by_mu_type
-from data_loading.preference_dataloader import get_dataloader
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
 from data_generation.score_rnn import RNN
 from data_generation.utils import extract_trajectory_indices
-from data_loading.load_data import load_dataset
+from data_loading import get_dataloader, load_dataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -103,6 +97,9 @@ def generate_score_pairs(env_name, pair_name_base, num_pairs, pair_algos=["rnn"]
             model, optimizer = RNN.initialize(
                 config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
             )
+        else:
+            model = None
+            optimizer = None
 
         if model is None:
             print(f"Model {pair_algo} is not supported")

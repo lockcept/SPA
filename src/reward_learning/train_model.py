@@ -1,5 +1,5 @@
 from data_loading import get_dataloader
-from reward_learning import MR
+from reward_learning.MR import MR
 
 
 def train_reward_model(

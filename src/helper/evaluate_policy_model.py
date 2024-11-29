@@ -8,10 +8,9 @@ from offlinerlkit.modules.critic_module import Critic
 from offlinerlkit.modules.dist_module import DiagGaussian
 from offlinerlkit.nets.mlp import MLP
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-from data_loading.load_data import get_env
-from policy_learning.iql import get_configs
+from data_loading import get_env
+from policy_learning import get_configs
 
 
 def evaluate_policy(env_name, model_path):

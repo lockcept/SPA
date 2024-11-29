@@ -1,15 +1,9 @@
-import numpy as np
-import numpy.lib.recfunctions as rfn
-
 import random
-
 import os
-import sys
 
+import numpy as np
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
-from data_loading.load_data import load_dataset
+from data_loading import load_dataset
 
 
 def generate_trajectories(dataset, trajectory_len, num_trajectories):

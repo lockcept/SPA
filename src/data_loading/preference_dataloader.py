@@ -1,9 +1,6 @@
-import os
-import sys
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from data_loading.load_data import get_processed_data
 
 

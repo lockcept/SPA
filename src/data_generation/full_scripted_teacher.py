@@ -1,18 +1,13 @@
+import random
+import os
+
+from tqdm import tqdm
 import numpy as np
 import numpy.lib.recfunctions as rfn
 
-import random
 
-import os
-import sys
-
-from tqdm import tqdm
-
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
+from data_loading import load_dataset
 from data_generation.utils import extract_trajectory_indices
-from data_loading.load_data import load_dataset
 
 
 def rewards_from_index(dataset, start, end):

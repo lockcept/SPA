@@ -2,13 +2,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
-import sys
-import os
-
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
-from data_loading import load_data
+from data_loading import load_dataset
 
 
 def save_trajectory_lengths(dataset, env_name):
@@ -55,7 +49,7 @@ def analyze_env_dataset(env_name):
     """
     Analyze the raw dataset of the given environment.
     """
-    data = load_data.load_dataset(env_name)
+    data = load_dataset(env_name)
     print(data["observations"].shape)
     save_trajectory_lengths(data, env_name)
     save_reward_graph(data, env_name)

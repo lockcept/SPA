@@ -83,8 +83,8 @@ def plot(env_name="", pair_list=[], postfix_list=[], output_name="name"):
         csv_files = []
         for pair_name in pair_list:
             file_path = f"model/{env_name}/policy/{pair_name}_{postfix}/record/policy_training_progress.csv"
-            print(file_path)
             if os.path.exists(file_path):
+                print(file_path)
                 csv_files.append(file_path)
 
         if not csv_files:

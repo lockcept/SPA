@@ -1,6 +1,5 @@
 import random
 import os
-import sys
 
 import numpy as np
 import torch
@@ -11,9 +10,7 @@ from offlinerlkit.utils.load_dataset import qlearning_dataset
 from offlinerlkit.buffer import ReplayBuffer
 from offlinerlkit.utils.logger import Logger
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
-from data_loading.load_data import get_env
+from data_loading import get_env
 
 
 def get_configs():
