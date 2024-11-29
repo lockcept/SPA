@@ -25,8 +25,7 @@ from src.data_generation.list_scripted_teacher import generate_list_pairs
 from src.data_generation.scored_pairs import generate_score_pairs
 from src.reward_learning.reward_model_base import RewardModelBase
 from src.reward_learning.MR import MR
-from src.policy_learning.change_reward import change_reward
-from src.policy_learning.iql import train
+from src.policy_learning import train, change_reward
 
 
 DEFAULT_ENV = "box-close-v2"
@@ -421,7 +420,6 @@ if __name__ == "__main__":
 
     elif function_number == 4:
         # Change reward and save dataset
-
         print("Changing reward", env_name, new_dataset_name)
 
         _, obs_dim, act_dim = get_dataloader(env_name=env_name, pair_name=pair_name)
@@ -451,7 +449,6 @@ if __name__ == "__main__":
         )
     elif function_number == 5:
         # Train policy
-
         print("Training policy", env_name, new_dataset_path)
 
         train(
