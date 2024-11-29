@@ -1,4 +1,3 @@
 {
-  "python.analysis.extraPaths": ["./OfflineRL-Kit"],
-  "pylint.enabled": false
+  "python.analysis.extraPaths": ["./OfflineRL-Kit"]
 }

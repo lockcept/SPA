@@ -5,26 +5,22 @@ import sys
 import numpy as np
 import torch
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
-
-from data_loading.load_data import get_env
-
 from offlinerlkit.nets import MLP
 from offlinerlkit.modules import ActorProb, Critic, DiagGaussian
 from offlinerlkit.utils.load_dataset import qlearning_dataset
 from offlinerlkit.buffer import ReplayBuffer
-from offlinerlkit.utils.logger import Logger, make_log_dirs
-from offlinerlkit.policy_trainer import MFPolicyTrainer
-from offlinerlkit.policy import IQLPolicy
+from offlinerlkit.utils.logger import Logger
 
-"""
-suggested hypers
-expectile=0.7, temperature=3.0 for all D4RL-Gym tasks
-"""
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
+
+from data_loading.load_data import get_env
 
 
 def get_configs():
+    """
+    suggested hypers
+    expectile=0.7, temperature=3.0 for all D4RL-Gym tasks
+    """
     algo_name = "iql"
     seed = 0
     hidden_dims = [256, 256]
@@ -113,6 +109,10 @@ def normalize_rewards(dataset):
 
 
 def train(env_name, dataset_path, log_dir, num_epochs=1000, is_goal_hidden=False):
+    # import gym lazyly to reduce the overhead
+    from offlinerlkit.policy_trainer import MFPolicyTrainer  # pylint: disable=C0415
+    from offlinerlkit.policy import IQLPolicy  # pylint: disable=C0415
+
     configs = get_configs()
     # create env and dataset
     env = get_env(env_name, is_hidden=is_goal_hidden)

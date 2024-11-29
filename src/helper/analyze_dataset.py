@@ -51,7 +51,10 @@ def save_reward_graph(dataset, graph_name, log_path=None):
         plt.show()
 
 
-def analyze(env_name):
+def analyze_env_dataset(env_name):
+    """
+    Analyze the raw dataset of the given environment.
+    """
     data = load_data.load_dataset(env_name)
     print(data["observations"].shape)
     save_trajectory_lengths(data, env_name)

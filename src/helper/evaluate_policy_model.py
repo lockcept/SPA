@@ -2,11 +2,11 @@ import os
 import sys
 import numpy as np
 import torch
+
 from offlinerlkit.modules.actor_module import ActorProb
 from offlinerlkit.modules.critic_module import Critic
 from offlinerlkit.modules.dist_module import DiagGaussian
 from offlinerlkit.nets.mlp import MLP
-from offlinerlkit.policy.model_free.iql import IQLPolicy
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
@@ -15,6 +15,9 @@ from policy_learning.iql import get_configs
 
 
 def evaluate_policy(env_name, model_path):
+    # import gym lazyly to reduce the overhead
+    from offlinerlkit.policy.model_free.iql import IQLPolicy  # pylint: disable=C0415
+
     configs = get_configs()
     # create env and dataset
     env = get_env(env_name)

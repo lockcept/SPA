@@ -25,9 +25,9 @@ class IQLPolicy(BasePolicy):
         critic_v_optim: torch.optim.Optimizer,
         action_space: gym.spaces.Space,
         tau: float = 0.005,
-        gamma: float  = 0.99,
+        gamma: float = 0.99,
         expectile: float = 0.8,
-        temperature: float = 0.1
+        temperature: float = 0.1,
     ) -> None:
         super().__init__()
 
@@ -78,21 +78,28 @@ class IQLPolicy(BasePolicy):
                 action = dist.sample().cpu().numpy()
         action = np.clip(action, self.action_space.low[0], self.action_space.high[0])
         return action
-    
+
     def _expectile_regression(self, diff: torch.Tensor) -> torch.Tensor:
         weight = torch.where(diff > 0, self._expectile, (1 - self._expectile))
         return weight * (diff**2)
-    
+
     def learn(self, batch: Dict) -> Dict[str, float]:
-        obss, actions, next_obss, rewards, terminals = batch["observations"], batch["actions"], \
-            batch["next_observations"], batch["rewards"], batch["terminals"]
-        
+        obss, actions, next_obss, rewards, terminals = (
+            batch["observations"],
+            batch["actions"],
+            batch["next_observations"],
+            batch["rewards"],
+            batch["terminals"],
+        )
+
         # update value net
         with torch.no_grad():
-            q1, q2 = self.critic_q1_old(obss, actions), self.critic_q2_old(obss, actions)
+            q1, q2 = self.critic_q1_old(obss, actions), self.critic_q2_old(
+                obss, actions
+            )
             q = torch.min(q1, q2)
         v = self.critic_v(obss)
-        critic_v_loss = self._expectile_regression(q-v).mean()
+        critic_v_loss = self._expectile_regression(q - v).mean()
         self.critic_v_optim.zero_grad()
         critic_v_loss.backward()
         self.critic_v_optim.step()
@@ -102,7 +109,7 @@ class IQLPolicy(BasePolicy):
         with torch.no_grad():
             next_v = self.critic_v(next_obss)
             target_q = rewards + self._gamma * (1 - terminals) * next_v
-        
+
         critic_q1_loss = ((q1 - target_q).pow(2)).mean()
         critic_q2_loss = ((q2 - target_q).pow(2)).mean()
 
@@ -116,7 +123,9 @@ class IQLPolicy(BasePolicy):
 
         # update actor
         with torch.no_grad():
-            q1, q2 = self.critic_q1_old(obss, actions), self.critic_q2_old(obss, actions)
+            q1, q2 = self.critic_q1_old(obss, actions), self.critic_q2_old(
+                obss, actions
+            )
             q = torch.min(q1, q2)
             v = self.critic_v(obss)
             exp_a = torch.exp((q - v) * self._temperature)
@@ -135,5 +144,5 @@ class IQLPolicy(BasePolicy):
             "loss/actor": actor_loss.item(),
             "loss/q1": critic_q1_loss.item(),
             "loss/q2": critic_q2_loss.item(),
-            "loss/v": critic_v_loss.item()
+            "loss/v": critic_v_loss.item(),
         }

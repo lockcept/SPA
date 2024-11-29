@@ -1,8 +1,32 @@
+"""
+Offline PbRL Scripts
+"""
+
 import argparse
 import glob
 import os
 
 import numpy as np
+import matplotlib.pyplot as plt
+
+from src.helper.analyze_dataset import analyze_env_dataset, save_reward_graph
+from src.helper.evaluate_reward_model import evaluate_reward_model
+from src.helper.evaluate_policy_model import evaluate_policy
+from src.helper.plot_policy_model import plot
+from src.data_loading.load_data import (
+    get_processed_data,
+    load_pair,
+    load_dataset,
+    save_dataset,
+)
+from src.data_loading.preference_dataloader import get_dataloader
+from src.data_generation.full_scripted_teacher import generate_full_pairs
+from src.data_generation.list_scripted_teacher import generate_list_pairs
+from src.data_generation.scored_pairs import generate_score_pairs
+from src.reward_learning.reward_model_base import RewardModelBase
+from src.reward_learning.MR import MR
+from src.policy_learning.change_reward import change_reward
+from src.policy_learning.iql import train
 
 
 DEFAULT_ENV = "box-close-v2"
@@ -12,8 +36,8 @@ DEFAULT_PAIR_ALGO = "full-binary"
 DEFAULT_REWARD_MODEL_ALGO = "MR"
 DEFAULT_REWARD_MODEL_TAG = "-"
 
-
 if __name__ == "__main__":
+    # Argument parser
     parser = argparse.ArgumentParser()
 
     parser = argparse.ArgumentParser(
@@ -140,18 +164,11 @@ if __name__ == "__main__":
     if function_number == 0:
         # Do nothing
         print("Pass")
-        pass
     elif function_number == -1:
         # Analyze dataset
-        from src.helper.analyze_dataset import analyze
-
-        print("Analyzing dataset")
-
-        analyze(env_name)
+        analyze_env_dataset(env_name)
     elif function_number == -2:
         # Analyze Pairset
-        from data_loading.load_data import get_processed_data
-        import matplotlib.pyplot as plt
 
         env_name_list = ["box-close-v2"]
         pair_name_list = [
@@ -176,8 +193,6 @@ if __name__ == "__main__":
 
     elif function_number == -2.1:
         # Analyze Pairset
-        from src.data_loading.load_data import load_dataset, load_pair
-        import matplotlib.pyplot as plt
 
         dataset = load_dataset(env_name)
         data = load_pair(env_name, pair_name)
@@ -195,9 +210,6 @@ if __name__ == "__main__":
 
     elif function_number == -3:
         # Evaluate reward model
-        from src.data_loading.preference_dataloader import get_dataloader
-        from src.helper.evaluate_reward_model import evaluate_reward_model
-        from src.reward_learning.MR import MR
 
         print("Evaluating reward model", env_name, new_dataset_name)
 
@@ -244,8 +256,6 @@ if __name__ == "__main__":
                 f"{env_name}, {pair_name_base}, {pair_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
             )
     elif function_number == -4:
-        from src.helper.analyze_dataset import save_reward_graph
-
         # Analyze changed dataset
 
         dataset_path = new_dataset_path
@@ -259,7 +269,6 @@ if __name__ == "__main__":
         save_reward_graph(dataset, new_dataset_name, log_path)
     elif function_number == -5:
         # Plot policy evaluation
-        from src.helper.plot_policy_model import plot
 
         print("Plotting policy evaluation")
 
@@ -281,7 +290,6 @@ if __name__ == "__main__":
             )
     elif function_number == -5.1:
         # Plot policy evaluation
-        from src.helper.plot_policy_model import plot
 
         print("Plotting policy evaluation")
 
@@ -303,7 +311,6 @@ if __name__ == "__main__":
             )
     elif function_number == -5.2:
         # Evaluate policy
-        from src.helper.evaluate_policy_model import evaluate_policy
 
         evaluate_policy(
             env_name=env_name,
@@ -317,16 +324,12 @@ if __name__ == "__main__":
 
     elif function_number == 1:
         # Load and save dataset
-        from src.data_loading.load_data import save_dataset
 
         print("Loading and saving dataset", env_name)
 
         save_dataset(env_name)
     elif function_number == 2:
         # Generate preference pairs
-        from src.data_generation.full_scripted_teacher import generate_full_pairs
-        from src.data_generation.list_scripted_teacher import generate_list_pairs
-        from src.data_generation.scored_pairs import generate_score_pairs
 
         print("Generating preference pairs", env_name, pair_name_base, num)
 
@@ -359,7 +362,6 @@ if __name__ == "__main__":
             )
     elif function_number == 2.1:
         # Generate preference pairs for test reward model
-        from src.data_generation.full_scripted_teacher import generate_full_pairs
 
         print("Generating preference pairs for test-reward_full-sigmoid", env_name, num)
 
@@ -371,9 +373,6 @@ if __name__ == "__main__":
         )
     elif function_number == 3:
         # Train reward model
-        from src.data_loading.preference_dataloader import get_dataloader
-        from src.reward_learning.reward_model_base import RewardModelBase
-        from src.reward_learning.MR import MR
 
         print(
             "Training reward model",
@@ -422,10 +421,6 @@ if __name__ == "__main__":
 
     elif function_number == 4:
         # Change reward and save dataset
-        from src.data_loading.preference_dataloader import get_dataloader
-        from src.reward_learning.reward_model_base import RewardModelBase
-        from src.reward_learning.MR import MR
-        from src.policy_learning.change_reward import change_reward
 
         print("Changing reward", env_name, new_dataset_name)
 
@@ -456,7 +451,6 @@ if __name__ == "__main__":
         )
     elif function_number == 5:
         # Train policy
-        from src.policy_learning.iql import train
 
         print("Training policy", env_name, new_dataset_path)
 
