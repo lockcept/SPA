@@ -124,3 +124,18 @@ def evaluate_policy(env_name, model_path):
         "Average episode length: ",
         np.mean([ep["episode_length"] for ep in eval_ep_info_buffer]),
     )
+
+
+def evaluate_best_and_last_policy(env_name, policy_model_dir):
+    """
+    evaluate best and last policy
+    """
+    evaluate_policy(
+        env_name=env_name,
+        model_path=f"{policy_model_dir}/model/best_policy.pth",
+    )
+
+    evaluate_policy(
+        env_name=env_name,
+        model_path=f"{policy_model_dir}/model/last_policy.pth",
+    )

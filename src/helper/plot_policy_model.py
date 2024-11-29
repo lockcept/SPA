@@ -100,3 +100,25 @@ def plot(env_name="", pair_list=[], postfix_list=[], output_name="name"):
         plot_and_save(df_list=df_list, output_name=output_name)
     else:
         print("nothing to plot")
+
+
+def plot_policy_models():
+    """
+    plot the policy models from hard-coded lists
+    """
+    env_list = ["box-close-v2", "lever-pull-v2", "dial-turn-v2"]
+    pair_list = ["train-00", "train-01", "train-02", "train-03", "train-04"]
+    postfix_list = [
+        "full-binary_MR",
+        "full-sigmoid_MR",
+        "full-linear_MR",
+        "full-linear_MR-linear",
+    ]
+
+    for env_name in env_list:
+        plot(
+            env_name=env_name,
+            pair_list=pair_list,
+            postfix_list=postfix_list,
+            output_name=f"policy_full_{env_name}",
+        )

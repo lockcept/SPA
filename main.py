@@ -9,10 +9,13 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.helper.analyze_dataset import analyze_env_dataset, save_reward_graph
-from src.helper.evaluate_reward_model import evaluate_reward_model
-from src.helper.evaluate_policy_model import evaluate_policy
-from src.helper.plot_policy_model import plot
+from src.helper import (
+    analyze_env_dataset,
+    save_reward_graph,
+    evaluate_reward_model,
+    evaluate_best_and_last_policy,
+    plot_policy_models,
+)
 from src.data_loading import (
     get_processed_data,
     load_pair,
@@ -23,7 +26,7 @@ from src.data_loading import (
 from src.data_generation.full_scripted_teacher import generate_full_pairs
 from src.data_generation.list_scripted_teacher import generate_list_pairs
 from src.data_generation.scored_pairs import generate_score_pairs
-from src.reward_learning import RewardModelBase, MR
+from src.reward_learning import MR, train_reward_model
 from src.policy_learning import train, change_reward_from_all_datasets
 
 
@@ -123,7 +126,6 @@ if __name__ == "__main__":
             "-5.2: Evaluate policy\n"
             "1: Load and save dataset\n"
             "2: Generate preference pairs\n"
-            "2.1: Generate preference pairs for test reward model\n"
             "3: Train reward model\n"
             "4: Change reward and save dataset\n"
             "5: Train policy\n"
@@ -239,8 +241,12 @@ if __name__ == "__main__":
                     path=model_file,
                     linear_loss=True,
                 )
-            model.eval()
-            models.append(model)
+            else:
+                model = None
+
+            if model is not None:
+                model.eval()
+                models.append(model)
 
         accuracy, mse, pcc = evaluate_reward_model(
             env_name=env_name,
@@ -249,7 +255,7 @@ if __name__ == "__main__":
             output_name=f"{env_name}_{new_dataset_name}",
         )
 
-        with open(log_path, "a") as log_file:
+        with open(log_path, "a", encoding="utf-8") as log_file:
             log_file.write(
                 f"{env_name}, {pair_name_base}, {pair_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
             )
@@ -269,56 +275,11 @@ if __name__ == "__main__":
         # Plot policy evaluation
 
         print("Plotting policy evaluation")
+        plot_policy_models()
 
-        env_list = ["box-close-v2", "lever-pull-v2", "dial-turn-v2"]
-        pair_list = ["train-00", "train-01", "train-02", "train-03", "train-04"]
-        postfix_list = [
-            "full-binary_MR",
-            "full-sigmoid_MR",
-            "full-linear_MR",
-            "full-linear_MR-linear",
-        ]
-
-        for env_name in env_list:
-            plot(
-                env_name=env_name,
-                pair_list=pair_list,
-                postfix_list=postfix_list,
-                output_name=f"policy_full_{env_name}",
-            )
-    elif function_number == -5.1:
-        # Plot policy evaluation
-
-        print("Plotting policy evaluation")
-
-        env_list = ["lever-pull-v2"]
-        pair_list = ["train-00", "train-01", "train-02", "train-03", "train-04"]
-        postfix_list = [
-            "list-2_MR-linear",
-            "list-3_MR-linear",
-            "list-5_MR-linear",
-            "list-11_MR-linear",
-        ]
-
-        for env_name in env_list:
-            plot(
-                env_name=env_name,
-                pair_list=pair_list,
-                postfix_list=postfix_list,
-                output_name=f"policy_train_{env_name}",
-            )
     elif function_number == -5.2:
         # Evaluate policy
-
-        evaluate_policy(
-            env_name=env_name,
-            model_path=f"{policy_model_dir}/model/best_policy.pth",
-        )
-
-        evaluate_policy(
-            env_name=env_name,
-            model_path=f"{policy_model_dir}/model/last_policy.pth",
-        )
+        evaluate_best_and_last_policy(env_name, policy_model_dir)
 
     elif function_number == 1:
         # Load and save dataset
@@ -358,17 +319,6 @@ if __name__ == "__main__":
                 num_pairs=num,
                 pair_algos=["rnn"],
             )
-    elif function_number == 2.1:
-        # Generate preference pairs for test reward model
-
-        print("Generating preference pairs for test-reward_full-sigmoid", env_name, num)
-
-        generate_full_pairs(
-            env_name=env_name,
-            pair_name_base="test-reward",
-            num_pairs=num,
-            mu_types=["sigmoid"],
-        )
     elif function_number == 3:
         # Train reward model
 
@@ -380,42 +330,14 @@ if __name__ == "__main__":
             reward_model_algo,
         )
 
-        data_loader, obs_dim, act_dim = get_dataloader(
+        train_reward_model(
             env_name=env_name,
             pair_name=pair_name,
+            pair_val_name=pair_val_name,
+            reward_model_algo=reward_model_algo,
+            reward_model_path=reward_model_path,
+            num=num,
         )
-
-        val_data_loader, _, _ = get_dataloader(
-            env_name=env_name,
-            pair_name=pair_val_name,
-        )
-
-        print("obs_dim:", obs_dim, "act_dim:", act_dim)
-
-        reward_model: RewardModelBase
-        optimizer = None
-
-        if reward_model_algo == "MR":
-            model, optimizer = MR.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim},
-                path=reward_model_path,
-                skip_if_exists=True,
-            )
-        elif reward_model_algo == "MR-linear":
-            model, optimizer = MR.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim},
-                path=reward_model_path,
-                linear_loss=True,
-                skip_if_exists=True,
-            )
-
-        if model is not None:
-            model.train_model(
-                train_loader=data_loader,
-                val_loader=val_data_loader,
-                optimizer=optimizer,
-                num_epochs=num,
-            )
 
     elif function_number == 4:
         # Change reward and save dataset

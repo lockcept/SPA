@@ -2,11 +2,8 @@ import csv
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
-
-from reward_learning.reward_model_base import RewardModelBase
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
