@@ -190,14 +190,12 @@ def load_pair(env_name, pair_name):
     return pair
 
 
-"""
-return structured array of (s0, s1, mu) pairs
-s0, s1 is a structured array of (observations, actions)
-mu is a float
-"""
-
-
 def get_processed_data(env_name, pair_name):
+    """
+    return structured array of (s0, s1, mu) pairs
+    s0, s1 is a structured array of (observations, actions)
+    mu is a float
+    """
     dataset = load_dataset(env_name)
 
     observations = dataset["observations"]

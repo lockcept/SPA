@@ -1,46 +1,25 @@
-import random
 import os
 
-from tqdm import tqdm
 import numpy as np
 import numpy.lib.recfunctions as rfn
 
 
-from data_loading import load_dataset
-from data_generation.utils import extract_trajectory_indices
-
-
-def rewards_from_index(dataset, start, end):
-    return dataset["rewards"][start:end]
-
-
-def generate_preference_pair(dataset, indices):
-    min_length = 10
-
-    while True:
-        index0, index1 = random.sample(range(len(indices)), 2)
-        (start0, end0), (start1, end1) = indices[index0], indices[index1]
-
-        length0 = end0 - start0
-        length1 = end1 - start1
-
-        if length0 < min_length or length1 < min_length:
-            continue
-
-        if length0 > length1:
-            end0 = start0 + length1
-        else:
-            end1 = start1 + length0
-
-        rewards_0 = rewards_from_index(dataset, start0, end0)
-        rewards_1 = rewards_from_index(dataset, start1, end1)
-
-        preference_pair = ((start0, end0), (start1, end1), rewards_0, rewards_1)
-
-        return preference_pair
-
-
 def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
+    """
+    Args:
+        mu_type: str, type of mu
+        pair_data: np.darray of,
+            ("s0", "i4", (2,)),
+            ("s1", "i4", (2,)),
+            ("rewards_0", "O"),
+            ("rewards_1", "O"),
+        reward_info: tuple, reward min and max
+    Returns:
+        pair_data: np.darray of,
+            ("s0", "i4", (2,)),
+            ("s1", "i4", (2,)),
+            ("mu", "f"),
+    """
     reward_min, reward_max = reward_info
     rewards_0 = pair_data["rewards_0"]
     rewards_1 = pair_data["rewards_1"]
@@ -115,30 +94,37 @@ def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
     return pair_data
 
 
-def generate_full_pairs(env_name, pair_name_base, num_pairs, mu_types=["binary"]):
-    for mu_type in mu_types:
-        save_path = f"pair/{env_name}/{pair_name_base}_full-{mu_type}.npz"
-        is_already_exist = os.path.exists(save_path)
-        if is_already_exist:
-            print(f"Pair already exists at {save_path}, cancel generating")
-            return
-
-    dataset = load_dataset(env_name=env_name)
+def generate_and_save_full_pairs(
+    dataset, env_name, pair_name_base, pairs, mu_types=None
+):
+    """
+    Args:
+        dataset,
+        env_name: str,
+        pair_name_base: str,
+        pairs: list of ((int, int), (int, int)),
+        mu_types: list of str,
+    """
 
     reward_min = np.min(dataset["rewards"])
     reward_max = np.max(dataset["rewards"])
     reward_info = (reward_min, reward_max)
 
-    print("start generating preference pairs", env_name, pair_name_base, num_pairs)
-
-    indices = extract_trajectory_indices(dataset)
-
     preference_pairs = []
-    for _ in tqdm(range(num_pairs), desc="Generating preference pairs"):
-        preference_pair = generate_preference_pair(dataset, indices)
-        preference_pairs.append(preference_pair)
 
-    print("generating finished, start saving by mu type")
+    for i0, i1 in pairs:
+        s0, e0 = i0
+        s1, e1 = i1
+        len0 = e0 - s0
+        len1 = e1 - s1
+        if len0 > len1:
+            e0 = s0 + len1
+        elif len0 < len1:
+            e1 = s1 + len0
+
+        rewards_0 = dataset["rewards"][s0:e0]
+        rewards_1 = dataset["rewards"][s1:e1]
+        preference_pairs.append((s0, s1, rewards_0, rewards_1))
 
     preference_pairs_np = np.array(
         preference_pairs,

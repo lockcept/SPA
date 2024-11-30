@@ -1,35 +1,16 @@
-import random
 import os
 
 import numpy as np
 
-from data_loading import load_dataset
-
-
-def generate_trajectories(dataset, trajectory_len, num_trajectories):
-    trajectories = []
-
-    dataset_length = len(dataset["observations"])
-    is_terminal = dataset["terminals"] | dataset["timeouts"]
-
-    count = 0
-    while count < num_trajectories:
-        start_idx = random.randint(0, dataset_length - trajectory_len)
-        end_idx = start_idx + trajectory_len
-
-        if any(is_terminal[start_idx:end_idx]):
-            continue
-
-        sum_of_rewards = np.sum(dataset["rewards"][start_idx:end_idx])
-        trajectories.append((start_idx, end_idx, sum_of_rewards))
-        count += 1
-
-    return np.array(
-        trajectories, dtype=[("start", int), ("end", int), ("sum_of_rewards", float)]
-    )
-
 
 def divide_into_groups(trajectories, num_group):
+    """
+    return np.array of
+        ("start", "i4"),
+        ("end", "i4"),
+        ("sum_of_rewards", "f"),
+        ("group_index", "i4"),
+    """
     sorted_trajectories = np.sort(trajectories, order="sum_of_rewards")
 
     group_size = len(sorted_trajectories) / num_group
@@ -56,29 +37,53 @@ def divide_into_groups(trajectories, num_group):
     )
 
 
-def generate_pairs(trajectories_with_groups, num_group):
-    np.random.shuffle(trajectories_with_groups)
+def generate_pairs(trajectory_pairs, trajectories_with_groups, num_group):
+    """
+    Args:
+        trajectory_pairs: list of ((int, int), (int, int)),
+        trajectories_with_groups: np.array of
+            ("start", "i4"),
+            ("end", "i4"),
+            ("sum_of_rewards", "f"),
+            ("group_index", "i4"),
+        num_group: int,
+
+    Returns:
+        pairs: np.array of
+            ("s0", "i4", (2,)),
+            ("s1", "i4", (2,)),
+            ("mu", "f"),
+    """
     pairs = []
-    num_trajectories = len(trajectories_with_groups)
 
-    for i in range(num_trajectories):
-        for j in range(i + 1, num_trajectories):
-            traj0 = trajectories_with_groups[i]
-            traj1 = trajectories_with_groups[j]
+    for i0, i1 in trajectory_pairs:
+        # search trajectory_with_groups with start=s0, end=e0
+        s0, e0 = i0
+        traj0 = trajectories_with_groups[
+            (trajectories_with_groups["start"] == s0)
+            & (trajectories_with_groups["end"] == e0)
+        ][0]
+        traj1 = trajectories_with_groups[
+            (trajectories_with_groups["start"] == i1[0])
+            & (trajectories_with_groups["end"] == i1[1])
+        ][0]
 
-            group_diff = (traj1["group_index"] - traj0["group_index"]) / (num_group - 1)
-            mu = group_diff * 0.5 + 0.5
+        group_diff = (traj1["group_index"] - traj0["group_index"]) / (num_group - 1)
+        mu = group_diff * 0.5 + 0.5
 
-            pairs.append(
-                ((traj0["start"], traj0["end"]), (traj1["start"], traj1["end"]), mu)
-            )
+        pairs.append(
+            ((traj0["start"], traj0["end"]), (traj1["start"], traj1["end"]), mu)
+        )
 
     # Typed numpy array로 반환
     return np.array(pairs, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f")])
 
 
-def save_pairs(env_name, pair, pair_algo, pair_data):
-    save_path = f"pair/{env_name}/{pair}_list-{pair_algo}.npz"
+def save_pairs(env_name, pair, num_group, pair_data):
+    """
+    save pairs to npz file
+    """
+    save_path = f"pair/{env_name}/{pair}_list-{num_group}.npz"
     save_dir = os.path.dirname(save_path)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -87,40 +92,59 @@ def save_pairs(env_name, pair, pair_algo, pair_data):
     print(f"Preference pairs saved at {save_path}")
 
 
-def generate_list_pairs(
+def generate_and_save_list_pairs(
+    dataset,
     env_name,
     pair_name_base,
-    num_trajectories,
-    pair_algos=[2, 3, 5, 11],
+    pairs,
+    all_indices,
+    num_groups=None,
 ):
-    for pair_algo in pair_algos:
-        save_path = f"pair/{env_name}/{pair_name_base}_list-{pair_algo}.npz"
-        is_already_exist = os.path.exists(save_path)
-        if is_already_exist:
-            print(f"Pair already exists at {save_path}, cancel generating")
-            return
+    """
+    Args:
+        dataset,
+        env_name: str,
+        pair_name_base: str,
+        pairs: list of ((int, int), (int, int)),
+        all_indices: list of (int, int, float),
+        group_nums: list of int,
+    """
+    # make same length of all trajectories
+    min_length = np.min([e - s for s, e in all_indices])
+    new_index_pairs = []
+    new_all_indices = []
 
-    dataset = load_dataset(env_name=env_name)
-    trajectory_len = 25
+    for i0, i1 in pairs:
+        s0, e0 = i0
+        s1, e1 = i1
 
-    trajectories = generate_trajectories(
-        dataset=dataset,
-        trajectory_len=trajectory_len,
-        num_trajectories=num_trajectories,
+        e0 = s0 + min_length
+        e1 = s1 + min_length
+
+        new_index_pairs.append(((s0, e0), (s1, e1)))
+
+    for s, e in all_indices:
+        e = s + min_length
+        sum_of_rewards = np.sum(dataset["rewards"][s:e])
+        new_all_indices.append((s, e, sum_of_rewards))
+
+    new_all_indices = np.array(
+        new_all_indices,
+        dtype=[("start", int), ("end", int), ("sum_of_rewards", float)],
     )
 
     # group num_pairs into M groups, with is defined by pair_algos
-    for pair_algo in pair_algos:
-        num_group = pair_algo
-
-        trajectories_with_groups = divide_into_groups(trajectories, num_group)
+    for num_group in num_groups:
+        trajectories_with_groups = divide_into_groups(new_all_indices, num_group)
 
         pairs = generate_pairs(
-            trajectories_with_groups=trajectories_with_groups, num_group=num_group
+            trajectory_pairs=new_index_pairs,
+            trajectories_with_groups=trajectories_with_groups,
+            num_group=num_group,
         )
 
         save_pairs(
-            env_name=env_name, pair=pair_name_base, pair_algo=pair_algo, pair_data=pairs
+            env_name=env_name, pair=pair_name_base, num_group=num_group, pair_data=pairs
         )
 
     print("finish generating preference pairs", env_name, pair_name_base)

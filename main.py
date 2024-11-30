@@ -83,14 +83,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-pv",
-        "--pair_val",
-        type=str,
-        default=DEFAULT_PAIR_VAL,
-        help="Name of the trajectory pair file to use for validate(val-full, etc.)",
-    )
-
-    parser.add_argument(
         "-pa",
         "--pair_algo",
         type=str,
@@ -143,15 +135,21 @@ if __name__ == "__main__":
     env_hidden = args.env_hidden
     num = args.num
     pair_name_base = args.pair
-    pair_val_name_base = args.pair_val
     reward_model_algo = args.reward_model_algo
     reward_model_tag = args.reward_model_tag
     function_number = args.function_number
     pair_algo = args.pair_algo
 
     # Derived variables
+    train_pair_name = f"{pair_name_base}-train"
+    val_pair_name = f"{pair_name_base}-val"
+    test_pair_name = f"{pair_name_base}-test"
+
+    train_pair_name = f"{train_pair_name}_{pair_algo}"
+    val_pair_name = f"{val_pair_name}_{pair_algo}"
+    test_pair_name = f"{test_pair_name}_full-binary"
+
     pair_name = f"{pair_name_base}_{pair_algo}"
-    pair_val_name = f"{pair_val_name_base}_{pair_algo}"
     new_dataset_name = f"{pair_name}_{reward_model_algo}"
     reward_model_name = f"{new_dataset_name}_{reward_model_tag}"
 
@@ -176,9 +174,8 @@ if __name__ == "__main__":
 
         env_name_list = ["box-close-v2"]
         pair_name_list = [
-            "val_binary",
-            "val_sigmoid",
-            "val_linear",
+            "e1-train_full-binary",
+            "e1-train_full-linear",
         ]
 
         for env_name in env_name_list:
@@ -228,7 +225,7 @@ if __name__ == "__main__":
 
         data_loader, obs_dim, act_dim = get_dataloader(
             env_name=env_name,
-            pair_name="test-reward_full-sigmoid",
+            pair_name=test_pair_name,
             drop_last=False,
         )
 
@@ -246,7 +243,7 @@ if __name__ == "__main__":
                     linear_loss=True,
                 )
             else:
-                model = None
+                model = None  # pylint: disable=C0103
 
             if model is not None:
                 model.eval()
@@ -292,7 +289,7 @@ if __name__ == "__main__":
         save_dataset(env_name)
     elif function_number == 2:
         # Generate preference pairs
-        print("Generating preference pairs", env_name, pair_name_base, num)
+        print("Generating preference pairs", env_name, pair_name_base)
 
         generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=True)
     elif function_number == 3:
@@ -301,8 +298,8 @@ if __name__ == "__main__":
 
         train_reward_model(
             env_name=env_name,
-            pair_name=pair_name,
-            pair_val_name=pair_val_name,
+            pair_name=train_pair_name,
+            pair_val_name=val_pair_name,
             reward_model_algo=reward_model_algo,
             reward_model_path=reward_model_path,
             num=num,

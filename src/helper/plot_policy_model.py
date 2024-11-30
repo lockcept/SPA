@@ -42,7 +42,7 @@ def process_csv_files(csv_files, label):
 
     result = pd.merge(mean_df, std_df, on="timestep")
     result["smoothed_mean"] = result["mean"].ewm(alpha=0.5).mean()
-    result["smoothed_std"] = result[f"std"].ewm(alpha=0.9).mean()
+    result["smoothed_std"] = result["std"].ewm(alpha=0.9).mean()
 
     return result
 
