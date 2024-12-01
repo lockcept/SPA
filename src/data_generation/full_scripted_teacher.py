@@ -124,7 +124,7 @@ def generate_and_save_full_pairs(
 
         rewards_0 = dataset["rewards"][s0:e0]
         rewards_1 = dataset["rewards"][s1:e1]
-        preference_pairs.append((s0, s1, rewards_0, rewards_1))
+        preference_pairs.append(((s0, e0), (s1, e1), rewards_0, rewards_1))
 
     preference_pairs_np = np.array(
         preference_pairs,

@@ -174,8 +174,9 @@ if __name__ == "__main__":
 
         env_name_list = ["box-close-v2"]
         pair_name_list = [
-            "e1-train_full-binary",
-            "e1-train_full-linear",
+            "hello-train_full-binary",
+            "hello-train_full-linear",
+            "hello-train_score-rnn",
         ]
 
         for env_name in env_name_list:

@@ -26,6 +26,8 @@ def fill_feedback_from_pairs(dataset, pairs, model):
     observations = dataset["observations"]
     actions = dataset["actions"]
 
+    results = []
+
     for s0, s1 in pairs:
         s0_obs = observations[s0[0] : s0[1]]
         s0_act = actions[s0[0] : s0[1]]
@@ -42,18 +44,16 @@ def fill_feedback_from_pairs(dataset, pairs, model):
         score_1 = model(s1_tensor).item()
 
         mu = 1 / (1 + np.exp(score_0 - score_1))
-        pairs.append((s0, s1, mu))
+        results.append((s0, s1, mu))
 
-    pairs_np = np.array(
-        pairs,
+    return np.array(
+        results,
         dtype=[
             ("s0", "i4", (2,)),
             ("s1", "i4", (2,)),
             ("mu", "f"),
         ],
     )
-
-    return pairs_np
 
 
 def save_pairs(env_name, pair, pair_algo, pair_data):
@@ -85,6 +85,7 @@ def generate_score_pairs(
     train_data_loader, obs_dim, act_dim = get_dataloader(
         env_name, pair_name=train_pair_name
     )
+
     val_data_loader, _, _ = get_dataloader(env_name, pair_name=val_pair_name)
 
     for pair_algo in pair_algos:
@@ -115,10 +116,12 @@ def generate_score_pairs(
 
         # save pairs
         np.savez(
-            f"pair/{env_name}/{train_pair_name}_score-{pair_algo}.npz", data=train_pairs
+            f"pair/{env_name}/{pair_name_base}-train_score-{pair_algo}.npz",
+            data=train_pairs,
         )
         np.savez(
-            f"pair/{env_name}/{val_pair_name}_score-{pair_algo}.npz", data=val_pairs
+            f"pair/{env_name}/{pair_name_base}-val_score-{pair_algo}.npz",
+            data=val_pairs,
         )
 
     return
