@@ -1,5 +1,6 @@
 import time
 import os
+import csv
 
 import numpy as np
 import torch
@@ -38,6 +39,8 @@ class MFPolicyTrainer:
         self._eval_episodes = eval_episodes
         self.lr_scheduler = lr_scheduler
 
+        self.log_path = os.path.join(logger._dir, "train_log.csv")
+
     def train(self) -> Dict[str, float]:
         start_time = time.time()
 
@@ -45,6 +48,10 @@ class MFPolicyTrainer:
         last_10_performance = deque(maxlen=10)
 
         best_norm_ep_rew_mean = -float("inf")
+
+        with open(self.log_path, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Timesteps", "Reward", "Length", "Success"])
 
         # train loop
         for e in range(1, self._epoch + 1):
@@ -67,6 +74,7 @@ class MFPolicyTrainer:
 
             # evaluate current policy
             eval_info = self._evaluate()
+
             normalized_rewards = [
                 self.eval_env.get_normalized_score(reward)
                 for reward in eval_info["eval/episode_reward"]
@@ -79,13 +87,21 @@ class MFPolicyTrainer:
             ep_length_mean, ep_length_std = np.mean(
                 eval_info["eval/episode_length"]
             ), np.std(eval_info["eval/episode_length"])
-            last_10_performance.append(norm_ep_rew_mean)
             self.logger.logkv("eval/normalized_episode_reward", norm_ep_rew_mean)
             self.logger.logkv("eval/normalized_episode_reward_std", norm_ep_rew_std)
             self.logger.logkv("eval/episode_length", ep_length_mean)
             self.logger.logkv("eval/episode_length_std", ep_length_std)
             self.logger.set_timestep(num_timesteps)
             self.logger.dumpkvs()
+
+            with open(self.log_path, mode="a", newline="", encoding="utf-8") as file:
+                writer = csv.writer(file)
+                for reward, length, success in zip(
+                    eval_info["eval/episode_reward"],
+                    eval_info["eval/episode_length"],
+                    eval_info["eval/episode_success"],
+                ):
+                    writer.writerow([num_timesteps, reward, length, success])
 
             # save checkpoint
             torch.save(
@@ -115,22 +131,28 @@ class MFPolicyTrainer:
         obs = self.eval_env.reset(seed=0)
         eval_ep_info_buffer = []
         num_episodes = 0
-        episode_reward, episode_length = 0, 0
+        episode_reward, episode_length, episode_success = 0, 0, 0
 
         while num_episodes < self._eval_episodes:
             action = self.policy.select_action(obs.reshape(1, -1), deterministic=True)
-            next_obs, reward, terminal, _ = self.eval_env.step(action.flatten())
+            next_obs, reward, terminal, info = self.eval_env.step(action.flatten())
             episode_reward += reward
             episode_length += 1
+            if "success" in info:
+                episode_success += info["success"]
 
             obs = next_obs
 
             if terminal:
                 eval_ep_info_buffer.append(
-                    {"episode_reward": episode_reward, "episode_length": episode_length}
+                    {
+                        "episode_reward": episode_reward,
+                        "episode_length": episode_length,
+                        "episode_success": episode_success,
+                    }
                 )
                 num_episodes += 1
-                episode_reward, episode_length = 0, 0
+                episode_reward, episode_length, episode_success = 0, 0, 0
                 obs = self.eval_env.reset(seed=num_episodes)
 
         return {
@@ -139,5 +161,8 @@ class MFPolicyTrainer:
             ],
             "eval/episode_length": [
                 ep_info["episode_length"] for ep_info in eval_ep_info_buffer
+            ],
+            "eval/episode_success": [
+                ep_info["episode_success"] for ep_info in eval_ep_info_buffer
             ],
         }

@@ -312,7 +312,7 @@ if __name__ == "__main__":
 
         change_reward_from_all_datasets(
             env_name=env_name,
-            pair_name=pair_name,
+            pair_name=train_pair_name,
             reward_model_algo=reward_model_algo,
             dataset_name=new_dataset_name,
             new_dataset_path=new_dataset_path,

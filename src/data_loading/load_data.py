@@ -31,8 +31,8 @@ class MetaworldEnvWrapper:
         return obs
 
     def step(self, action):
-        next_obs, reward, terminal, truncated, _ = self.env.step(action)
-        return (next_obs, reward, terminal | truncated, {})
+        next_obs, reward, terminal, truncated, info = self.env.step(action)
+        return (next_obs, reward, terminal | truncated, info)
 
     def __getattr__(self, name):
         return getattr(self.env, name)
