@@ -54,7 +54,7 @@ class RewardModelBase(nn.Module):
 
         best_loss = float("inf")
 
-        for epoch in tqdm(range(num_epochs), desc=f"learning MR reward"):
+        for epoch in tqdm(range(num_epochs), desc=f"learning reward"):
             self.train()
             epoch_loss = 0.0
 

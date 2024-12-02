@@ -128,7 +128,7 @@ class RNN(nn.Module):
         loss_history = []
         val_loss_history = []
 
-        for epoch in tqdm(range(num_epochs), desc=f"learning MR reward"):
+        for epoch in tqdm(range(num_epochs), desc=f"learning score function"):
             self.train()
             epoch_loss = 0.0
 

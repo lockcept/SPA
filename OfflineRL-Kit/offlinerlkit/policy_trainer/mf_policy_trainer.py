@@ -45,7 +45,6 @@ class MFPolicyTrainer:
         start_time = time.time()
 
         num_timesteps = 0
-        last_10_performance = deque(maxlen=10)
 
         best_norm_ep_rew_mean = -float("inf")
 
@@ -124,7 +123,7 @@ class MFPolicyTrainer:
         )
         self.logger.close()
 
-        return {"last_10_performance": np.mean(last_10_performance)}
+        return
 
     def _evaluate(self) -> Dict[str, List[float]]:
         self.policy.eval()
