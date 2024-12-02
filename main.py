@@ -192,7 +192,7 @@ if __name__ == "__main__":
         # Analyze Pairset
         evaluate_score_model(
             env_name=env_name,
-            model_path=f"model/{env_name}/score/{train_pair_name}.pth",
+            model_path=f"model/{env_name}/score/{pair_name_base}_rnn.pth",
             pair_name=test_pair_name,
         )
 

@@ -27,24 +27,26 @@ def fill_feedback_from_pairs(dataset, pairs, model):
     actions = dataset["actions"]
 
     results = []
+    model.eval()
 
-    for s0, s1 in pairs:
-        s0_obs = observations[s0[0] : s0[1]]
-        s0_act = actions[s0[0] : s0[1]]
-        s1_obs = observations[s1[0] : s1[1]]
-        s1_act = actions[s1[0] : s1[1]]
+    with torch.no_grad():
+        for s0, s1 in pairs:
+            s0_obs = observations[s0[0] : s0[1]]
+            s0_act = actions[s0[0] : s0[1]]
+            s1_obs = observations[s1[0] : s1[1]]
+            s1_act = actions[s1[0] : s1[1]]
 
-        s0_state = np.concatenate([s0_obs, s0_act], axis=1)
-        s1_state = np.concatenate([s1_obs, s1_act], axis=1)
+            s0_state = np.concatenate([s0_obs, s0_act], axis=1)
+            s1_state = np.concatenate([s1_obs, s1_act], axis=1)
 
-        s0_tensor = torch.tensor(s0_state, dtype=torch.float32).to(device)
-        s1_tensor = torch.tensor(s1_state, dtype=torch.float32).to(device)
+            s0_tensor = torch.tensor(s0_state, dtype=torch.float32).to(device)
+            s1_tensor = torch.tensor(s1_state, dtype=torch.float32).to(device)
 
-        score_0 = model(s0_tensor).item()
-        score_1 = model(s1_tensor).item()
+            score_0 = model(s0_tensor).item()
+            score_1 = model(s1_tensor).item()
 
-        mu = 1 / (1 + np.exp(score_0 - score_1))
-        results.append((s0, s1, mu))
+            mu = 1 / (1 + np.exp(score_0 - score_1))
+            results.append((s0, s1, mu))
 
     return np.array(
         results,

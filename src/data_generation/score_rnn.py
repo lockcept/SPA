@@ -26,7 +26,9 @@ class RNN(nn.Module):
                 if skip_if_exists:
                     print("Skipping model initialization")
                     return None, None
-                model.load_state_dict(torch.load(path, weights_only=True))
+                model.load_state_dict(
+                    torch.load(path, weights_only=True, map_location=device)
+                )
                 print(f"Model loaded from {path}")
         model = model.to(device)
         optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -71,7 +73,7 @@ class RNN(nn.Module):
             _, h_n = self.rnn(trajectory)
 
         score = self.fc(h_n)
-        return score
+        return score.squeeze(0)
 
     def evaluate(self, data_loader):
         self.eval()
