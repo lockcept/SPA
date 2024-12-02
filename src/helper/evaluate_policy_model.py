@@ -1,5 +1,3 @@
-import os
-import sys
 import numpy as np
 import torch
 
@@ -87,7 +85,9 @@ def evaluate_policy(env_name, model_path):
 
     # 저장된 가중치 로드
     state_dict = torch.load(
-        model_path, map_location=configs["device"], weights_only=True
+        model_path,
+        map_location=configs["device"],
+        weights_only=True,
     )
 
     # 모델에 가중치 적용
@@ -97,31 +97,41 @@ def evaluate_policy(env_name, model_path):
     obs = env.reset()
     eval_ep_info_buffer = []
     num_episodes = 0
-    episode_reward, episode_length = 0, 0
+    episode_reward, episode_length, episode_success = 0, 0, 0
 
     while num_episodes < configs["eval_episodes"]:
         action = policy.select_action(obs.reshape(1, -1), deterministic=True)
-        next_obs, reward, terminal, _ = env.step(action.flatten())
+        next_obs, reward, terminal, info = env.step(action.flatten())
         episode_reward += reward
         episode_length += 1
+
+        if "success" in info:
+            print(info)
+            episode_success += info["success"]
 
         obs = next_obs
 
         if terminal:
             eval_ep_info_buffer.append(
-                {"episode_reward": episode_reward, "episode_length": episode_length}
+                {
+                    "episode_reward": episode_reward,
+                    "episode_length": episode_length,
+                    "episode_success": episode_success,
+                }
             )
             num_episodes += 1
-            episode_reward, episode_length = 0, 0
+            episode_reward, episode_length, episode_success = 0, 0, 0
             obs = env.reset()
 
     print(
         model_path,
         "\n",
         "Average episode reward: ",
-        np.mean([ep["episode_reward"] for ep in eval_ep_info_buffer]) * 100,
+        np.mean([ep["episode_reward"] for ep in eval_ep_info_buffer]),
         "Average episode length: ",
         np.mean([ep["episode_length"] for ep in eval_ep_info_buffer]),
+        "Average episode success: ",
+        np.mean([ep["episode_success"] for ep in eval_ep_info_buffer]),
     )
 
 

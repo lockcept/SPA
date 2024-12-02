@@ -8,7 +8,6 @@ import gym
 
 from typing import Optional, Dict, List
 from tqdm import tqdm
-from collections import deque
 from offlinerlkit.buffer import ReplayBuffer
 from offlinerlkit.utils.logger import Logger
 from offlinerlkit.policy import BasePolicy
@@ -79,8 +78,8 @@ class MFPolicyTrainer:
                 for reward in eval_info["eval/episode_reward"]
             ]
             norm_ep_rew_mean, norm_ep_rew_std = (
-                np.mean(normalized_rewards) * 100,
-                np.std(normalized_rewards) * 100,
+                np.mean(normalized_rewards),
+                np.std(normalized_rewards),
             )
 
             ep_length_mean, ep_length_std = np.mean(
