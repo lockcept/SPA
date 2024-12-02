@@ -42,7 +42,7 @@ def evaluate_score_model(env_name, model_path, pair_name):
 
             mu_batch = mu_batch.unsqueeze(1)
 
-            condition = ((s0_score < s1_score) & (0.5 < mu_batch)) | (
+            condition = ((s0_score <= s1_score) & (0.5 <= mu_batch)) | (
                 (s0_score >= s1_score) & (0.5 >= mu_batch)
             )
             answer_count += torch.sum(condition).item()

@@ -29,8 +29,8 @@ def evaluate_pair(env_name, pair_name):
         rewards_sum_0 = np.sum(dataset["rewards"][s0[0] : s0[1]])
         rewards_sum_1 = np.sum(dataset["rewards"][s1[0] : s1[1]])
 
-        if rewards_sum_0 < rewards_sum_1 and mu > 0.5:
+        if rewards_sum_0 <= rewards_sum_1 and mu >= 0.5:
             answer_count += 1
-        elif rewards_sum_0 > rewards_sum_1 and mu < 0.5:
+        elif rewards_sum_0 >= rewards_sum_1 and mu <= 0.5:
             answer_count += 1
     print(answer_count / len(data["data"]))

@@ -112,9 +112,15 @@ def generate_score_pairs(
             num_epochs=num_epochs,
         )
 
+        best_model, _ = RNN.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            skip_if_exists=False,
+        )
+
         # fill feedback in pairs
-        train_pairs = fill_feedback_from_pairs(dataset, train_pairs, model)
-        val_pairs = fill_feedback_from_pairs(dataset, val_pairs, model)
+        train_pairs = fill_feedback_from_pairs(dataset, train_pairs, best_model)
+        val_pairs = fill_feedback_from_pairs(dataset, val_pairs, best_model)
 
         # save pairs
         np.savez(
