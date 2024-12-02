@@ -10,12 +10,18 @@ def save_trajectory_lengths(dataset, env_name):
     indices = []
     length = len(terminals)
     start = 0
+    success_count = 0
     for i in range(length):
         if terminals[i] or timeouts[i]:
+            if "success" in dataset:
+                success = np.sum(dataset["success"][start : i + 1])
+                if success > 0:
+                    success_count += 1
             indices.append((start, i + 1))
             start = i + 1
 
     lengths = [end - start for start, end in indices]
+    print(success_count, len(indices))
 
     with open(f"dataset/{env_name}/trajectory_lengths.json", "w") as f:
         json.dump(lengths, f)
