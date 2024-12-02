@@ -64,6 +64,7 @@ def change_reward_from_all_datasets(
 
     if reward_model_algo == "MR":
         for model_file in model_files:
+            print(model_file)
             model, _ = MR.initialize(
                 config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
             )

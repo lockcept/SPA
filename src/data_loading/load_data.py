@@ -184,6 +184,9 @@ def load_dataset(env_name):
 
 
 def load_pair(env_name, pair_name):
+    """
+    {data: [(s0, s1, mu)]}
+    """
     dir_path = f"pair/{env_name}"
     pair = np.load(os.path.join(dir_path, f"{pair_name}.npz"), allow_pickle=True)
 

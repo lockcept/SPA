@@ -7,25 +7,23 @@ import glob
 import os
 import sys
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
 # pylint: disable=C0413
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 
 from src.helper import (
     analyze_env_dataset,
     save_reward_graph,
+    evaluate_score_model,
     evaluate_reward_model,
     evaluate_best_and_last_policy,
+    plot_pair,
+    evaluate_pair,
     plot_policy_models,
 )
 from src.data_loading import (
-    get_processed_data,
-    load_pair,
-    load_dataset,
     save_dataset,
     get_dataloader,
 )
@@ -141,13 +139,13 @@ if __name__ == "__main__":
     pair_algo = args.pair_algo
 
     # Derived variables
-    train_pair_name = f"{pair_name_base}-train"
-    val_pair_name = f"{pair_name_base}-val"
-    test_pair_name = f"{pair_name_base}-test"
+    train_pair_name_base = f"{pair_name_base}-train"
+    val_pair_name_base = f"{pair_name_base}-val"
+    test_pair_name_base = f"{pair_name_base}-test"
 
-    train_pair_name = f"{train_pair_name}_{pair_algo}"
-    val_pair_name = f"{val_pair_name}_{pair_algo}"
-    test_pair_name = f"{test_pair_name}_full-binary"
+    train_pair_name = f"{train_pair_name_base}_{pair_algo}"
+    val_pair_name = f"{val_pair_name_base}_{pair_algo}"
+    test_pair_name = f"{test_pair_name_base}_full-binary"
 
     pair_name = f"{pair_name_base}_{pair_algo}"
     new_dataset_name = f"{pair_name}_{reward_model_algo}"
@@ -172,43 +170,31 @@ if __name__ == "__main__":
     elif function_number == -2:
         # Analyze Pairset
 
-        env_name_list = ["box-close-v2"]
-        pair_name_list = [
-            "hello-train_full-binary",
-            "hello-train_full-linear",
-            "hello-train_score-rnn",
-        ]
-
-        for env_name in env_name_list:
-            for pair_name in pair_name_list:
-                data = get_processed_data(env_name, pair_name)
-
-                # histogram of mu values
-                mu_values = [item["mu"] for item in data]
-                plt.figure(figsize=(10, 6))
-                plt.hist(mu_values, bins=50, alpha=0.75)
-                plt.xlabel("Mu Values")
-                plt.ylabel("Frequency")
-                plt.title(f"{env_name}_{pair_name}")
-                plt.grid(True)
-                plt.savefig(f"log/mu_histogram_{env_name}_{pair_name}.png")
+        plot_pair(
+            env_name_list=["box-close-v2"],
+            pair_algo_list=[
+                "full-binary",
+                "full-linear",
+                "list-2",
+                "list-3",
+                "list-5",
+                "list-11",
+                "score-rnn",
+            ],
+            pair_name_base=train_pair_name_base,
+        )
 
     elif function_number == -2.1:
         # Analyze Pairset
+        evaluate_pair(env_name, train_pair_name)
 
-        dataset = load_dataset(env_name)
-        data = load_pair(env_name, pair_name)
-
-        answer_count = 0
-        for s0, s1, mu in data["data"]:
-            rewards_sum_0 = np.sum(dataset["rewards"][s0[0] : s0[1]])
-            rewards_sum_1 = np.sum(dataset["rewards"][s1[0] : s1[1]])
-
-            if rewards_sum_0 < rewards_sum_1 and mu > 0.5:
-                answer_count += 1
-            elif rewards_sum_0 > rewards_sum_1 and mu < 0.5:
-                answer_count += 1
-        print(answer_count / len(data["data"]))
+    elif function_number == -2.2:
+        # Analyze Pairset
+        evaluate_score_model(
+            env_name=env_name,
+            model_path=f"model/{env_name}/score/{train_pair_name}.pth",
+            pair_name=test_pair_name,
+        )
 
     elif function_number == -3:
         # Evaluate reward model
@@ -263,16 +249,9 @@ if __name__ == "__main__":
             )
     elif function_number == -4:
         # Analyze changed dataset
-
-        dataset_path = new_dataset_path
-        dataset_npz = np.load(dataset_path)
-        dataset = {key: dataset_npz[key] for key in dataset_npz}
-
-        log_path = f"log/dataset_reward_distribution_{new_dataset_name}.png"
-
         print("Analyzing changed dataset")
 
-        save_reward_graph(dataset, new_dataset_name, log_path)
+        save_reward_graph(new_dataset_path, new_dataset_name)
     elif function_number == -5:
         # Plot policy evaluation
 

@@ -31,7 +31,9 @@ class MR(RewardModelBase):
                 if skip_if_exists:
                     print("Skipping model initialization")
                     return None, None
-                model.load_state_dict(torch.load(path, weights_only=True))
+                model.load_state_dict(
+                    torch.load(path, weights_only=True, map_location=device)
+                )
                 print(f"Model loaded from {path}")
         model = model.to(device)
         optimizer = optim.Adam(model.parameters(), lr=lr)
