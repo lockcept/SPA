@@ -113,10 +113,10 @@ if __name__ == "__main__":
             "-1: Analyze dataset\n"
             "-2: Analyze Pairset, plot mu\n"
             "-2.1: Analyze Pairset, mu accuracy\n"
+            "-2.2: Analyze Score model\n"
             "-3: Evaluate reward model\n"
             "-4: Analyze changed dataset\n"
-            "-5: Plot policy evaluation (Full methods)\n"
-            "-5.1: Plot policy evaluation (List methods)\n"
+            "-5: Plot policy evaluation\n"
             "-5.2: Evaluate policy\n"
             "1: Load and save dataset\n"
             "2: Generate preference pairs\n"
@@ -190,6 +190,11 @@ if __name__ == "__main__":
 
     elif function_number == -2.2:
         # Analyze Pairset
+        evaluate_score_model(
+            env_name=env_name,
+            model_path=f"model/{env_name}/score/{pair_name_base}_rnn.pth",
+            pair_name=train_pair_name,
+        )
         evaluate_score_model(
             env_name=env_name,
             model_path=f"model/{env_name}/score/{pair_name_base}_rnn.pth",

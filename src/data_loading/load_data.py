@@ -119,24 +119,36 @@ def save_metaworld_dataset(env_name, save_dir):
     if not pkl_files:
         raise FileNotFoundError("No .pkl files found in the specified directory.")
 
-    first_pkl_file = sorted(pkl_files)[0]
-    file_path = os.path.join(save_dir, first_pkl_file)
+    all_observations = []
+    all_actions = []
+    all_rewards = []
+    all_terminals = []
+    all_success = []
 
-    with open(file_path, "rb") as file:
-        dataset = pickle.load(file)
+    for pkl_file in pkl_files:
+        file_path = os.path.join(save_dir, pkl_file)
 
-    print("keys:", dataset.keys())
+        with open(file_path, "rb") as file:
+            dataset = pickle.load(file)
+
+        all_observations.append(dataset["observations"])
+        all_actions.append(dataset["actions"])
+        all_rewards.append(dataset["rewards"])
+        all_terminals.append(dataset["dones"].astype(bool))
+        all_success.append(dataset["success"].astype(bool))
 
     save_data = {
-        "observations": dataset["observations"],
-        "actions": dataset["actions"],
-        "rewards": dataset["rewards"],
-        "terminals": dataset["dones"].astype(bool),
-        "timeouts": np.zeros_like(dataset["dones"], dtype=bool),
-        "success": dataset["success"].astype(bool),
+        "observations": np.concatenate(all_observations, axis=0),
+        "actions": np.concatenate(all_actions, axis=0),
+        "rewards": np.concatenate(all_rewards, axis=0),
+        "terminals": np.concatenate(all_terminals, axis=0),
+        "timeouts": np.zeros_like(np.concatenate(all_terminals, axis=0), dtype=bool),
+        "success": np.concatenate(all_success, axis=0),
     }
 
     np.savez(npz_path, **save_data)
+
+    print(save_data["observations"].shape, save_data["actions"].shape)
 
     print(f"Dataset saved with keys: {save_data.keys()}")
 
