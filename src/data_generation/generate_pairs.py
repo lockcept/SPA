@@ -85,7 +85,12 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
 
     train_set = indices[:train_trajectories]
     val_set = indices[train_trajectories : train_trajectories + val_trajectories]
-    test_set = indices[train_trajectories + val_trajectories :]
+    test_set = indices[
+        train_trajectories
+        + val_trajectories : train_trajectories
+        + val_trajectories
+        + test_trajectories
+    ]
 
     train_index_pairs = choose_index_pairs_from_list(train_trajectories, train_pairs)
     val_index_pairs = choose_index_pairs_from_list(val_trajectories, val_pairs)
@@ -146,7 +151,7 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
             dataset=dataset,
             env_name=env_name,
             pair_name_base=pair_name_base,
-            num_epochs=500,
+            num_epochs=2,
             train_pairs=train_pairs,
             val_pairs=val_pairs,
             pair_algos=["rnn"],
