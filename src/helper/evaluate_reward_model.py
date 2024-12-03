@@ -1,10 +1,12 @@
+import glob
+import os
 from typing import List
 import torch
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
 
-from data_loading import load_dataset
-from reward_learning import RewardModelBase
+from data_loading import load_dataset, get_dataloader
+from reward_learning import RewardModelBase, MR
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -126,3 +128,58 @@ def evaluate_reward_model(
     )
 
     return accuracy, avg_mse, pearson_corr
+
+
+def evaluate_and_log_reward_models(
+    env_name,
+    new_dataset_name,
+    pair_name_base,
+    pair_algo,
+    test_pair_name,
+    reward_model_algo,
+):
+    log_path = "log/main_evaluate_reward.log"
+    log_dir = os.path.dirname(log_path)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
+    model_files = glob.glob(model_path_pattern)
+
+    data_loader, obs_dim, act_dim = get_dataloader(
+        env_name=env_name,
+        pair_name=test_pair_name,
+        drop_last=False,
+    )
+
+    models = []
+
+    for model_file in model_files:
+        if reward_model_algo == "MR":
+            model, _ = MR.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
+            )
+        elif reward_model_algo == "MR-linear":
+            model, _ = MR.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=model_file,
+                linear_loss=True,
+            )
+        else:
+            model = None  # pylint: disable=C0103
+
+        if model is not None:
+            model.eval()
+            models.append(model)
+
+    accuracy, mse, pcc = evaluate_reward_model(
+        env_name=env_name,
+        models=models,
+        data_loader=data_loader,
+        output_name=f"{env_name}_{new_dataset_name}",
+    )
+
+    with open(log_path, "a", encoding="utf-8") as log_file:
+        log_file.write(
+            f"{env_name}, {pair_name_base}, {pair_algo},{reward_model_algo}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
+        )

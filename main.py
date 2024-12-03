@@ -3,7 +3,6 @@ Offline PbRL Scripts
 """
 
 import argparse
-import glob
 import os
 import sys
 
@@ -17,7 +16,7 @@ from src.helper import (
     analyze_env_dataset,
     save_reward_graph,
     evaluate_score_model,
-    evaluate_reward_model,
+    evaluate_and_log_reward_models,
     evaluate_best_and_last_policy,
     plot_pair,
     evaluate_pair,
@@ -25,10 +24,9 @@ from src.helper import (
 )
 from src.data_loading import (
     save_dataset,
-    get_dataloader,
 )
 from src.data_generation import generate_all_algo_pairs
-from src.reward_learning import MR, train_reward_model
+from src.reward_learning import train_reward_model
 from src.policy_learning import train, change_reward_from_all_datasets
 
 
@@ -205,53 +203,15 @@ if __name__ == "__main__":
         # Evaluate reward model
 
         print("Evaluating reward model", env_name, new_dataset_name)
-
-        log_path = "log/main_evaluate_reward.log"
-        log_dir = os.path.dirname(log_path)
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-
-        model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
-        model_files = glob.glob(model_path_pattern)
-        accuarcy, mse, pcc = None, None, None
-
-        data_loader, obs_dim, act_dim = get_dataloader(
+        evaluate_and_log_reward_models(
             env_name=env_name,
-            pair_name=test_pair_name,
-            drop_last=False,
+            new_dataset_name=new_dataset_name,
+            pair_name_base=pair_name_base,
+            pair_algo=pair_algo,
+            test_pair_name=test_pair_name,
+            reward_model_algo=reward_model_algo,
         )
 
-        models = []
-
-        for model_file in model_files:
-            if reward_model_algo == "MR":
-                model, _ = MR.initialize(
-                    config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
-                )
-            elif reward_model_algo == "MR-linear":
-                model, _ = MR.initialize(
-                    config={"obs_dim": obs_dim, "act_dim": act_dim},
-                    path=model_file,
-                    linear_loss=True,
-                )
-            else:
-                model = None  # pylint: disable=C0103
-
-            if model is not None:
-                model.eval()
-                models.append(model)
-
-        accuracy, mse, pcc = evaluate_reward_model(
-            env_name=env_name,
-            models=models,
-            data_loader=data_loader,
-            output_name=f"{env_name}_{new_dataset_name}",
-        )
-
-        with open(log_path, "a", encoding="utf-8") as log_file:
-            log_file.write(
-                f"{env_name}, {pair_name_base}, {pair_algo},{reward_model_algo},{reward_model_tag}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
-            )
     elif function_number == -4:
         # Analyze changed dataset
         print("Analyzing changed dataset")
@@ -261,7 +221,7 @@ if __name__ == "__main__":
         # Plot policy evaluation
 
         print("Plotting policy evaluation")
-        plot_policy_models()
+        plot_policy_models(pair_name_base=pair_name_base)
 
     elif function_number == -5.2:
         # Evaluate policy
