@@ -28,17 +28,30 @@ def choose_index_pairs_from_list(list_length, pair_count):
     return index_pairs
 
 
+def cut_trajectories(indices, trajectory_length):
+    valid_trajectories = []
+
+    for start, end in indices:
+        if end - start >= trajectory_length:
+            random_start = np.random.randint(start, end - trajectory_length)
+            valid_trajectories.append((random_start, random_start + trajectory_length))
+
+    return valid_trajectories
+
+
 def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False):
     """
     generate all algo pairs with hard-coded values
     """
-    train_trajectories = 200
-    val_trajectories = 300
-    test_trajectories = 1500
+    trajectory_length = 50
 
-    train_pairs = 1000
-    val_pairs = 400
-    test_pairs = 2000
+    train_trajectories = 1000
+    val_trajectories = 1000
+    test_trajectories = 1000
+
+    train_pairs = 500
+    val_pairs = 500
+    test_pairs = 500
 
     train_pair_name = f"{pair_name_base}-train"
     val_pair_name = f"{pair_name_base}-val"
@@ -63,6 +76,7 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
 
     dataset = load_dataset(env_name=env_name)
     indices = extract_trajectory_indices(dataset)
+    indices = cut_trajectories(indices, trajectory_length)
     np.random.shuffle(indices)
 
     if len(indices) < train_trajectories + val_trajectories + test_trajectories:
