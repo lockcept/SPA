@@ -6,7 +6,7 @@ from data_generation.full_scripted_teacher import generate_and_save_full_pairs
 from data_generation.list_scripted_teacher import generate_and_save_list_pairs
 from data_generation.scored_pairs import generate_score_pairs
 from data_generation.utils import extract_trajectory_indices
-from data_loading.load_data import load_dataset
+from data_loading.load_data import load_dataset, load_pair
 
 
 def choose_index_pairs_from_list(list_length, pair_count):
@@ -54,59 +54,94 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     val_pairs = 500
     test_pairs = 500
 
-    train_pair_name = f"{pair_name_base}-train"
-    val_pair_name = f"{pair_name_base}-val"
-    test_pair_name = f"{pair_name_base}-test"
+    train_pair_name_base = f"{pair_name_base}-train"
+    val_pair_name_base = f"{pair_name_base}-val"
+    test_pair_name_base = f"{pair_name_base}-test"
 
-    pair_algos = [
-        "full-binary",
-        "full-linear",
-        "list-2",
-        "list-3",
-        "list-5",
-        "list-11",
-        "score-rnn",
-    ]
-
-    for pair_algo in pair_algos:
-        save_path = f"pair/{env_name}/{train_pair_name}_{pair_algo}.npz"
-        is_already_exist = os.path.exists(save_path)
-        if is_already_exist:
-            print(f"Pair already exists at {save_path}, cancel generating")
-            return
+    save_path = f"pair/{env_name}/{train_pair_name_base}_full-binary.npz"
+    is_already_exist = os.path.exists(save_path)
 
     dataset = load_dataset(env_name=env_name)
-    indices = extract_trajectory_indices(dataset)
-    indices = cut_trajectories(indices, trajectory_length)
-    np.random.shuffle(indices)
+    if is_already_exist:
+        print(f"Pair already exists at {save_path}, use it for generating")
 
-    if len(indices) < train_trajectories + val_trajectories + test_trajectories:
-        print("Not enough trajectories")
-        return
+        train_pairs_with_mu = load_pair(
+            env_name=env_name, pair_name=f"{train_pair_name_base}_full-binary"
+        )["data"]
+        val_pairs_with_mu = load_pair(
+            env_name=env_name, pair_name=f"{val_pair_name_base}_full-binary"
+        )["data"]
+        test_pairs_with_mu = load_pair(
+            env_name=env_name, pair_name=f"{test_pair_name_base}_full-binary"
+        )["data"]
 
-    train_set = indices[:train_trajectories]
-    val_set = indices[train_trajectories : train_trajectories + val_trajectories]
-    test_set = indices[
-        train_trajectories
-        + val_trajectories : train_trajectories
-        + val_trajectories
-        + test_trajectories
-    ]
+        train_pairs = [
+            ((p["s0"][0], p["s0"][1]), (p["s1"][0], p["s1"][1]))
+            for p in train_pairs_with_mu
+        ]
+        val_pairs = [
+            ((p["s0"][0], p["s0"][1]), (p["s1"][0], p["s1"][1]))
+            for p in val_pairs_with_mu
+        ]
+        test_pairs = [
+            ((p["s0"][0], p["s0"][1]), (p["s1"][0], p["s1"][1]))
+            for p in test_pairs_with_mu
+        ]
 
-    train_index_pairs = choose_index_pairs_from_list(train_trajectories, train_pairs)
-    val_index_pairs = choose_index_pairs_from_list(val_trajectories, val_pairs)
-    test_index_pairs = choose_index_pairs_from_list(test_trajectories, test_pairs)
+        train_set = []
+        val_set = []
+        test_set = []
 
-    train_pairs = [(train_set[i0], train_set[i1]) for i0, i1 in train_index_pairs]
-    val_pairs = [(val_set[i0], val_set[i1]) for i0, i1 in val_index_pairs]
-    test_pairs = [(test_set[i0], test_set[i1]) for i0, i1 in test_index_pairs]
+        for p in train_pairs:
+            train_set.append(p[0])
+            train_set.append(p[1])
+
+        for p in val_pairs:
+            val_set.append(p[0])
+            val_set.append(p[1])
+
+        for p in test_pairs:
+            test_set.append(p[0])
+            test_set.append(p[1])
+
+        train_set = list(set(train_set))
+        val_set = list(set(val_set))
+        test_set = list(set(test_set))
+
+    else:
+        indices = extract_trajectory_indices(dataset)
+        indices = cut_trajectories(indices, trajectory_length)
+        np.random.shuffle(indices)
+
+        if len(indices) < train_trajectories + val_trajectories + test_trajectories:
+            print("Not enough trajectories")
+            return
+
+        train_set = indices[:train_trajectories]
+        val_set = indices[train_trajectories : train_trajectories + val_trajectories]
+        test_set = indices[
+            train_trajectories
+            + val_trajectories : train_trajectories
+            + val_trajectories
+            + test_trajectories
+        ]
+
+        train_index_pairs = choose_index_pairs_from_list(
+            train_trajectories, train_pairs
+        )
+        val_index_pairs = choose_index_pairs_from_list(val_trajectories, val_pairs)
+        test_index_pairs = choose_index_pairs_from_list(test_trajectories, test_pairs)
+
+        train_pairs = [(train_set[i0], train_set[i1]) for i0, i1 in train_index_pairs]
+        val_pairs = [(val_set[i0], val_set[i1]) for i0, i1 in val_index_pairs]
+        test_pairs = [(test_set[i0], test_set[i1]) for i0, i1 in test_index_pairs]
 
     # full
 
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=train_pair_name,
+        pair_name_base=train_pair_name_base,
         pairs=train_pairs,
         mu_types=[
             "binary",
@@ -116,7 +151,7 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=val_pair_name,
+        pair_name_base=val_pair_name_base,
         pairs=val_pairs,
         mu_types=[
             "binary",
@@ -128,7 +163,7 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=test_pair_name,
+        pair_name_base=test_pair_name_base,
         pairs=test_pairs,
         mu_types=["binary"],
     )
@@ -138,7 +173,7 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_list_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=train_pair_name,
+        pair_name_base=train_pair_name_base,
         pairs=train_pairs,
         all_indices=train_set,
         num_groups=[2, 3, 5, 11],
@@ -147,7 +182,7 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_list_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=val_pair_name,
+        pair_name_base=val_pair_name_base,
         pairs=val_pairs,
         all_indices=val_set,
         num_groups=[2, 3, 5, 11],
@@ -175,14 +210,14 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     cut_train_pairs = generate_and_save_cut_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=train_pair_name,
+        pair_name_base=train_pair_name_base,
         pairs=train_pairs,
     )
 
     cut_val_pairs = generate_and_save_cut_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=val_pair_name,
+        pair_name_base=val_pair_name_base,
         pairs=val_pairs,
     )
 
@@ -195,5 +230,5 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
         num_epochs=2000,
         train_pairs=[(p[0], p[1]) for p in cut_train_pairs],
         val_pairs=[(p[0], p[1]) for p in cut_val_pairs],
-        pair_algos=["rnn"],
+        pair_algos=["cutrnn"],
     )

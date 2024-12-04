@@ -74,6 +74,8 @@ def generate_and_save_cut_pairs(dataset, env_name, pair_name_base, pairs):
                     cut_pairs.append((i0_0, i1_0, 1 - mu))
                     cut_pairs.append((i0_1, i1_1, 1 - mu))
                     valid_feedback += 3
+        pair_index += 1
+    print(length, valid_feedback, pair_index)
 
     pairs_np = np.array(
         cut_pairs, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f")]

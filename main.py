@@ -177,7 +177,9 @@ if __name__ == "__main__":
                 "list-3",
                 "list-5",
                 "list-11",
+                "cut-binary",
                 "score-rnn",
+                "score-cutrnn",
             ],
             pair_name_base=train_pair_name_base,
         )
