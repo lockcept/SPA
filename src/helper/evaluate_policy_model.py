@@ -1,5 +1,7 @@
+import csv
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from offlinerlkit.modules.actor_module import ActorProb
 from offlinerlkit.modules.critic_module import Critic
@@ -11,7 +13,7 @@ from data_loading import get_env
 from policy_learning import get_configs
 
 
-def evaluate_policy(env_name, model_path):
+def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
     # import gym lazyly to reduce the overhead
     from offlinerlkit.policy.model_free.iql import IQLPolicy  # pylint: disable=C0415
 
@@ -83,68 +85,103 @@ def evaluate_policy(env_name, model_path):
         temperature=configs["temperature"],
     )
 
-    # 저장된 가중치 로드
     state_dict = torch.load(
         model_path,
         map_location=configs["device"],
         weights_only=True,
     )
 
-    # 모델에 가중치 적용
     policy.load_state_dict(state_dict)
 
     policy.eval()
-    obs = env.reset()
+    obs = env.reset(seed=0)
     eval_ep_info_buffer = []
     num_episodes = 0
     episode_reward, episode_length, episode_success = 0, 0, 0
 
-    while num_episodes < configs["eval_episodes"]:
-        action = policy.select_action(obs.reshape(1, -1), deterministic=True)
-        next_obs, reward, terminal, info = env.step(action.flatten())
-        episode_reward += reward
-        episode_length += 1
+    eval_episodes = 10
 
-        if "success" in info:
-            print(info)
-            episode_success += info["success"]
+    with tqdm(total=eval_episodes, desc="Evaluating Episodes") as pbar:
+        while num_episodes < eval_episodes:
+            action = policy.select_action(obs.reshape(1, -1), deterministic=True)
+            next_obs, reward, terminal, info = env.step(action.flatten())
+            episode_reward += reward
+            episode_length += 1
 
-        obs = next_obs
+            if "success" in info:
+                episode_success += info["success"]
 
-        if terminal:
-            eval_ep_info_buffer.append(
-                {
-                    "episode_reward": episode_reward,
-                    "episode_length": episode_length,
-                    "episode_success": episode_success,
-                }
+            obs = next_obs
+
+            if terminal:
+                eval_ep_info_buffer.append(
+                    {
+                        "episode_reward": episode_reward,
+                        "episode_length": episode_length,
+                        "episode_success": episode_success,
+                    }
+                )
+                num_episodes += 1
+                pbar.update(1)
+                episode_reward, episode_length, episode_success = 0, 0, 0
+                obs = env.reset(seed=num_episodes)
+
+    reward_list = [ep["episode_reward"] for ep in eval_ep_info_buffer]
+    length_list = [ep["episode_length"] for ep in eval_ep_info_buffer]
+    success_list = [ep["episode_success"] for ep in eval_ep_info_buffer]
+
+    reward_mean = np.mean(reward_list)
+    length_mean = np.mean(length_list)
+    success_mean = np.mean(np.array(success_list) > 0)
+
+    log_path = "log/main_evaluate_policy.csv"
+
+    if not log_path.endswith("best_policy.csv"):
+        return
+
+    with open(log_path, "a", encoding="utf-8", newline="") as log_file:
+        writer = csv.writer(log_file)
+
+        if log_file.tell() == 0:
+            writer.writerow(
+                [
+                    "EnvName",
+                    "PairName",
+                    "RewardModelAlgo",
+                    "RewardMean",
+                    "LengthMean",
+                    "SuccessMean",
+                ]
             )
-            num_episodes += 1
-            episode_reward, episode_length, episode_success = 0, 0, 0
-            obs = env.reset()
 
-    print(
-        model_path,
-        "\n",
-        "Average episode reward: ",
-        np.mean([ep["episode_reward"] for ep in eval_ep_info_buffer]),
-        "Average episode length: ",
-        np.mean([ep["episode_length"] for ep in eval_ep_info_buffer]),
-        "Average episode success: ",
-        np.mean([ep["episode_success"] for ep in eval_ep_info_buffer]),
-    )
+        writer.writerow(
+            [
+                env_name,
+                pair_name,
+                reward_model_algo,
+                f"{reward_mean:.3f}",
+                f"{length_mean:.2f}",
+                f"{success_mean:.6f}",
+            ]
+        )
 
 
-def evaluate_best_and_last_policy(env_name, policy_model_dir):
+def evaluate_best_and_last_policy(
+    env_name, pair_name, reward_model_algo, policy_model_dir
+):
     """
     evaluate best and last policy
     """
     evaluate_policy(
         env_name=env_name,
         model_path=f"{policy_model_dir}/model/best_policy.pth",
+        pair_name=pair_name,
+        reward_model_algo=reward_model_algo,
     )
 
     evaluate_policy(
         env_name=env_name,
         model_path=f"{policy_model_dir}/model/last_policy.pth",
+        pair_name=pair_name,
+        reward_model_algo=reward_model_algo,
     )

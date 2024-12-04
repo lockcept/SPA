@@ -225,7 +225,12 @@ if __name__ == "__main__":
 
     elif function_number == -5.2:
         # Evaluate policy
-        evaluate_best_and_last_policy(env_name, policy_model_dir)
+        evaluate_best_and_last_policy(
+            env_name=env_name,
+            pair_name=pair_name,
+            reward_model_algo=reward_model_algo,
+            policy_model_dir=policy_model_dir,
+        )
 
     elif function_number == 1:
         # Load and save dataset

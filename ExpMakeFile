@@ -12,7 +12,7 @@ pairs:
 	$(foreach pair, $(PAIRS), \
 		python main.py -f 2 -e $(ENV) -p $(pair) -pa score-rnn;)
 
-define learn_commands
+learn:
 	$(foreach pair, $(PAIRS), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
@@ -23,10 +23,10 @@ define learn_commands
 			python main.py -f -3 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
 			python main.py -f 4 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
 			python main.py -f 5 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward);))
-endef
+eval:
+	$(foreach pair, $(PAIRS), \
+		$(foreach algo_pair, $(ALGO_PAIRS), \
+			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
+			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
+			python main.py -f -5.2 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward);))
 
-learn:
-	$(call learn_commands)
-
-# Run all commands
-all: load_dataset pairs learn
