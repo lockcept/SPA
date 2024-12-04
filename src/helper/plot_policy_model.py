@@ -5,9 +5,9 @@ import pandas as pd
 
 
 def remove_max_min(series):
-    # if len(series) <= 2:
+    # if len(series) <= 10:
     #     return series
-    # return series.sort_values().iloc[1:-1]
+    # return series.sort_values().iloc[5:-5]
     return series
 
 
@@ -35,12 +35,16 @@ def process_csv_files(csv_files):
     )
     std_df = (
         grouped["Reward"]
-        .apply(lambda x: ((x**2).mean() ** 0.5) / ((len(x)) ** 0.5))
+        .apply(remove_max_min)
+        .groupby("Timesteps")
+        .apply(lambda x: (((x**2).mean() - x.mean() ** 2) ** 0.5) / ((len(x)) ** 0.5))
         .reset_index()
         .rename(columns={"Reward": "Reward_std"})
     )
     success_rate_df = (
         grouped["Success"]
+        .apply(remove_max_min)
+        .groupby("Timesteps")
         .apply(lambda x: (x > 0).mean())
         .reset_index()
         .rename(columns={"Success": "Success_rate"})
@@ -50,8 +54,9 @@ def process_csv_files(csv_files):
         success_rate_df, on="Timesteps"
     )
 
-    final_df["Reward_mean"] = final_df["Reward_mean"].ewm(alpha=0.5).mean()
-    final_df["Reward_std"] = final_df["Reward_std"].ewm(alpha=0.9).mean()
+    final_df["Reward_mean"] = final_df["Reward_mean"].ewm(alpha=0.2).mean()
+    final_df["Reward_std"] = final_df["Reward_std"].ewm(alpha=0.2).mean()
+    final_df["Success_rate"] = final_df["Success_rate"].ewm(alpha=0.2).mean()
 
     return final_df
 
@@ -70,7 +75,7 @@ def plot_and_save(df_list=[], output_name="name"):
             df["Timesteps"],
             mean_values - std_values,
             mean_values + std_values,
-            alpha=0.4,
+            alpha=0.2,
         )
     plt.xlabel("Timestep")
     plt.ylabel("Reward per timesteps")
