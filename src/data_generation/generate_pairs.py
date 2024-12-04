@@ -1,6 +1,7 @@
 import os
 import numpy as np
 
+from data_generation.cut_pairs import generate_and_save_cut_pairs
 from data_generation.full_scripted_teacher import generate_and_save_full_pairs
 from data_generation.list_scripted_teacher import generate_and_save_list_pairs
 from data_generation.scored_pairs import generate_score_pairs
@@ -100,6 +101,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     val_pairs = [(val_set[i0], val_set[i1]) for i0, i1 in val_index_pairs]
     test_pairs = [(test_set[i0], test_set[i1]) for i0, i1 in test_index_pairs]
 
+    # full
+
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
@@ -120,6 +123,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
             "linear",
         ],
     )
+
+    # test
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
@@ -127,6 +132,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
         pairs=test_pairs,
         mu_types=["binary"],
     )
+
+    # list
 
     generate_and_save_list_pairs(
         dataset=dataset,
@@ -146,13 +153,47 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
         num_groups=[2, 3, 5, 11],
     )
 
-    if include_score_pairs:
-        generate_score_pairs(
-            dataset=dataset,
-            env_name=env_name,
-            pair_name_base=pair_name_base,
-            num_epochs=2000,
-            train_pairs=train_pairs,
-            val_pairs=val_pairs,
-            pair_algos=["rnn"],
-        )
+    if not include_score_pairs:
+        return
+
+    # score-rnn
+
+    generate_score_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        pair_name_base=pair_name_base,
+        train_pair_name=f"{pair_name_base}-train_full-binary",
+        val_pair_name=f"{pair_name_base}-val_full-binary",
+        num_epochs=2000,
+        train_pairs=train_pairs,
+        val_pairs=val_pairs,
+        pair_algos=["rnn"],
+    )
+
+    # score-cutrnn
+
+    cut_train_pairs = generate_and_save_cut_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        pair_name_base=train_pair_name,
+        pairs=train_pairs,
+    )
+
+    cut_val_pairs = generate_and_save_cut_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        pair_name_base=val_pair_name,
+        pairs=val_pairs,
+    )
+
+    generate_score_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        pair_name_base=pair_name_base,
+        train_pair_name=f"{pair_name_base}-train_cut-binary",
+        val_pair_name=f"{pair_name_base}-val_cut-binary",
+        num_epochs=2000,
+        train_pairs=[(p[0], p[1]) for p in cut_train_pairs],
+        val_pairs=[(p[0], p[1]) for p in cut_val_pairs],
+        pair_algos=["rnn"],
+    )

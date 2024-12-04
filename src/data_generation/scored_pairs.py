@@ -72,6 +72,8 @@ def generate_score_pairs(
     dataset,
     env_name,
     pair_name_base,
+    train_pair_name,
+    val_pair_name,
     num_epochs,
     pair_algos=None,
     train_pairs=None,
@@ -81,9 +83,6 @@ def generate_score_pairs(
     learn score model and save score pairs
     """
 
-    train_pair_name = f"{pair_name_base}-train_full-binary"
-    val_pair_name = f"{pair_name_base}-val_full-binary"
-
     train_data_loader, obs_dim, act_dim = get_dataloader(
         env_name, pair_name=train_pair_name
     )
@@ -91,7 +90,7 @@ def generate_score_pairs(
     val_data_loader, _, _ = get_dataloader(env_name, pair_name=val_pair_name)
 
     for pair_algo in pair_algos:
-        if pair_algo == "rnn":
+        if pair_algo.endswith("rnn"):
             model_path = f"model/{env_name}/score/{pair_name_base}_{pair_algo}.pth"
             # train rnn with train data
             model, optimizer = RNN.initialize(
