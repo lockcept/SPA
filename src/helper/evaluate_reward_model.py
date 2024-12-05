@@ -43,12 +43,12 @@ def calculate_pearson_correlation_with_d4rl(
 
     plt.figure(figsize=(8, 6))
     plt.scatter(
-        actual_rewards_np, mean_predicted_rewards_np, alpha=0.5, label=output_name
+        actual_rewards_np, mean_predicted_rewards_np, alpha=0.005, label=output_name
     )
     plt.xlabel("Actual Rewards")
     plt.ylabel("Predicted Rewards")
     plt.title(f"Actual vs. Predicted Rewards\nPearson Correlation: {pearson_corr:.2f}")
-    plt.legend()
+    plt.legend(loc="upper right")
     plt.grid(True)
 
     output_path = f"log/reward_PCC_{output_name}.png"
