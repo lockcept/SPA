@@ -39,7 +39,8 @@ def save_trajectory_lengths(dataset, env_name):
     plt.savefig(f"log/dataset_trajectory_length_{env_name}.png")
 
 
-def save_reward_graph(dataset_npz, dataset_name, log_path=None):
+def save_reward_graph(dataset_path, dataset_name, log_path=None):
+    dataset_npz = np.load(dataset_path)
     dataset = {key: dataset_npz[key] for key in dataset_npz}
 
     log_path = f"log/dataset_reward_distribution_{dataset_name}.png"

@@ -190,14 +190,15 @@ if __name__ == "__main__":
 
     elif function_number == -2.2:
         # Analyze Pairset
+        score_algo = pair_algo.split("-")[1]
         evaluate_score_model(
             env_name=env_name,
-            model_path=f"model/{env_name}/score/{pair_name_base}_rnn.pth",
+            model_path=f"model/{env_name}/score/{pair_name_base}_{score_algo}.pth",
             pair_name=train_pair_name,
         )
         evaluate_score_model(
             env_name=env_name,
-            model_path=f"model/{env_name}/score/{pair_name_base}_rnn.pth",
+            model_path=f"model/{env_name}/score/{pair_name_base}_{score_algo}.pth",
             pair_name=test_pair_name,
         )
 

@@ -99,7 +99,7 @@ def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
     num_episodes = 0
     episode_reward, episode_length, episode_success = 0, 0, 0
 
-    eval_episodes = 10
+    eval_episodes = 1000
 
     with tqdm(total=eval_episodes, desc="Evaluating Episodes") as pbar:
         while num_episodes < eval_episodes:
@@ -136,7 +136,7 @@ def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
 
     log_path = "log/main_evaluate_policy.csv"
 
-    if not log_path.endswith("best_policy.csv"):
+    if not model_path.endswith("best_policy.pth"):
         return
 
     with open(log_path, "a", encoding="utf-8", newline="") as log_file:
@@ -179,9 +179,9 @@ def evaluate_best_and_last_policy(
         reward_model_algo=reward_model_algo,
     )
 
-    evaluate_policy(
-        env_name=env_name,
-        model_path=f"{policy_model_dir}/model/last_policy.pth",
-        pair_name=pair_name,
-        reward_model_algo=reward_model_algo,
-    )
+    # evaluate_policy(
+    #     env_name=env_name,
+    #     model_path=f"{policy_model_dir}/model/last_policy.pth",
+    #     pair_name=pair_name,
+    #     reward_model_algo=reward_model_algo,
+    # )
