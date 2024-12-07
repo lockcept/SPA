@@ -1,3 +1,4 @@
+import csv
 import glob
 import os
 from typing import List
@@ -7,6 +8,7 @@ from scipy.stats import pearsonr
 
 from data_loading import load_dataset, get_dataloader
 from reward_learning import RewardModelBase, MR
+from helper.path import get_reward_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -132,23 +134,29 @@ def evaluate_reward_model(
 
 def evaluate_and_log_reward_models(
     env_name,
-    new_dataset_name,
-    pair_name_base,
+    exp_name,
     pair_algo,
-    test_pair_name,
     reward_model_algo,
 ):
-    log_path = "log/main_evaluate_reward.log"
+    log_path = "log/main_evaluate_reward.csv"
     log_dir = os.path.dirname(log_path)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
+    model_path_pattern = get_reward_model_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        reward_model_algo=reward_model_algo,
+        reward_model_tag="*",
+    )
     model_files = glob.glob(model_path_pattern)
 
     data_loader = get_dataloader(
         env_name=env_name,
-        pair_name=test_pair_name,
+        exp_name=exp_name,
+        pair_type="test",
+        pair_algo="full-binary",
         drop_last=False,
     )
 
@@ -178,10 +186,24 @@ def evaluate_and_log_reward_models(
         env_name=env_name,
         models=models,
         data_loader=data_loader,
-        output_name=f"{env_name}_{new_dataset_name}",
+        output_name=f"{env_name}_{exp_name}_{pair_algo}_{reward_model_algo}",
     )
 
-    with open(log_path, "a", encoding="utf-8") as log_file:
-        log_file.write(
-            f"{env_name}, {pair_name_base}, {pair_algo},{reward_model_algo}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
+    with open(log_path, "a", encoding="utf-8", newline="") as log_file:
+        writer = csv.writer(log_file)
+
+        if log_file.tell() == 0:
+            writer.writerow(
+                [
+                    "EnvName",
+                    "ExpName",
+                    "PairAlgo",
+                    "RewardModelAlgo",
+                    "Accuracy",
+                    "MSE",
+                    "PCC",
+                ]
+            )
+        writer.writerow(
+            f"{env_name}, {exp_name}, {pair_algo},{reward_model_algo}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
         )

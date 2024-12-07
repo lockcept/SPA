@@ -11,9 +11,10 @@ from offlinerlkit.nets.mlp import MLP
 
 from data_loading import get_env
 from policy_learning import get_configs
+from helper.path import get_policy_model_path
 
 
-def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
+def evaluate_policy(env_name, exp_name, pair_algo, reward_model_algo, model_subpath):
     # import gym lazyly to reduce the overhead
     from offlinerlkit.policy.model_free.iql import IQLPolicy  # pylint: disable=C0415
 
@@ -85,6 +86,14 @@ def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
         temperature=configs["temperature"],
     )
 
+    model_path = get_policy_model_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        reward_model_algo=reward_model_algo,
+        log_path=model_subpath,
+    )
+
     state_dict = torch.load(
         model_path,
         map_location=configs["device"],
@@ -146,7 +155,8 @@ def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
             writer.writerow(
                 [
                     "EnvName",
-                    "PairName",
+                    "ExpName",
+                    "PairAlgo",
                     "RewardModelAlgo",
                     "RewardMean",
                     "LengthMean",
@@ -157,7 +167,8 @@ def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
         writer.writerow(
             [
                 env_name,
-                pair_name,
+                exp_name,
+                pair_algo,
                 reward_model_algo,
                 f"{reward_mean:.3f}",
                 f"{length_mean:.2f}",
@@ -166,17 +177,17 @@ def evaluate_policy(env_name, model_path, pair_name, reward_model_algo):
         )
 
 
-def evaluate_best_and_last_policy(
-    env_name, pair_name, reward_model_algo, policy_model_dir
-):
+def evaluate_best_and_last_policy(env_name, exp_name, pair_algo, reward_model_algo):
     """
     evaluate best and last policy
     """
+
     evaluate_policy(
         env_name=env_name,
-        model_path=f"{policy_model_dir}/model/best_policy.pth",
-        pair_name=pair_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
         reward_model_algo=reward_model_algo,
+        model_subpath="model/best_policy.pth",
     )
 
     # evaluate_policy(

@@ -104,6 +104,17 @@ def get_new_dataset_path(env_name, exp_name, pair_algo, reward_model_algo):
     return path
 
 
+def get_new_dataset_log_path(
+    env_name, exp_name, pair_algo, reward_model_algo, log_file
+):
+    """
+    Return path of new dataset log file
+    """
+    path = f"log/{env_name}/{exp_name}/{pair_algo}/{reward_model_algo}/{log_file}"
+    make_dir_from_path(path)
+    return path
+
+
 def get_policy_model_path(
     env_name,
     exp_name,
@@ -114,5 +125,22 @@ def get_policy_model_path(
     Return path of policy model file
     """
     path = f"model/{env_name}/{exp_name}/policy/{pair_algo}/{reward_model_algo}/"
+    make_dir_from_path(path)
+    return path
+
+
+def get_policy_model_log_path(
+    env_name,
+    exp_name,
+    pair_algo,
+    reward_model_algo: Literal["MR", "MR-linear"],
+    log_file,
+):
+    """
+    Return path of policy model log file
+    """
+    path = (
+        f"log/{env_name}/{exp_name}/policy/{pair_algo}/{reward_model_algo}/{log_file}"
+    )
     make_dir_from_path(path)
     return path

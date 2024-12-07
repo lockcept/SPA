@@ -12,7 +12,9 @@ from .path import (
     get_reward_model_path,
     get_reward_model_log_path,
     get_new_dataset_path,
+    get_new_dataset_log_path,
     get_policy_model_path,
+    get_policy_model_log_path,
 )
 
 __all__ = [
@@ -31,5 +33,7 @@ __all__ = [
     "get_reward_model_path",
     "get_reward_model_log_path",
     "get_new_dataset_path",
+    "get_new_dataset_log_path",
     "get_policy_model_path",
+    "get_policy_model_log_path",
 ]

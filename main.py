@@ -182,13 +182,13 @@ if __name__ == "__main__":
     elif function_number == -3:
         # Evaluate reward model
 
-        print("Evaluating reward model", env_name, new_dataset_name)
+        print(
+            "Evaluating reward model", env_name, exp_name, pair_algo, reward_model_algo
+        )
         evaluate_and_log_reward_models(
             env_name=env_name,
-            new_dataset_name=new_dataset_name,
-            pair_name_base=pair_name_base,
+            exp_name=exp_name,
             pair_algo=pair_algo,
-            test_pair_name=test_pair_name,
             reward_model_algo=reward_model_algo,
         )
 
@@ -196,20 +196,20 @@ if __name__ == "__main__":
         # Analyze changed dataset
         print("Analyzing changed dataset")
 
-        save_reward_graph(new_dataset_path, new_dataset_name)
+        save_reward_graph(env_name, exp_name, pair_algo, reward_model_algo)
     elif function_number == -5:
         # Plot policy evaluation
 
         print("Plotting policy evaluation")
-        plot_policy_models(pair_name_base=pair_name_base)
+        plot_policy_models(exp_name=exp_name)
 
     elif function_number == -5.2:
         # Evaluate policy
         evaluate_best_and_last_policy(
             env_name=env_name,
-            pair_name=pair_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
             reward_model_algo=reward_model_algo,
-            policy_model_dir=policy_model_dir,
         )
 
     elif function_number == 1:

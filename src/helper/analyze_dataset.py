@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from data_loading import load_dataset
+from helper.path import get_new_dataset_path, get_new_dataset_log_path
 
 
 def save_trajectory_lengths(dataset, env_name):
@@ -23,7 +24,9 @@ def save_trajectory_lengths(dataset, env_name):
     lengths = [end - start for start, end in indices]
     print(success_count, len(indices))
 
-    with open(f"dataset/{env_name}/trajectory_lengths.json", "w") as f:
+    with open(
+        f"dataset/{env_name}/trajectory_lengths.json", "w", encoding="utf-8"
+    ) as f:
         json.dump(lengths, f)
 
     print("Number of trajectories: ", len(lengths))
@@ -39,28 +42,51 @@ def save_trajectory_lengths(dataset, env_name):
     plt.savefig(f"log/dataset_trajectory_length_{env_name}.png")
 
 
-def save_reward_graph(dataset_path, dataset_name, log_path=None):
+def save_reward_graph_from_dataset(dataset, log_path, title):
+    """
+    Save the reward graph from the given dataset.
+    """
+    rewards = dataset["rewards"]
+    plt.hist(rewards)
+    plt.title(f"Reward graph of {title}")
+    plt.xlabel("Reward")
+    plt.ylabel("Frequency")
+    plt.savefig(log_path, format="png")
+
+
+def save_reward_graph(
+    env_name,
+    exp_name,
+    pair_algo,
+    reward_model_algo,
+):
+    """
+    Save the reward graph of the given environment, experiment, pair algorithm, and reward model algorithm.
+    """
+    dataset_path = get_new_dataset_path(
+        env_name, exp_name, pair_algo, reward_model_algo
+    )
     dataset_npz = np.load(dataset_path)
     dataset = {key: dataset_npz[key] for key in dataset_npz}
 
-    log_path = f"log/dataset_reward_distribution_{dataset_name}.png"
+    log_path = get_new_dataset_log_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        reward_model_algo=reward_model_algo,
+        log_file="reward_distribution.png",
+    )
 
-    rewards = dataset["rewards"]
-    plt.hist(rewards)
-    plt.title(f"Reward graph of {dataset_name}")
-    plt.xlabel("Reward")
-    plt.ylabel("Frequency")
-    if log_path is not None:
-        plt.savefig(log_path, format="png")
-    else:
-        plt.show()
+    title = f"{env_name} {exp_name} {pair_algo} {reward_model_algo}"
+
+    save_reward_graph_from_dataset(dataset, log_path, title)
 
 
 def analyze_env_dataset(env_name):
     """
     Analyze the raw dataset of the given environment.
     """
-    data = load_dataset(env_name)
-    print(data["observations"].shape)
-    save_trajectory_lengths(data, env_name)
-    save_reward_graph(data, env_name)
+    dataset = load_dataset(env_name)
+    print(dataset["observations"].shape)
+    save_trajectory_lengths(dataset, env_name)
+    save_reward_graph_from_dataset(dataset, f"log/{env_name}", env_name)

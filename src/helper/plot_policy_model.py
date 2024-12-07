@@ -2,6 +2,7 @@ import os
 
 from matplotlib import pyplot as plt
 import pandas as pd
+from helper.path import get_policy_model_log_path
 
 
 def remove_max_min(series):
@@ -98,14 +99,22 @@ def plot_and_save(df_list=[], output_name="name"):
     plt.close()
 
 
-def plot(env_name="", pair_list=[], postfix_list=[], output_name="name"):
+def plot(env_name, exp_list=[], postfix_list=[], output_name="name"):
     csv_files = []
     df_list = []
 
     for postfix in postfix_list:
         csv_files = []
-        for pair_name in pair_list:
-            file_path = f"model/{env_name}/policy/{pair_name}_{postfix}/train_log.csv"
+        for exp_name in exp_list:
+            pair_algo = postfix.split("_")[0]
+            reward_model_algo = postfix.split("_")[1]
+            file_path = get_policy_model_log_path(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_algo=pair_algo,
+                reward_model_algo=reward_model_algo,
+                log_file="train_log.csv",
+            )
             if os.path.exists(file_path):
                 print(file_path)
                 csv_files.append(file_path)
@@ -122,18 +131,18 @@ def plot(env_name="", pair_list=[], postfix_list=[], output_name="name"):
         print("nothing to plot")
 
 
-def plot_policy_models(pair_name_base):
+def plot_policy_models(exp_name):
     """
     plot the policy models from hard-coded lists
     """
     env_list = ["box-close-v2"]
-    pair_list = [
-        pair_name_base,
-        f"{pair_name_base}-00",
-        f"{pair_name_base}-01",
-        f"{pair_name_base}-02",
-        f"{pair_name_base}-03",
-        f"{pair_name_base}-04",
+    exp_list = [
+        exp_name,
+        f"{exp_name}-00",
+        f"{exp_name}-01",
+        f"{exp_name}-02",
+        f"{exp_name}-03",
+        f"{exp_name}-04",
     ]
     postfix_list = [
         "full-binary_MR",
@@ -150,7 +159,13 @@ def plot_policy_models(pair_name_base):
     for env_name in env_list:
         plot(
             env_name=env_name,
-            pair_list=pair_list,
+            exp_list=exp_list,
             postfix_list=postfix_list,
-            output_name=f"policy_{env_name}_{pair_name_base}",
+            output_name=get_policy_model_log_path(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_algo="all",
+                reward_model_algo="all",
+                log_file="train_log.png",
+            ),
         )
