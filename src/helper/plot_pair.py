@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 from data_loading import get_processed_data, load_dataset, load_pair
-from helper import get_pair_log_path
+from utils import get_pair_log_path
 
 
 def plot_pair(env_name_list, exp_name, pair_algo_list):

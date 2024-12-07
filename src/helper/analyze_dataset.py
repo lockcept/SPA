@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from data_loading import load_dataset
-from helper.path import get_new_dataset_path, get_new_dataset_log_path
+from utils import get_new_dataset_path, get_new_dataset_log_path
 
 
 def save_trajectory_lengths(dataset, env_name):

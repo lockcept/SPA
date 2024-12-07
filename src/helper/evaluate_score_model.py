@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from data_generation import RNN
 from data_loading import get_dataloader, load_pair, load_dataset
-from helper import get_score_model_path, get_score_model_log_path
+from utils import get_score_model_path, get_score_model_log_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from data_loading.load_data import get_processed_data
-from helper import get_pair_path
+from utils import get_pair_path
 
 
 class PreferenceDataset(Dataset):

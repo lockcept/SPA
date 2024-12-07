@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.lib.recfunctions as rfn
 
-from helper import get_pair_path
+from utils import get_pair_path
 
 
 def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):

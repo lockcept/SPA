@@ -1,6 +1,6 @@
 from data_loading import get_dataloader
 from reward_learning.MR import MR
-from helper import get_reward_model_path
+from utils import get_reward_model_path
 
 
 def train_reward_model(

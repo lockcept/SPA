@@ -5,7 +5,7 @@ import numpy as np
 
 from data_loading import load_dataset
 from reward_learning import MR, RewardModelBase
-from helper import get_reward_model_path, get_new_dataset_path
+from utils import get_reward_model_path, get_new_dataset_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

@@ -1,7 +1,7 @@
 # Variables
 ENV=box-close-v2
+EXP_LIST ?= exp-00 exp-01 exp-02 exp-03 exp-04
 ALGO_PAIRS ?= full-binary:MR full-binary:MR-linear full-linear:MR-linear list-2:MR-linear list-3:MR-linear list-5:MR-linear list-11:MR-linear score-rnn:MR score-rnn:MR-linear
-PAIRS ?= exp-00 exp-01 exp-02 exp-03 exp-04
 N ?= 300
 
 # Default targets
@@ -9,24 +9,24 @@ load_dataset:
 	python main.py -f 1 -e $(ENV)
 
 pairs:
-	$(foreach pair, $(PAIRS), \
-		python main.py -f 2 -e $(ENV) -p $(pair) -pa score-rnn;)
+	$(foreach exp, $(EXP_LIST), \
+		python main.py -f 2 -e $(ENV) -exp $(exp) -pa score-rnn;)
 
 learn:
-	$(foreach pair, $(PAIRS), \
+	$(foreach exp, $(EXP_LIST), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
 			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
-			python main.py -f 3 -e $(ENV) -p $(pair) -rt 00 -pa $(algo) -n $(N) -ra $(reward); \
-			python main.py -f 3 -e $(ENV) -p $(pair) -rt 01 -pa $(algo) -n $(N) -ra $(reward); \
-			python main.py -f 3 -e $(ENV) -p $(pair) -rt 02 -pa $(algo) -n $(N) -ra $(reward); \
-			python main.py -f -3 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
-			python main.py -f 4 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward); \
-			python main.py -f 5 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward);))
+			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 00 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 01 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 02 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f -3 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+			python main.py -f 4 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+			python main.py -f 5 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward);))
 eval:
-	$(foreach pair, $(PAIRS), \
+	$(foreach exp, $(EXP_LIST), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
 			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
-			python main.py -f -5.2 -e $(ENV) -p $(pair) -pa $(algo) -ra $(reward);))
+			python main.py -f -5.2 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward);))
 

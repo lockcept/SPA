@@ -10,7 +10,7 @@ from offlinerlkit.buffer import ReplayBuffer
 from offlinerlkit.utils.logger import Logger
 
 from data_loading import get_env
-from helper import get_new_dataset_path, get_policy_model_path
+from utils import get_new_dataset_path, get_policy_model_path
 
 
 def get_configs():

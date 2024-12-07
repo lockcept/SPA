@@ -1,7 +1,7 @@
 from typing import Literal
 import numpy as np
 
-from helper import get_pair_path
+from utils import get_pair_path
 
 
 def generate_and_save_cut_pairs(
@@ -43,7 +43,7 @@ def generate_and_save_cut_pairs(
         elif cut_type == "half-random":
             ratio = np.random.uniform(0.25, 0.75)
         elif cut_type == "random":
-            ratio = np.random.uniform(0, 1)
+            ratio = np.random.uniform(0.1, 0.9)
         else:
             raise ValueError(f"Invalid cut type: {cut_type}")
 

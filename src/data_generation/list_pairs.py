@@ -1,6 +1,6 @@
 import numpy as np
 
-from helper import get_pair_path
+from utils import get_pair_path
 
 
 def divide_into_groups(trajectories, num_group):

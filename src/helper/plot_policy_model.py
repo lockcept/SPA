@@ -2,7 +2,7 @@ import os
 
 from matplotlib import pyplot as plt
 import pandas as pd
-from helper.path import get_policy_model_log_path
+from utils import get_policy_model_log_path
 
 
 def remove_max_min(series):

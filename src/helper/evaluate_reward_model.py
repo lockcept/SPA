@@ -8,7 +8,7 @@ from scipy.stats import pearsonr
 
 from data_loading import load_dataset, get_dataloader
 from reward_learning import RewardModelBase, MR
-from helper.path import get_reward_model_path
+from utils import get_reward_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

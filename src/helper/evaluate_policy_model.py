@@ -11,7 +11,7 @@ from offlinerlkit.nets.mlp import MLP
 
 from data_loading import get_env
 from policy_learning import get_configs
-from helper.path import get_policy_model_path
+from utils import get_policy_model_path
 
 
 def evaluate_policy(env_name, exp_name, pair_algo, reward_model_algo, model_subpath):
