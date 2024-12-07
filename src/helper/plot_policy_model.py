@@ -2,7 +2,7 @@ import os
 
 from matplotlib import pyplot as plt
 import pandas as pd
-from utils import get_policy_model_log_path
+from utils import get_policy_model_path, get_policy_model_log_path
 
 
 def remove_max_min(series):
@@ -62,8 +62,9 @@ def process_csv_files(csv_files):
     return final_df
 
 
-def plot_and_save(df_list=[], output_name="name"):
+def plot_and_save(df_list, output_path):
     plt.figure(figsize=(10, 12))
+    output_name = output_path.split(".png")[0]
 
     # Reward
     plt.subplot(2, 1, 1)
@@ -95,11 +96,11 @@ def plot_and_save(df_list=[], output_name="name"):
     plt.grid(True)
 
     plt.tight_layout()
-    plt.savefig(f"log/{output_name}.png")
+    plt.savefig(output_path)
     plt.close()
 
 
-def plot(env_name, exp_list=[], postfix_list=[], output_name="name"):
+def plot(env_name, exp_list, postfix_list, output_path):
     csv_files = []
     df_list = []
 
@@ -108,13 +109,13 @@ def plot(env_name, exp_list=[], postfix_list=[], output_name="name"):
         for exp_name in exp_list:
             pair_algo = postfix.split("_")[0]
             reward_model_algo = postfix.split("_")[1]
-            file_path = get_policy_model_log_path(
+            file_path = get_policy_model_path(
                 env_name=env_name,
                 exp_name=exp_name,
                 pair_algo=pair_algo,
                 reward_model_algo=reward_model_algo,
-                log_file="train_log.csv",
             )
+            file_path = f"{file_path}/train_log.csv"
             if os.path.exists(file_path):
                 print(file_path)
                 csv_files.append(file_path)
@@ -126,7 +127,7 @@ def plot(env_name, exp_list=[], postfix_list=[], output_name="name"):
         df_list.append((postfix, df))
 
     if df_list:
-        plot_and_save(df_list=df_list, output_name=output_name)
+        plot_and_save(df_list=df_list, output_path=output_path)
     else:
         print("nothing to plot")
 
@@ -148,7 +149,7 @@ def plot_policy_models(exp_name):
         "full-binary_MR",
         "full-binary_MR-linear",
         "full-linear_MR-linear",
-        "score-rnn_MR",
+        "rnn-cut-0.25_MR",
         "score-rnn_MR-linear",
         "list-2_MR-linear",
         "list-3_MR-linear",
@@ -161,7 +162,7 @@ def plot_policy_models(exp_name):
             env_name=env_name,
             exp_list=exp_list,
             postfix_list=postfix_list,
-            output_name=get_policy_model_log_path(
+            output_path=get_policy_model_log_path(
                 env_name=env_name,
                 exp_name=exp_name,
                 pair_algo="all",

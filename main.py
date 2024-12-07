@@ -148,9 +148,9 @@ if __name__ == "__main__":
                 "list-3",
                 "list-5",
                 "list-11",
-                "cut-binary",
-                "score-rnn",
-                "score-cutrnn",
+                "cut-0.5",
+                "rnn-full-binary",
+                "rnn-cut-0.5",
             ],
         )
 

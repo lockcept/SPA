@@ -110,7 +110,9 @@ def get_new_dataset_log_path(
     """
     Return path of new dataset log file
     """
-    path = f"log/{env_name}/{exp_name}/{pair_algo}/{reward_model_algo}/{log_file}"
+    path = (
+        f"log/{env_name}/{exp_name}/dataset/{pair_algo}/{reward_model_algo}/{log_file}"
+    )
     make_dir_from_path(path)
     return path
 

@@ -88,5 +88,5 @@ def analyze_env_dataset(env_name):
     """
     dataset = load_dataset(env_name)
     print(dataset["observations"].shape)
+    save_reward_graph_from_dataset(dataset, f"log/{env_name}.png", env_name)
     save_trajectory_lengths(dataset, env_name)
-    save_reward_graph_from_dataset(dataset, f"log/{env_name}", env_name)

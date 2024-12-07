@@ -9,7 +9,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pair_algo):
-    data_loader, obs_dim, act_dim = get_dataloader(
+    data_loader = get_dataloader(
         env_name=env_name,
         exp_name=exp_name,
         pair_type=test_pair_type,
@@ -19,8 +19,15 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
     )
     print(f"evaluate pair {exp_name} {pair_algo}")
 
+    obs_dim, act_dim = data_loader.dataset.get_dimensions()
+
+    raw_pair_algo = "-".join(pair_algo.split("-")[1:])
+
     model_path = get_score_model_path(
-        env_name=env_name, exp_name=exp_name, pair_algo=pair_algo, score_model="rnn"
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=raw_pair_algo,
+        score_model=pair_algo.split("-")[0],
     )
 
     model, _ = RNN.initialize(
@@ -93,11 +100,13 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
     plt.legend()
     plt.grid(True)
 
+    raw_pair_algo = "-".join(pair_algo.split("-")[1:])
+
     output_path = get_score_model_log_path(
         env_name=env_name,
         exp_name=exp_name,
-        pair_algo=pair_algo,
-        score_model="rnn",
+        pair_algo=raw_pair_algo,
+        score_model=pair_algo.split("-")[0],
         log_file=f"true_reward_{test_pair_type}.png",
     )
     plt.savefig(output_path, format="png")

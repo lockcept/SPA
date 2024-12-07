@@ -8,13 +8,13 @@ from scipy.stats import pearsonr
 
 from data_loading import load_dataset, get_dataloader
 from reward_learning import RewardModelBase, MR
-from utils import get_reward_model_path
+from utils import get_reward_model_path, get_reward_model_log_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def calculate_pearson_correlation_with_d4rl(
-    env_name, models: List[RewardModelBase], output_name
+    env_name, models: List[RewardModelBase], output_path
 ):
     dataset = load_dataset(env_name)
 
@@ -43,6 +43,8 @@ def calculate_pearson_correlation_with_d4rl(
         mean_predicted_rewards_np.flatten(), actual_rewards_np.flatten()
     )
 
+    output_name = output_path.split(".png")[0]
+
     plt.figure(figsize=(8, 6))
     plt.scatter(
         actual_rewards_np, mean_predicted_rewards_np, alpha=0.005, label=output_name
@@ -53,7 +55,6 @@ def calculate_pearson_correlation_with_d4rl(
     plt.legend(loc="upper right")
     plt.grid(True)
 
-    output_path = f"log/reward_PCC_{output_name}.png"
     plt.savefig(output_path, format="png")
     plt.close()
 
@@ -61,7 +62,7 @@ def calculate_pearson_correlation_with_d4rl(
 
 
 def evaluate_reward_model(
-    env_name, models: List[RewardModelBase], data_loader, output_name
+    env_name, models: List[RewardModelBase], data_loader, output_path
 ):
 
     correct_predictions = 0
@@ -118,7 +119,7 @@ def evaluate_reward_model(
     accuracy = correct_predictions / total_samples if total_samples > 0 else 0
     avg_mse = cumulative_mse / total_samples if total_samples > 0 else 0
     pearson_corr = calculate_pearson_correlation_with_d4rl(
-        env_name, models, output_name=output_name
+        env_name, models, output_path=output_path
     )
 
     print(f"Correct predictions: {correct_predictions}")
@@ -182,11 +183,19 @@ def evaluate_and_log_reward_models(
             model.eval()
             models.append(model)
 
+    output_path = get_reward_model_log_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        reward_model_algo=reward_model_algo,
+        log_file="PCC.png",
+    )
+
     accuracy, mse, pcc = evaluate_reward_model(
         env_name=env_name,
         models=models,
         data_loader=data_loader,
-        output_name=f"{env_name}_{exp_name}_{pair_algo}_{reward_model_algo}",
+        output_path=output_path,
     )
 
     with open(log_path, "a", encoding="utf-8", newline="") as log_file:
@@ -204,6 +213,19 @@ def evaluate_and_log_reward_models(
                     "PCC",
                 ]
             )
+
+        formatted_accuracy = f"{accuracy:.4f}"
+        formatted_mse = f"{mse:.6f}"
+        formatted_pcc = f"{pcc:.4f}"
+
         writer.writerow(
-            f"{env_name}, {exp_name}, {pair_algo},{reward_model_algo}, {accuracy:.4f}, {mse:.6f}, {pcc:.4f}\n"
+            [
+                env_name,
+                exp_name,
+                pair_algo,
+                reward_model_algo,
+                formatted_accuracy,
+                formatted_mse,
+                formatted_pcc,
+            ]
         )
