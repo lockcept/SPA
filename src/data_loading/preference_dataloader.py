@@ -2,10 +2,14 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from data_loading.load_data import get_processed_data
+from helper import get_pair_path
 
 
-# Custom Dataset for handling structured (s0, s1, mu) pairs
 class PreferenceDataset(Dataset):
+    """
+    Custom Dataset for handling structured (s0, s1, mu) pairs
+    """
+
     def __init__(self, processed_data):
         max_len = max(len(item["s0"]["observations"]) for item in processed_data)
 
@@ -74,12 +78,17 @@ class PreferenceDataset(Dataset):
 
 def get_dataloader(
     env_name,
-    pair_path,
+    exp_name,
+    pair_type,
+    pair_algo,
     batch_size=32,
     shuffle=True,
     drop_last=True,
 ):
-    processed_data = get_processed_data(env_name, pair_path)
+    """
+    Returns a DataLoader object for the given pair data
+    """
+    processed_data = get_processed_data(env_name, exp_name, pair_type, pair_algo)
 
     dataset = PreferenceDataset(processed_data)
 
@@ -88,6 +97,10 @@ def get_dataloader(
         batch_size=batch_size,
         shuffle=shuffle,
         drop_last=drop_last,
+    )
+
+    pair_path = get_pair_path(
+        env_name=env_name, exp_name=exp_name, pair_type=pair_type, pair_algo=pair_algo
     )
 
     print(f"Loaded {pair_path} dataset with {len(dataset)} samples")

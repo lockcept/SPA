@@ -243,11 +243,11 @@ if __name__ == "__main__":
 
         train_reward_model(
             env_name=env_name,
-            pair_name=train_pair_name,
-            pair_val_name=val_pair_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
             reward_model_algo=reward_model_algo,
-            reward_model_path=reward_model_path,
-            num=num,
+            reward_model_tag=reward_model_tag,
+            num_epoch=num,
         )
 
     elif function_number == 4:
@@ -256,10 +256,9 @@ if __name__ == "__main__":
 
         change_reward_from_all_datasets(
             env_name=env_name,
-            pair_name=train_pair_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
             reward_model_algo=reward_model_algo,
-            dataset_name=new_dataset_name,
-            new_dataset_path=new_dataset_path,
         )
 
     elif function_number == 5:

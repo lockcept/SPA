@@ -68,14 +68,15 @@ def generate_score_pairs(
     learn score model and save score pairs
     """
 
-    train_pair_path = f"{exp_name}/train/{pair_algo}.npz"
-    val_pair_path = f"{exp_name}/val/{pair_algo}.npz"
-
-    train_data_loader = get_dataloader(env_name=env_name, pair_path=train_pair_path)
+    train_data_loader = get_dataloader(
+        env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
+    )
 
     obs_dim, act_dim = train_data_loader.dataset.get_dimensions()
 
-    val_data_loader = get_dataloader(env_name=env_name, pair_path=val_pair_path)
+    val_data_loader = get_dataloader(
+        env_name=env_name, exp_name=exp_name, pair_type="val", pair_algo=pair_algo
+    )
 
     if score_model == "rnn":
         model_path = f"model/{env_name}/{exp_name}/score/rnn-{pair_algo}.pth"

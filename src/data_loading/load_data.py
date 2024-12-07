@@ -22,17 +22,27 @@ metaworld_ids = {
 
 
 class MetaworldEnvWrapper:
+    """
+    Wrapper for Metaworld environments
+    """
+
     def __init__(self, env_gen):
         self.env = None
         self.env_gen = env_gen
 
     def reset(self, seed=None):
+        """
+        Reset the environment with a random seed
+        """
         seed = seed if seed is not None else random.randint(0, 1000)
         self.env = self.env_gen(seed=seed)
         obs, _ = self.env.reset()
         return obs
 
     def step(self, action):
+        """
+        Take a step in the environment, combine terminal and truncated flags
+        """
         next_obs, reward, terminal, truncated, info = self.env.step(action)
         return (next_obs, reward, terminal | truncated, info)
 
@@ -40,12 +50,20 @@ class MetaworldEnvWrapper:
         return getattr(self.env, name)
 
     def get_normalized_score(self, reward):
+        """
+        do nothing for metaworld
+        """
         return reward
 
 
 def save_d4rl_dataset(env_name, save_dir):
-    import gym
-    import d4rl  # import 해야 gym.make()에서 d4rl 환경을 불러올 수 있음
+    """
+    Save d4rl dataset as a .npz file
+    """
+    import gym  # pylint: disable=C0415
+
+    # import 해야 gym.make()에서 d4rl 환경을 불러올 수 있음
+    import d4rl  # pylint: disable=C0415, W0611
 
     file_path = os.path.join(save_dir, "raw_dataset.npz")
 
@@ -75,9 +93,12 @@ def save_d4rl_dataset(env_name, save_dir):
 
 
 def save_metaworld_dataset(env_name, save_dir):
-    from zipfile import ZipFile
-    import gdown
-    import pickle
+    """
+    Save metaworld dataset as a .npz file
+    """
+    from zipfile import ZipFile  # pylint: disable=C0415
+    import gdown  # pylint: disable=C0415
+    import pickle  # pylint: disable=C0415
 
     file_id = metaworld_ids[env_name]
     npz_path = os.path.join(save_dir, "raw_dataset.npz")
@@ -156,11 +177,14 @@ def save_metaworld_dataset(env_name, save_dir):
 
 
 def get_env(env_name, is_hidden=False):
-    if env_name in metaworld_ids.keys():
+    """
+    Get the environment object
+    """
+    if env_name in metaworld_ids:
         from metaworld.envs import (
             ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE,
             ALL_V2_ENVIRONMENTS_GOAL_HIDDEN,
-        )
+        )  # pylint: disable=C0415
 
         if not is_hidden:
             env_gen = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[f"{env_name}-goal-observable"]
@@ -172,8 +196,10 @@ def get_env(env_name, is_hidden=False):
             env = MetaworldEnvWrapper(env_gen=env_gen)
             env.reset()
     else:
-        import gym
-        import d4rl
+        import gym  # pylint: disable=C0415
+
+        # import 해야 gym.make()에서 d4rl 환경을 불러올 수 있음
+        import d4rl  # pylint: disable=C0415, W0611
 
         env = gym.make(env_name)
     return env
@@ -213,7 +239,7 @@ def load_pair(env_name, exp_name, pair_type, pair_algo):
     return pair
 
 
-def get_processed_data(env_name, pair_path):
+def get_processed_data(env_name, exp_name, pair_type, pair_algo):
     """
     return structured array of (s0, s1, mu) pairs
     s0, s1 is a structured array of (observations, actions)
@@ -223,7 +249,7 @@ def get_processed_data(env_name, pair_path):
 
     observations = dataset["observations"]
     actions = dataset["actions"]
-    pair = load_pair(env_name, pair_path)
+    pair = load_pair(env_name, exp_name, pair_type, pair_algo)
     processed_data = []
 
     for entry in pair["data"]:

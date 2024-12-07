@@ -3,8 +3,9 @@ from typing import List
 import torch
 import numpy as np
 
-from data_loading import get_dataloader, load_dataset
+from data_loading import load_dataset
 from reward_learning import MR, RewardModelBase
+from helper import get_reward_model_path, get_new_dataset_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -47,18 +48,24 @@ def change_reward(env_name, model_list: List[RewardModelBase], dataset_path):
     np.savez(dataset_path, **save_data)
 
 
-def change_reward_from_all_datasets(
-    env_name, pair_name, reward_model_algo, dataset_name, new_dataset_path
-):
+def change_reward_from_all_datasets(env_name, exp_name, pair_algo, reward_model_algo):
     """
     change reward and save it to new_dataset_path
     use all reward models in model/{env_name}/reward/{dataset_name}_*.pth
     """
 
-    _, obs_dim, act_dim = get_dataloader(env_name=env_name, pair_name=pair_name)
+    dataset = load_dataset(env_name)
+    obs_dim = dataset["observations"].shape[1]
+    act_dim = dataset["actions"].shape[1]
 
     print("obs_dim:", obs_dim, "act_dim:", act_dim)
-    model_path_pattern = f"model/{env_name}/reward/{dataset_name}_*.pth"
+    model_path_pattern = get_reward_model_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        reward_model_algo=reward_model_algo,
+        reward_model_tag="*",
+    )
     model_files = glob.glob(model_path_pattern)
     model_list = []
 
@@ -77,6 +84,10 @@ def change_reward_from_all_datasets(
                 linear_loss=True,
             )
             model_list.append(model)
+
+    new_dataset_path = get_new_dataset_path(
+        env_name, exp_name, pair_algo, reward_model_algo
+    )
 
     change_reward(
         env_name=env_name, model_list=model_list, dataset_path=new_dataset_path

@@ -4,7 +4,7 @@ from .evaluate_reward_model import evaluate_and_log_reward_models
 from .evaluate_policy_model import evaluate_best_and_last_policy
 from .plot_pair import plot_pair, evaluate_pair
 from .plot_policy_model import plot_policy_models
-from .path import get_pair_path
+from .path import get_pair_path, get_reward_model_path, get_new_dataset_path
 
 __all__ = [
     "analyze_env_dataset",
@@ -16,4 +16,6 @@ __all__ = [
     "evaluate_pair",
     "plot_policy_models",
     "get_pair_path",
+    "get_reward_model_path",
+    "get_new_dataset_path",
 ]
