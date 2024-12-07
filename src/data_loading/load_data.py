@@ -130,8 +130,8 @@ def save_metaworld_dataset(env_name, save_dir):
         for root, dirs, files in os.walk(temp_dir, topdown=False):
             for file in files:
                 os.remove(os.path.join(root, file))
-            for dir in dirs:
-                os.rmdir(os.path.join(root, dir))
+            for d in dirs:
+                os.rmdir(os.path.join(root, d))
         os.rmdir(temp_dir)
 
     else:
@@ -181,10 +181,11 @@ def get_env(env_name, is_hidden=False):
     Get the environment object
     """
     if env_name in metaworld_ids:
+        # pylint: disable=C0415
         from metaworld.envs import (
             ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE,
             ALL_V2_ENVIRONMENTS_GOAL_HIDDEN,
-        )  # pylint: disable=C0415
+        )
 
         if not is_hidden:
             env_gen = ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE[f"{env_name}-goal-observable"]
@@ -209,7 +210,7 @@ def save_dataset(env_name):
     save_dir = f"dataset/{env_name}"
     os.makedirs(save_dir, exist_ok=True)
 
-    if env_name in metaworld_ids.keys():
+    if env_name in metaworld_ids:
         save_metaworld_dataset(env_name=env_name, save_dir=save_dir)
     else:
         save_d4rl_dataset(env_name=env_name, save_dir=save_dir)

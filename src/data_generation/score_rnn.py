@@ -114,7 +114,7 @@ class RNN(nn.Module):
         val_data_loader,
         num_epochs=10,
     ):
-        with open(self.log_path, mode="w", newline="") as file:
+        with open(self.log_path, mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(["Epoch", "Train Loss", "Validation Loss"])
 
@@ -122,7 +122,7 @@ class RNN(nn.Module):
         loss_history = []
         val_loss_history = []
 
-        with open(self.log_path, mode="w", newline="") as file:
+        with open(self.log_path, mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(["Epoch", "Train Loss", "Validation Loss"])
 
@@ -130,7 +130,7 @@ class RNN(nn.Module):
         loss_history = []
         val_loss_history = []
 
-        for epoch in tqdm(range(num_epochs), desc=f"learning score function"):
+        for epoch in tqdm(range(num_epochs), desc="learning score function"):
             self.train()
             epoch_loss = 0.0
 
@@ -166,7 +166,7 @@ class RNN(nn.Module):
             val_loss = self.evaluate(data_loader=val_data_loader)
             val_loss_history.append(val_loss)
 
-            with open(self.log_path, mode="a", newline="") as file:
+            with open(self.log_path, mode="a", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
                 writer.writerow([epoch + 1, avg_epoch_loss, val_loss])
 

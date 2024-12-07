@@ -3,6 +3,7 @@ import torch
 
 from data_generation.score_rnn import RNN
 from data_loading import get_dataloader, load_pair
+from helper import get_score_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -79,7 +80,7 @@ def generate_score_pairs(
     )
 
     if score_model == "rnn":
-        model_path = f"model/{env_name}/{exp_name}/score/rnn-{pair_algo}.pth"
+        model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
         # train rnn with train data
         model, optimizer = RNN.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path

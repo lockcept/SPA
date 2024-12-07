@@ -6,7 +6,11 @@ from .plot_pair import plot_pair, evaluate_pair
 from .plot_policy_model import plot_policy_models
 from .path import (
     get_pair_path,
+    get_pair_log_path,
+    get_score_model_path,
+    get_score_model_log_path,
     get_reward_model_path,
+    get_reward_model_log_path,
     get_new_dataset_path,
     get_policy_model_path,
 )
@@ -21,7 +25,11 @@ __all__ = [
     "evaluate_pair",
     "plot_policy_models",
     "get_pair_path",
+    "get_pair_log_path",
+    "get_score_model_path",
+    "get_score_model_log_path",
     "get_reward_model_path",
+    "get_reward_model_log_path",
     "get_new_dataset_path",
     "get_policy_model_path",
 ]

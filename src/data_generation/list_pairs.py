@@ -79,15 +79,6 @@ def generate_pairs(trajectory_pairs, trajectories_with_groups, num_group):
     return np.array(pairs, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f")])
 
 
-def save_pairs(env_name, save_pair_dir, num_group, pair_data):
-    """
-    save pairs to npz file
-    """
-    save_path = f"pair/{env_name}/{save_pair_dir}/list-{num_group}.npz"
-
-    print(f"Preference pairs saved at {save_path}")
-
-
 def generate_and_save_list_pairs(
     dataset,
     env_name,

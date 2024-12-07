@@ -3,15 +3,25 @@ import numpy as np
 import torch
 from data_generation import RNN
 from data_loading import get_dataloader, load_pair, load_dataset
+from helper import get_score_model_path, get_score_model_log_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def evaluate_score_model(env_name, model_path, pair_name):
+def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pair_algo):
     data_loader, obs_dim, act_dim = get_dataloader(
-        env_name=env_name, pair_name=pair_name, shuffle=False, drop_last=False
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type=test_pair_type,
+        pair_algo=test_pair_algo,
+        shuffle=False,
+        drop_last=False,
     )
-    print(f"evaluate {model_path} with pair {pair_name}")
+    print(f"evaluate pair {exp_name} {pair_algo}")
+
+    model_path = get_score_model_path(
+        env_name=env_name, exp_name=exp_name, pair_algo=pair_algo, score_model="rnn"
+    )
 
     model, _ = RNN.initialize(
         config={"obs_dim": obs_dim, "act_dim": act_dim},
@@ -59,7 +69,12 @@ def evaluate_score_model(env_name, model_path, pair_name):
     score_list = np.concatenate(score_list, axis=0)
 
     dataset = load_dataset(env_name)
-    pairs = load_pair(env_name, pair_name)
+    pairs = load_pair(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type=test_pair_type,
+        pair_algo=test_pair_algo,
+    )
     reward_sum_list = []
     for s0, s1, _ in pairs["data"]:
         reward_sum_0 = np.sum(dataset["rewards"][s0[0] : s0[1]])
@@ -69,10 +84,7 @@ def evaluate_score_model(env_name, model_path, pair_name):
 
     pearson_corr = np.corrcoef(reward_sum_list, score_list)[0, 1]
 
-    model_name = model_path.split("/")[-1].split(".")[0]
-    pair_name_base = pair_name.split("_")[0]
-
-    label = f"{env_name}: {model_name}, {pair_name_base}"
+    label = f"{env_name}: {exp_name}, {pair_algo}"
     plt.figure(figsize=(8, 6))
     plt.scatter(reward_sum_list, score_list, alpha=0.5, label=label)
     plt.xlabel("Sum of Rewards")
@@ -81,6 +93,12 @@ def evaluate_score_model(env_name, model_path, pair_name):
     plt.legend()
     plt.grid(True)
 
-    output_path = f"log/score_{env_name}_{model_name}_{pair_name_base}.png"
+    output_path = get_score_model_log_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        score_model="rnn",
+        log_file=f"true_reward_{test_pair_type}.png",
+    )
     plt.savefig(output_path, format="png")
     plt.close()

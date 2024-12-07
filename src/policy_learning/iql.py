@@ -115,7 +115,7 @@ def train(
     """
     Train IQL policy on the given dataset
     """
-    dir = get_policy_model_path(env_name, exp_name, pair_algo, reward_model_algo)
+    policy_dir = get_policy_model_path(env_name, exp_name, pair_algo, reward_model_algo)
 
     # import gym lazyly to reduce the overhead
     from offlinerlkit.policy_trainer import MFPolicyTrainer  # pylint: disable=C0415
@@ -244,7 +244,7 @@ def train(
         "policy_training_progress": "csv",
         "tb": "tensorboard",
     }
-    logger = Logger(dir, output_config)
+    logger = Logger(policy_dir, output_config)
     logger.log_hyperparameters(configs)
 
     # create policy trainer

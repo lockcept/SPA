@@ -1,13 +1,26 @@
 from matplotlib import pyplot as plt
 import numpy as np
 from data_loading import get_processed_data, load_dataset, load_pair
+from helper import get_pair_log_path
 
 
-def plot_pair(env_name_list, pair_algo_list, pair_name_base):
+def plot_pair(env_name_list, exp_name, pair_algo_list):
     for env_name in env_name_list:
         for pair_algo in pair_algo_list:
-            pair_name = f"{pair_name_base}_{pair_algo}"
-            data = get_processed_data(env_name, pair_name)
+            data = get_processed_data(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_type="train",
+                pair_algo=pair_algo,
+            )
+
+            log_path = get_pair_log_path(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_type="train",
+                pair_algo=pair_algo,
+                log_file="mu_histogram.png",
+            )
 
             # histogram of mu values
             mu_values = [item["mu"] for item in data]
@@ -15,14 +28,14 @@ def plot_pair(env_name_list, pair_algo_list, pair_name_base):
             plt.hist(mu_values, bins=50, alpha=0.75)
             plt.xlabel("Mu Values")
             plt.ylabel("Frequency")
-            plt.title(f"{env_name}_{pair_name}")
+            plt.title(f"{env_name}_{exp_name}_{pair_algo}")
             plt.grid(True)
-            plt.savefig(f"log/mu_histogram_{env_name}_{pair_name}.png")
+            plt.savefig(log_path)
 
 
-def evaluate_pair(env_name, pair_name):
+def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     dataset = load_dataset(env_name)
-    data = load_pair(env_name, pair_name)
+    data = load_pair(env_name, exp_name, pair_type, pair_algo)
 
     answer_count = 0
     for s0, s1, mu in data["data"]:

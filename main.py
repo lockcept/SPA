@@ -140,6 +140,7 @@ if __name__ == "__main__":
 
         plot_pair(
             env_name_list=["box-close-v2"],
+            exp_name=exp_name,
             pair_algo_list=[
                 "full-binary",
                 "full-linear",
@@ -151,25 +152,31 @@ if __name__ == "__main__":
                 "score-rnn",
                 "score-cutrnn",
             ],
-            pair_name_base=train_pair_name_base,
         )
 
     elif function_number == -2.1:
         # Analyze Pairset
-        evaluate_pair(env_name, train_pair_name)
+        evaluate_pair(
+            env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
+        )
 
     elif function_number == -2.2:
         # Analyze Pairset
         score_algo = pair_algo.split("-")[1]
         evaluate_score_model(
             env_name=env_name,
-            model_path=f"model/{env_name}/score/{pair_name_base}_{score_algo}.pth",
-            pair_name=train_pair_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            test_pair_type="train",
+            test_pair_algo=pair_algo,
         )
+
         evaluate_score_model(
             env_name=env_name,
-            model_path=f"model/{env_name}/score/{pair_name_base}_{score_algo}.pth",
-            pair_name=test_pair_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            test_pair_type="test",
+            test_pair_algo="full-binary",
         )
 
     elif function_number == -3:
