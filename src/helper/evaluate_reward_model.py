@@ -146,11 +146,13 @@ def evaluate_and_log_reward_models(
     model_path_pattern = f"model/{env_name}/reward/{new_dataset_name}_*.pth"
     model_files = glob.glob(model_path_pattern)
 
-    data_loader, obs_dim, act_dim = get_dataloader(
+    data_loader = get_dataloader(
         env_name=env_name,
         pair_name=test_pair_name,
         drop_last=False,
     )
+
+    obs_dim, act_dim = data_loader.dataset.get_dimensions()
 
     models = []
 

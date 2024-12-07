@@ -1,9 +1,8 @@
-import os
 import numpy as np
 
 from data_generation.cut_pairs import generate_and_save_cut_pairs
-from data_generation.full_scripted_teacher import generate_and_save_full_pairs
-from data_generation.list_scripted_teacher import generate_and_save_list_pairs
+from data_generation.full_pairs import generate_and_save_full_pairs
+from data_generation.list_pairs import generate_and_save_list_pairs
 from data_generation.scored_pairs import generate_score_pairs
 from data_generation.utils import extract_trajectory_indices
 from data_loading.load_data import load_dataset, load_pair
@@ -30,6 +29,9 @@ def choose_index_pairs_from_list(list_length, pair_count):
 
 
 def cut_trajectories(indices, trajectory_length):
+    """
+    cut trajectories to have a fixed length
+    """
     valid_trajectories = []
 
     for start, end in indices:
@@ -40,7 +42,7 @@ def cut_trajectories(indices, trajectory_length):
     return valid_trajectories
 
 
-def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False):
+def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     """
     generate all algo pairs with hard-coded values
     """
@@ -54,25 +56,38 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     val_pairs = 500
     test_pairs = 500
 
-    train_pair_name_base = f"{pair_name_base}-train"
-    val_pair_name_base = f"{pair_name_base}-val"
-    test_pair_name_base = f"{pair_name_base}-test"
-
-    save_path = f"pair/{env_name}/{train_pair_name_base}_full-binary.npz"
-    is_already_exist = os.path.exists(save_path)
+    try:
+        _ = load_pair(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="train",
+            pair_algo="full-binary",
+        )["data"]
+        is_already_exist = True
+    except FileNotFoundError:
+        is_already_exist = False
 
     dataset = load_dataset(env_name=env_name)
     if is_already_exist:
-        print(f"Pair already exists at {save_path}, use it for generating")
+        print("full-binary Pair already exists, use it for generating")
 
         train_pairs_with_mu = load_pair(
-            env_name=env_name, pair_name=f"{train_pair_name_base}_full-binary"
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="train",
+            pair_algo="full-binary",
         )["data"]
         val_pairs_with_mu = load_pair(
-            env_name=env_name, pair_name=f"{val_pair_name_base}_full-binary"
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="val",
+            pair_algo="full-binary",
         )["data"]
         test_pairs_with_mu = load_pair(
-            env_name=env_name, pair_name=f"{test_pair_name_base}_full-binary"
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="test",
+            pair_algo="full-binary",
         )["data"]
 
         train_pairs = [
@@ -141,7 +156,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=train_pair_name_base,
+        exp_name=exp_name,
+        pair_type="train",
         pairs=train_pairs,
         mu_types=[
             "binary",
@@ -151,7 +167,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=val_pair_name_base,
+        exp_name=exp_name,
+        pair_type="val",
         pairs=val_pairs,
         mu_types=[
             "binary",
@@ -163,7 +180,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=test_pair_name_base,
+        exp_name=exp_name,
+        pair_type="test",
         pairs=test_pairs,
         mu_types=["binary"],
     )
@@ -173,7 +191,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_list_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=train_pair_name_base,
+        exp_name=exp_name,
+        pair_type="train",
         pairs=train_pairs,
         all_indices=train_set,
         num_groups=[2, 3, 5, 11],
@@ -182,7 +201,8 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_and_save_list_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=val_pair_name_base,
+        exp_name=exp_name,
+        pair_type="val",
         pairs=val_pairs,
         all_indices=val_set,
         num_groups=[2, 3, 5, 11],
@@ -196,39 +216,38 @@ def generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=False)
     generate_score_pairs(
         dataset=dataset,
         env_name=env_name,
-        pair_name_base=pair_name_base,
-        train_pair_name=f"{pair_name_base}-train_full-binary",
-        val_pair_name=f"{pair_name_base}-val_full-binary",
+        exp_name=exp_name,
         num_epochs=2000,
-        train_pairs=train_pairs,
-        val_pairs=val_pairs,
-        pair_algos=["rnn"],
+        pair_algo="full-binary",
+        score_model="rnn",
     )
 
-    # score-cutrnn
+    # cut-score-rnn
 
-    cut_train_pairs = generate_and_save_cut_pairs(
-        dataset=dataset,
-        env_name=env_name,
-        pair_name_base=train_pair_name_base,
-        pairs=train_pairs,
-    )
+    for cut_type in ["0.5", "0.25", "half-random", "random"]:
+        generate_and_save_cut_pairs(
+            dataset=dataset,
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="train",
+            pairs=train_pairs,
+            cut_type=cut_type,
+        )
 
-    cut_val_pairs = generate_and_save_cut_pairs(
-        dataset=dataset,
-        env_name=env_name,
-        pair_name_base=val_pair_name_base,
-        pairs=val_pairs,
-    )
+        generate_and_save_cut_pairs(
+            dataset=dataset,
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="val",
+            pairs=val_pairs,
+            cut_type=cut_type,
+        )
 
-    generate_score_pairs(
-        dataset=dataset,
-        env_name=env_name,
-        pair_name_base=pair_name_base,
-        train_pair_name=f"{pair_name_base}-train_cut-binary",
-        val_pair_name=f"{pair_name_base}-val_cut-binary",
-        num_epochs=2000,
-        train_pairs=[(p[0], p[1]) for p in cut_train_pairs],
-        val_pairs=[(p[0], p[1]) for p in cut_val_pairs],
-        pair_algos=["cutrnn"],
-    )
+        generate_score_pairs(
+            dataset=dataset,
+            env_name=env_name,
+            exp_name=exp_name,
+            num_epochs=2000,
+            pair_algo=f"cut-{cut_type}",
+            score_model="rnn",
+        )

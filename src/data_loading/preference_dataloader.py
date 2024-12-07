@@ -74,12 +74,12 @@ class PreferenceDataset(Dataset):
 
 def get_dataloader(
     env_name,
-    pair_name,
+    pair_path,
     batch_size=32,
     shuffle=True,
     drop_last=True,
 ):
-    processed_data = get_processed_data(env_name, pair_name)
+    processed_data = get_processed_data(env_name, pair_path)
 
     dataset = PreferenceDataset(processed_data)
 
@@ -90,8 +90,6 @@ def get_dataloader(
         drop_last=drop_last,
     )
 
-    obs_dim, act_dim = dataset.get_dimensions()
+    print(f"Loaded {pair_path} dataset with {len(dataset)} samples")
 
-    print(f"Loaded {pair_name} dataset with {len(dataset)} samples")
-
-    return dataloader, obs_dim, act_dim
+    return dataloader

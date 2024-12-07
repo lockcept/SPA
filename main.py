@@ -31,8 +31,7 @@ from src.policy_learning import train, change_reward_from_all_datasets
 
 
 DEFAULT_ENV = "box-close-v2"
-DEFAULT_PAIR = "train"
-DEFAULT_PAIR_VAL = "val"
+DEFAULT_EXP_NAME = "exp00"
 DEFAULT_PAIR_ALGO = "full-binary"
 DEFAULT_REWARD_MODEL_ALGO = "MR"
 DEFAULT_REWARD_MODEL_TAG = "-"
@@ -67,15 +66,15 @@ if __name__ == "__main__":
         "--num",
         type=int,
         default=1000,
-        help="Number of pairs",
+        help="Number of epoch",
     )
 
     parser.add_argument(
-        "-p",
-        "--pair",
+        "-exp",
+        "--exp",
         type=str,
-        default=DEFAULT_PAIR,
-        help="Name of Experiment pair",
+        default=DEFAULT_EXP_NAME,
+        help="Name of Experiment",
     )
 
     parser.add_argument(
@@ -130,22 +129,13 @@ if __name__ == "__main__":
     env_name = args.env
     env_hidden = args.env_hidden
     num = args.num
-    pair_name_base = args.pair
+    exp_name = args.exp
     reward_model_algo = args.reward_model_algo
     reward_model_tag = args.reward_model_tag
     function_number = args.function_number
     pair_algo = args.pair_algo
 
     # Derived variables
-    train_pair_name_base = f"{pair_name_base}-train"
-    val_pair_name_base = f"{pair_name_base}-val"
-    test_pair_name_base = f"{pair_name_base}-test"
-
-    train_pair_name = f"{train_pair_name_base}_{pair_algo}"
-    val_pair_name = f"{val_pair_name_base}_{pair_algo}"
-    test_pair_name = f"{test_pair_name_base}_full-binary"
-
-    pair_name = f"{pair_name_base}_{pair_algo}"
     new_dataset_name = f"{pair_name}_{reward_model_algo}"
     reward_model_name = f"{new_dataset_name}_{reward_model_tag}"
 
@@ -242,9 +232,11 @@ if __name__ == "__main__":
         save_dataset(env_name)
     elif function_number == 2:
         # Generate preference pairs
-        print("Generating preference pairs", env_name, pair_name_base)
+        print("Generating preference pairs", env_name, exp_name)
 
-        generate_all_algo_pairs(env_name, pair_name_base, include_score_pairs=True)
+        generate_all_algo_pairs(
+            env_name=env_name, exp_name=exp_name, include_score_pairs=True
+        )
     elif function_number == 3:
         # Train reward model
         print("Training reward model")

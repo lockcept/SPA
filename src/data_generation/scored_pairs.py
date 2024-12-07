@@ -1,10 +1,8 @@
-import os
-
 import numpy as np
 import torch
 
 from data_generation.score_rnn import RNN
-from data_loading import get_dataloader
+from data_loading import get_dataloader, load_pair
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -15,7 +13,7 @@ def fill_feedback_from_pairs(dataset, pairs, model):
 
     Args:
         dataset: dict
-        pairs: list of tuples ((int, int), (int, int))
+        pairs: list of tuples ((int, int), (int, int), float)
         model: torch.nn.Module
 
     Returns:
@@ -30,7 +28,7 @@ def fill_feedback_from_pairs(dataset, pairs, model):
     model.eval()
 
     with torch.no_grad():
-        for s0, s1 in pairs:
+        for s0, s1, _ in pairs:
             s0_obs = observations[s0[0] : s0[1]]
             s0_act = actions[s0[0] : s0[1]]
             s1_obs = observations[s1[0] : s1[1]]
@@ -58,77 +56,72 @@ def fill_feedback_from_pairs(dataset, pairs, model):
     )
 
 
-def save_pairs(env_name, pair, pair_algo, pair_data):
-    save_path = f"pair/{env_name}/{pair}_score-{pair_algo}.npz"
-    save_dir = os.path.dirname(save_path)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    np.savez(save_path, data=pair_data)
-    print(f"Preference pairs saved at {save_path}")
-
-
 def generate_score_pairs(
     dataset,
     env_name,
-    pair_name_base,
-    train_pair_name,
-    val_pair_name,
+    exp_name,
     num_epochs,
-    pair_algos=None,
-    train_pairs=None,
-    val_pairs=None,
+    pair_algo,
+    score_model,
 ):
     """
     learn score model and save score pairs
     """
 
-    train_data_loader, obs_dim, act_dim = get_dataloader(
-        env_name, pair_name=train_pair_name
+    train_pair_path = f"{exp_name}/train/{pair_algo}.npz"
+    val_pair_path = f"{exp_name}/val/{pair_algo}.npz"
+
+    train_data_loader = get_dataloader(env_name=env_name, pair_path=train_pair_path)
+
+    obs_dim, act_dim = train_data_loader.dataset.get_dimensions()
+
+    val_data_loader = get_dataloader(env_name=env_name, pair_path=val_pair_path)
+
+    if score_model == "rnn":
+        model_path = f"model/{env_name}/{exp_name}/score/rnn-{pair_algo}.pth"
+        # train rnn with train data
+        model, optimizer = RNN.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
+        )
+    else:
+        model = None
+        optimizer = None
+
+    if model is None:
+        print(f"Model {pair_algo} is not supported")
+        return
+
+    model.train_model(
+        train_data_loader=train_data_loader,
+        val_data_loader=val_data_loader,
+        optimizer=optimizer,
+        num_epochs=num_epochs,
     )
 
-    val_data_loader, _, _ = get_dataloader(env_name, pair_name=val_pair_name)
+    best_model, _ = RNN.initialize(
+        config={"obs_dim": obs_dim, "act_dim": act_dim},
+        path=model_path,
+        skip_if_exists=False,
+    )
 
-    for pair_algo in pair_algos:
-        if pair_algo.endswith("rnn"):
-            model_path = f"model/{env_name}/score/{pair_name_base}_{pair_algo}.pth"
-            # train rnn with train data
-            model, optimizer = RNN.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
-            )
-        else:
-            model = None
-            optimizer = None
+    # fill feedback in pairs
+    train_pairs = load_pair(
+        env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
+    )["data"]
+    val_pairs = load_pair(
+        env_name=env_name, exp_name=exp_name, pair_type="val", pair_algo=pair_algo
+    )["data"]
+    train_pairs = fill_feedback_from_pairs(dataset, train_pairs, best_model)
+    val_pairs = fill_feedback_from_pairs(dataset, val_pairs, best_model)
 
-        if model is None:
-            print(f"Model {pair_algo} is not supported")
-            continue
-
-        model.train_model(
-            train_data_loader=train_data_loader,
-            val_data_loader=val_data_loader,
-            optimizer=optimizer,
-            num_epochs=num_epochs,
-        )
-
-        best_model, _ = RNN.initialize(
-            config={"obs_dim": obs_dim, "act_dim": act_dim},
-            path=model_path,
-            skip_if_exists=False,
-        )
-
-        # fill feedback in pairs
-        train_pairs = fill_feedback_from_pairs(dataset, train_pairs, best_model)
-        val_pairs = fill_feedback_from_pairs(dataset, val_pairs, best_model)
-
-        # save pairs
-        np.savez(
-            f"pair/{env_name}/{pair_name_base}-train_score-{pair_algo}.npz",
-            data=train_pairs,
-        )
-        np.savez(
-            f"pair/{env_name}/{pair_name_base}-val_score-{pair_algo}.npz",
-            data=val_pairs,
-        )
+    # save pairs
+    np.savez(
+        f"pair/{env_name}/{exp_name}/train/{score_model}-{pair_algo}.npz",
+        data=train_pairs,
+    )
+    np.savez(
+        f"pair/{env_name}/{exp_name}/val/{score_model}-{pair_algo}.npz",
+        data=val_pairs,
+    )
 
     return

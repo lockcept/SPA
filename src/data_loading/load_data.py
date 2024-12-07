@@ -2,6 +2,8 @@ import os
 import random
 import numpy as np
 
+from helper import get_pair_path
+
 
 metaworld_ids = {
     "box-close-v2": "1yva0VXvnnyMOCLfWstj5q0TK-oi3Rt65",
@@ -195,17 +197,23 @@ def load_dataset(env_name):
     return dataset
 
 
-def load_pair(env_name, pair_name):
+def load_pair(env_name, exp_name, pair_type, pair_algo):
     """
     {data: [(s0, s1, mu)]}
     """
-    dir_path = f"pair/{env_name}"
-    pair = np.load(os.path.join(dir_path, f"{pair_name}.npz"), allow_pickle=True)
+    path = get_pair_path(
+        env_name=env_name, exp_name=exp_name, pair_type=pair_type, pair_algo=pair_algo
+    )
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Pair file not found at {path}")
+
+    pair = np.load(path, allow_pickle=True)
 
     return pair
 
 
-def get_processed_data(env_name, pair_name):
+def get_processed_data(env_name, pair_path):
     """
     return structured array of (s0, s1, mu) pairs
     s0, s1 is a structured array of (observations, actions)
@@ -215,7 +223,7 @@ def get_processed_data(env_name, pair_name):
 
     observations = dataset["observations"]
     actions = dataset["actions"]
-    pair = load_pair(env_name, pair_name)
+    pair = load_pair(env_name, pair_path)
     processed_data = []
 
     for entry in pair["data"]:
@@ -229,7 +237,6 @@ def get_processed_data(env_name, pair_name):
         s0_act = actions[s0_idx[0] : s0_idx[1]]
         s1_obs = observations[s1_idx[0] : s1_idx[1]]
         s1_act = actions[s1_idx[0] : s1_idx[1]]
-        mu = mu
 
         dtype_list_s0 = [
             ("observations", "f4", (s0_obs.shape[1],)),

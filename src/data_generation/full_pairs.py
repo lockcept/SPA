@@ -1,7 +1,7 @@
-import os
-
 import numpy as np
 import numpy.lib.recfunctions as rfn
+
+from helper import get_pair_path
 
 
 def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
@@ -95,13 +95,13 @@ def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
 
 
 def generate_and_save_full_pairs(
-    dataset, env_name, pair_name_base, pairs, mu_types=None
+    dataset, env_name, exp_name, pair_type, pairs, mu_types=None
 ):
     """
     Args:
         dataset,
         env_name: str,
-        pair_name_base: str,
+        save_pair_dir: str,
         pairs: list of ((int, int), (int, int)),
         mu_types: list of str,
     """
@@ -143,9 +143,11 @@ def generate_and_save_full_pairs(
             reward_info=reward_info,
         )
 
-        save_path = f"pair/{env_name}/{pair_name_base}_full-{mu_type}.npz"
-        save_dir = os.path.dirname(save_path)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        save_path = get_pair_path(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type=pair_type,
+            pair_algo=f"full-{mu_type}",
+        )
         np.savez(save_path, data=pair_data)
         print(f"Preference pairs saved at {save_path}")

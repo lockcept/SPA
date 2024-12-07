@@ -1,6 +1,6 @@
-import os
-
 import numpy as np
+
+from helper import get_pair_path
 
 
 def divide_into_groups(trajectories, num_group):
@@ -79,23 +79,20 @@ def generate_pairs(trajectory_pairs, trajectories_with_groups, num_group):
     return np.array(pairs, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f")])
 
 
-def save_pairs(env_name, pair, num_group, pair_data):
+def save_pairs(env_name, save_pair_dir, num_group, pair_data):
     """
     save pairs to npz file
     """
-    save_path = f"pair/{env_name}/{pair}_list-{num_group}.npz"
-    save_dir = os.path.dirname(save_path)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+    save_path = f"pair/{env_name}/{save_pair_dir}/list-{num_group}.npz"
 
-    np.savez(save_path, data=pair_data)
     print(f"Preference pairs saved at {save_path}")
 
 
 def generate_and_save_list_pairs(
     dataset,
     env_name,
-    pair_name_base,
+    exp_name,
+    pair_type,
     pairs,
     all_indices,
     num_groups=None,
@@ -143,8 +140,12 @@ def generate_and_save_list_pairs(
             num_group=num_group,
         )
 
-        save_pairs(
-            env_name=env_name, pair=pair_name_base, num_group=num_group, pair_data=pairs
+        save_path = get_pair_path(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type=pair_type,
+            pair_algo=f"list-{num_group}",
         )
 
-    print("finish generating preference pairs", env_name, pair_name_base)
+        np.savez(save_path, data=pairs)
+        print("finish saving preference pair", save_path)
