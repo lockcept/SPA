@@ -1,5 +1,4 @@
 import random
-import os
 
 import numpy as np
 import torch
@@ -11,6 +10,7 @@ from offlinerlkit.buffer import ReplayBuffer
 from offlinerlkit.utils.logger import Logger
 
 from data_loading import get_env
+from helper import get_new_dataset_path, get_policy_model_path
 
 
 def get_configs():
@@ -105,10 +105,17 @@ def normalize_rewards(dataset):
     return dataset
 
 
-def train(env_name, dataset_path, log_dir, num_epochs=1000, is_goal_hidden=False):
+def train(
+    env_name,
+    exp_name,
+    pair_algo,
+    reward_model_algo,
+    num_epochs=1000,
+):
     """
     Train IQL policy on the given dataset
     """
+    dir = get_policy_model_path(env_name, exp_name, pair_algo, reward_model_algo)
 
     # import gym lazyly to reduce the overhead
     from offlinerlkit.policy_trainer import MFPolicyTrainer  # pylint: disable=C0415
@@ -116,7 +123,10 @@ def train(env_name, dataset_path, log_dir, num_epochs=1000, is_goal_hidden=False
 
     configs = get_configs()
     # create env and dataset
-    env = get_env(env_name, is_hidden=is_goal_hidden)
+    env = get_env(env_name, is_hidden=False)
+    dataset_path = get_new_dataset_path(
+        env_name, exp_name, pair_algo, reward_model_algo
+    )
     dataset_npz = np.load(dataset_path)
     dataset = {key: dataset_npz[key] for key in dataset_npz}
     dataset = qlearning_dataset(env, dataset=dataset)
@@ -229,15 +239,12 @@ def train(env_name, dataset_path, log_dir, num_epochs=1000, is_goal_hidden=False
 
     # log
     # log_dirs = make_log_dirs(env_name, configs["algo_name"], configs["seed"], configs)
-    log_dirs = log_dir
-    if not os.path.exists(log_dirs):
-        os.makedirs(log_dirs)
     output_config = {
         "consoleout_backup": "stdout",
         "policy_training_progress": "csv",
         "tb": "tensorboard",
     }
-    logger = Logger(log_dirs, output_config)
+    logger = Logger(dir, output_config)
     logger.log_hyperparameters(configs)
 
     # create policy trainer

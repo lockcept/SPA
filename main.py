@@ -54,14 +54,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-eh",
-        "--env_hidden",
-        action="store_true",
-        default=False,
-        help="is_hidden for environment (True, False)",
-    )
-
-    parser.add_argument(
         "-n",
         "--num",
         type=int,
@@ -127,24 +119,12 @@ if __name__ == "__main__":
     # Parse arguments
     args = parser.parse_args()
     env_name = args.env
-    env_hidden = args.env_hidden
     num = args.num
     exp_name = args.exp
     reward_model_algo = args.reward_model_algo
     reward_model_tag = args.reward_model_tag
     function_number = args.function_number
     pair_algo = args.pair_algo
-
-    # Derived variables
-    new_dataset_name = f"{pair_name}_{reward_model_algo}"
-    reward_model_name = f"{new_dataset_name}_{reward_model_tag}"
-
-    # Paths
-    reward_model_path = f"model/{env_name}/reward/{reward_model_name}.pth"
-    new_dataset_path = f"dataset/{env_name}/{new_dataset_name}_dataset.npz"
-    policy_model_dir = f"model/{env_name}/policy/{new_dataset_name}"
-    if env_hidden:
-        policy_model_dir = policy_model_dir + "_hidden"
 
     print("main function started with args", args)
 
@@ -252,7 +232,7 @@ if __name__ == "__main__":
 
     elif function_number == 4:
         # Change reward and save dataset
-        print("Changing reward", env_name, new_dataset_name)
+        print("Changing reward", env_name, exp_name, pair_algo, reward_model_algo)
 
         change_reward_from_all_datasets(
             env_name=env_name,
@@ -263,12 +243,12 @@ if __name__ == "__main__":
 
     elif function_number == 5:
         # Train policy
-        print("Training policy", env_name, new_dataset_path)
+        print("Training policy", env_name, exp_name, pair_algo, reward_model_algo)
 
         train(
             env_name=env_name,
-            dataset_path=new_dataset_path,
-            log_dir=policy_model_dir,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            reward_model_algo=reward_model_algo,
             num_epochs=num,
-            is_goal_hidden=env_hidden,
         )
