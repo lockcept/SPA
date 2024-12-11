@@ -91,8 +91,8 @@ def evaluate_policy(env_name, exp_name, pair_algo, reward_model_algo, model_subp
         exp_name=exp_name,
         pair_algo=pair_algo,
         reward_model_algo=reward_model_algo,
-        log_path=model_subpath,
     )
+    model_path = f"{model_path}{model_subpath}"
 
     state_dict = torch.load(
         model_path,
