@@ -115,7 +115,7 @@ def plot(env_name, exp_list, postfix_list, output_path):
                 pair_algo=pair_algo,
                 reward_model_algo=reward_model_algo,
             )
-            file_path = f"{file_path}/train_log.csv"
+            file_path = f"{file_path}train_log.csv"
             if os.path.exists(file_path):
                 print(file_path)
                 csv_files.append(file_path)
@@ -138,7 +138,6 @@ def plot_policy_models(exp_name):
     """
     env_list = ["box-close-v2"]
     exp_list = [
-        exp_name,
         f"{exp_name}-00",
         f"{exp_name}-01",
         f"{exp_name}-02",
@@ -149,12 +148,23 @@ def plot_policy_models(exp_name):
         "full-binary_MR",
         "full-binary_MR-linear",
         "full-linear_MR-linear",
-        "rnn-cut-0.25_MR",
-        "score-rnn_MR-linear",
+        "rnn-full-binary_MR-linear",
+        "rnn-cut-0.5_MR-linear",
+        "rnn-cut-0.25_MR-linear",
+        "rnn-cut-half-random_MR-linear",
+        "rnn-cut-random_MR-linear",
         "list-2_MR-linear",
         "list-3_MR-linear",
         "list-5_MR-linear",
         "list-11_MR-linear",
+        "rnn-lire-with-0.5_MR",
+        "rnn-lire-with-0.5_MR-linear",
+        "rnn-lire-without-0.5_MR",
+        "rnn-lire-without-0.5_MR-linear",
+        "lire-with-0.5_MR",
+        "lire-with-0.5_MR-linear",
+        "lire-without-0.5_MR",
+        "lire-without-0.5_MR-linear",
     ]
 
     for env_name in env_list:

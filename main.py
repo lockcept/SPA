@@ -141,17 +141,7 @@ if __name__ == "__main__":
         plot_pair(
             env_name_list=["box-close-v2"],
             exp_name=exp_name,
-            pair_algo_list=[
-                "full-binary",
-                "full-linear",
-                "list-2",
-                "list-3",
-                "list-5",
-                "list-11",
-                "cut-0.5",
-                "rnn-full-binary",
-                "rnn-cut-0.5",
-            ],
+            pair_algo_list=[pair_algo],
         )
 
     elif function_number == -2.1:
