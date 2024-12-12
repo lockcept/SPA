@@ -77,13 +77,16 @@ class MR(RewardModelBase):
                     s1_obs_batch,
                     s1_act_batch,
                     mu_batch,
-                    mask_batch,
+                    mask0_batch,
+                    mask1_batch,
                 ) = [x.to(device) for x in batch]
 
                 rewards_s0 = self(s0_obs_batch, s0_act_batch)
                 rewards_s1 = self(s1_obs_batch, s1_act_batch)
 
-                loss = loss_fn(rewards_s0, rewards_s1, mu_batch, mask_batch)
+                loss = loss_fn(
+                    rewards_s0, rewards_s1, mu_batch, mask0_batch, mask1_batch
+                )
 
                 epoch_loss += loss.item()
                 num_batches += 1
