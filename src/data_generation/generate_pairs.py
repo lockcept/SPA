@@ -8,38 +8,41 @@ from data_generation.utils import extract_trajectory_indices
 from data_loading.load_data import load_dataset, load_pair
 
 
-def choose_index_pairs_from_list(list_length, pair_count):
+def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
     """
-    choose pairs from a list
-    there is not unused element in the list
-    some indices may be repeated
+    choose pairs from indices and cut them to have a fixed length with same starting point
+    To utilize as many pairs as possible, start by using pairs from the beginning.
     """
 
-    index_pairs = []
+    pairs = []
+    valid_trajectories = [t for t in trajectories if len(t) >= trajectory_length]
+    total_trajectory_count = len(valid_trajectories)
+
     for i in range(pair_count):
-        if i * 2 < list_length:
-            if i * 2 + 1 < list_length:
-                index_pairs.append((i * 2, i * 2 + 1))
+        if i * 2 < total_trajectory_count:
+            if i * 2 + 1 < total_trajectory_count:
+                first_pair_index = i * 2
+                second_pair_index = i * 2 + 1
             else:
-                index_pairs.append((i * 2, np.random.randint(0, list_length - 1)))
+                first_pair_index = i * 2
+                second_pair_index = np.random.randint(0, total_trajectory_count - 1)
         else:
-            i_0, i_1 = np.random.randint(0, list_length - 1, 2)
-            index_pairs.append((i_0, i_1))
-    return index_pairs
+            first_pair_index, second_pair_index = np.random.randint(
+                0, total_trajectory_count - 1, 2
+            )
 
+        first_trajectory = valid_trajectories[first_pair_index]
+        second_trajectory = valid_trajectories[second_pair_index]
+        min_length = min(len(first_trajectory), len(second_trajectory))
+        start_point = np.random.randint(0, min_length - trajectory_length)
+        pairs.append(
+            (
+                first_trajectory[start_point : start_point + trajectory_length],
+                second_trajectory[start_point : start_point + trajectory_length],
+            )
+        )
 
-def cut_trajectories(indices, trajectory_length):
-    """
-    cut trajectories to have a fixed length
-    """
-    valid_trajectories = []
-
-    for start, end in indices:
-        if end - start >= trajectory_length:
-            random_start = np.random.randint(start, end - trajectory_length)
-            valid_trajectories.append((random_start, random_start + trajectory_length))
-
-    return valid_trajectories
+    return pairs
 
 
 def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
@@ -48,13 +51,13 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     """
     trajectory_length = 50
 
-    train_trajectories = 1000
-    val_trajectories = 1000
-    test_trajectories = 1000
+    train_trajectories_cnt = 1000
+    val_trajectories_cnt = 1000
+    test_trajectories_cnt = 1000
 
-    train_pairs = 500
-    val_pairs = 500
-    test_pairs = 500
+    train_pairs_cnt = 500
+    val_pairs_cnt = 500
+    test_pairs_cnt = 500
 
     try:
         _ = load_pair(
@@ -125,31 +128,35 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
 
     else:
         indices = extract_trajectory_indices(dataset)
-        indices = cut_trajectories(indices, trajectory_length)
         np.random.shuffle(indices)
 
-        if len(indices) < train_trajectories + val_trajectories + test_trajectories:
+        if (
+            len(indices)
+            < train_trajectories_cnt + val_trajectories_cnt + test_trajectories_cnt
+        ):
             print("Not enough trajectories")
             return
 
-        train_set = indices[:train_trajectories]
-        val_set = indices[train_trajectories : train_trajectories + val_trajectories]
+        train_set = indices[:train_trajectories_cnt]
+        val_set = indices[
+            train_trajectories_cnt : train_trajectories_cnt + val_trajectories_cnt
+        ]
         test_set = indices[
-            train_trajectories
-            + val_trajectories : train_trajectories
-            + val_trajectories
-            + test_trajectories
+            train_trajectories_cnt
+            + val_trajectories_cnt : train_trajectories_cnt
+            + val_trajectories_cnt
+            + test_trajectories_cnt
         ]
 
-        train_index_pairs = choose_index_pairs_from_list(
-            train_trajectories, train_pairs
+        train_pairs = generate_pairs_from_indices(
+            train_set, train_pairs_cnt, trajectory_length
         )
-        val_index_pairs = choose_index_pairs_from_list(val_trajectories, val_pairs)
-        test_index_pairs = choose_index_pairs_from_list(test_trajectories, test_pairs)
-
-        train_pairs = [(train_set[i0], train_set[i1]) for i0, i1 in train_index_pairs]
-        val_pairs = [(val_set[i0], val_set[i1]) for i0, i1 in val_index_pairs]
-        test_pairs = [(test_set[i0], test_set[i1]) for i0, i1 in test_index_pairs]
+        val_pairs = generate_pairs_from_indices(
+            val_set, val_pairs_cnt, trajectory_length
+        )
+        test_pairs = generate_pairs_from_indices(
+            test_set, test_pairs_cnt, trajectory_length
+        )
 
     # full
 
@@ -211,7 +218,7 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     if not include_score_pairs:
         return
 
-    # score-rnn
+    # rnn-full-binary
 
     generate_score_pairs(
         dataset=dataset,
@@ -222,9 +229,9 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
         score_model="rnn",
     )
 
-    # cut-score-rnn
+    # rnn-cut-X
 
-    for cut_type in ["0.5", "0.25", "half-random", "random"]:
+    for cut_type in ["0.5"]:
         generate_and_save_cut_pairs(
             dataset=dataset,
             env_name=env_name,
