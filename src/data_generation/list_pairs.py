@@ -85,22 +85,27 @@ def generate_and_save_list_pairs(
     exp_name,
     pair_type,
     pairs,
-    all_indices,
     num_groups=None,
 ):
     """
     Args:
         dataset,
         env_name: str,
+        exp_name: str,
         pair_name_base: str,
         pairs: list of ((int, int), (int, int)),
-        all_indices: list of (int, int, float),
         group_nums: list of int,
     """
     # make same length of all trajectories
-    min_length = np.min([e - s for s, e in all_indices])
-    new_index_pairs = []
-    new_all_indices = []
+    all_trajectories = []
+    for t0, t1 in pairs:
+        all_trajectories.append(t0)
+        all_trajectories.append(t1)
+
+    min_length = np.min([e - s for s, e in all_trajectories])
+
+    new_pairs = []
+    new_trajectories = []
 
     for i0, i1 in pairs:
         s0, e0 = i0
@@ -109,24 +114,24 @@ def generate_and_save_list_pairs(
         e0 = s0 + min_length
         e1 = s1 + min_length
 
-        new_index_pairs.append(((s0, e0), (s1, e1)))
+        new_pairs.append(((s0, e0), (s1, e1)))
 
-    for s, e in all_indices:
+    for s, e in all_trajectories:
         e = s + min_length
         sum_of_rewards = np.sum(dataset["rewards"][s:e])
-        new_all_indices.append((s, e, sum_of_rewards))
+        new_trajectories.append((s, e, sum_of_rewards))
 
-    new_all_indices = np.array(
-        new_all_indices,
+    new_trajectories = np.array(
+        new_trajectories,
         dtype=[("start", int), ("end", int), ("sum_of_rewards", float)],
     )
 
     # group num_pairs into M groups, with is defined by pair_algos
     for num_group in num_groups:
-        trajectories_with_groups = divide_into_groups(new_all_indices, num_group)
+        trajectories_with_groups = divide_into_groups(new_trajectories, num_group)
 
         pairs = generate_pairs(
-            trajectory_pairs=new_index_pairs,
+            trajectory_pairs=new_pairs,
             trajectories_with_groups=trajectories_with_groups,
             num_group=num_group,
         )

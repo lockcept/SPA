@@ -15,7 +15,7 @@ def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
     """
 
     pairs = []
-    valid_trajectories = [t for t in trajectories if len(t) >= trajectory_length]
+    valid_trajectories = [t for t in trajectories if (t[1] - t[0]) >= trajectory_length]
     total_trajectory_count = len(valid_trajectories)
 
     for i in range(pair_count):
@@ -33,12 +33,23 @@ def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
 
         first_trajectory = valid_trajectories[first_pair_index]
         second_trajectory = valid_trajectories[second_pair_index]
-        min_length = min(len(first_trajectory), len(second_trajectory))
+        min_length = min(
+            (
+                first_trajectory[1] - first_trajectory[0],
+                second_trajectory[1] - second_trajectory[0],
+            )
+        )
         start_point = np.random.randint(0, min_length - trajectory_length)
         pairs.append(
             (
-                first_trajectory[start_point : start_point + trajectory_length],
-                second_trajectory[start_point : start_point + trajectory_length],
+                (
+                    first_trajectory[0] + start_point,
+                    first_trajectory[0] + start_point + trajectory_length,
+                ),
+                (
+                    second_trajectory[0] + start_point,
+                    second_trajectory[0] + start_point + trajectory_length,
+                ),
             )
         )
 
@@ -201,7 +212,6 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
         exp_name=exp_name,
         pair_type="train",
         pairs=train_pairs,
-        all_indices=train_set,
         num_groups=[2, 3, 5, 11],
     )
 
@@ -211,7 +221,6 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
         exp_name=exp_name,
         pair_type="val",
         pairs=val_pairs,
-        all_indices=val_set,
         num_groups=[2, 3, 5, 11],
     )
 
