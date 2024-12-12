@@ -88,19 +88,25 @@ class RNN(nn.Module):
                     s1_obs_batch,
                     s1_act_batch,
                     mu_batch,
-                    mask_batch,
+                    mask0_batch,
+                    mask1_batch,
                 ) = [x.to(device) for x in batch]
 
                 s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
                 s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-                lengths = (1 - mask_batch.squeeze()).sum(dim=1)
+                # Compute lengths for s0 and s1 separately using mask0_batch and mask1_batch
+                lengths_s0 = (1 - mask0_batch.squeeze()).sum(dim=1)
+                lengths_s1 = (1 - mask1_batch.squeeze()).sum(dim=1)
 
-                score_s0 = self.forward(s0_batch, lengths)
-                score_s1 = self.forward(s1_batch, lengths)
+                # Forward pass for s0 and s1
+                score_s0 = self.forward(s0_batch, lengths_s0)
+                score_s1 = self.forward(s1_batch, lengths_s1)
 
+                # Compute the loss
                 loss = self.loss_fn(score_s0, score_s1, mu_batch)
 
+                # Update loss and batch count
                 epoch_loss += loss.item()
                 num_batches += 1
 

@@ -50,16 +50,18 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
                 s1_obs_batch,
                 s1_act_batch,
                 mu_batch,
-                mask_batch,
+                mask0_batch,
+                mask1_batch,
             ) = [x.to(device) for x in batch]
 
             s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
             s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-            lengths = (1 - mask_batch.squeeze()).sum(dim=1)
+            lengths_s0 = (1 - mask0_batch.squeeze()).sum(dim=1)
+            lengths_s1 = (1 - mask1_batch.squeeze()).sum(dim=1)
 
-            s0_score = model(s0_batch, lengths)
-            s1_score = model(s1_batch, lengths)
+            s0_score = model(s0_batch, lengths_s0)
+            s1_score = model(s1_batch, lengths_s1)
 
             scores = torch.cat((s0_score, s1_score), dim=1)
             score_list.append(scores.detach().cpu().numpy())

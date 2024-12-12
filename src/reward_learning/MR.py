@@ -111,7 +111,7 @@ class MR(RewardModelBase):
         loss_history = []
         val_loss_history = []
 
-        for epoch in tqdm(range(num_epochs), desc=f"learning MR reward"):
+        for epoch in tqdm(range(num_epochs), desc="learning MR reward"):
             self.train()
             epoch_loss = 0.0
 
@@ -122,13 +122,16 @@ class MR(RewardModelBase):
                     s1_obs_batch,
                     s1_act_batch,
                     mu_batch,
-                    mask_batch,
+                    mask0_batch,
+                    mask1_batch,
                 ) = [x.to(device) for x in batch]
 
                 rewards_s0 = self(s0_obs_batch, s0_act_batch)
                 rewards_s1 = self(s1_obs_batch, s1_act_batch)
 
-                loss = loss_fn(rewards_s0, rewards_s1, mu_batch, mask_batch)
+                loss = loss_fn(
+                    rewards_s0, rewards_s1, mu_batch, mask0_batch, mask1_batch
+                )
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -177,11 +180,12 @@ class BradleyTerryLoss(nn.Module):
         super(BradleyTerryLoss, self).__init__()
         self.cross_entropy_loss = nn.BCELoss()
 
-    def forward(self, rewards_s0, rewards_s1, mu, mask):
-        reward_s0_sum = torch.sum(rewards_s0 * (1 - mask), dim=1)
-        reward_s1_sum = torch.sum(rewards_s1 * (1 - mask), dim=1)
+    def forward(self, rewards_s0, rewards_s1, mu, mask0, mask1):
+        # Apply mask0 and mask1 to compute masked reward sums
+        reward_s0_mean = torch.mean(rewards_s0 * (1 - mask0), dim=1)
+        reward_s1_mean = torch.mean(rewards_s1 * (1 - mask1), dim=1)
 
-        prob_s1_wins = torch.sigmoid(reward_s1_sum - reward_s0_sum)
+        prob_s1_wins = torch.sigmoid(reward_s1_mean - reward_s0_mean)
         prob_s1_wins = prob_s1_wins.squeeze()
 
         loss = self.cross_entropy_loss(prob_s1_wins, mu)
@@ -193,11 +197,12 @@ class LinearLoss(nn.Module):
         super(LinearLoss, self).__init__()
         self.mse_loss = nn.MSELoss()
 
-    def forward(self, rewards_s0, rewards_s1, mu, mask):
-        reward_s0_sum = torch.sum(rewards_s0 * (1 - mask), dim=1)
-        reward_s1_sum = torch.sum(rewards_s1 * (1 - mask), dim=1)
+    def forward(self, rewards_s0, rewards_s1, mu, mask0, mask1):
+        # Apply mask0 and mask1 to compute masked reward sums
+        reward_s0_mean = torch.mean(rewards_s0 * (1 - mask0), dim=1)
+        reward_s1_mean = torch.mean(rewards_s1 * (1 - mask1), dim=1)
 
-        linear_ratio = (reward_s1_sum) / (reward_s1_sum + reward_s0_sum + 1e-6)
+        linear_ratio = (reward_s1_mean) / (reward_s1_mean + reward_s0_mean + 1e-6)
         linear_ratio = linear_ratio.squeeze()
 
         loss = self.mse_loss(linear_ratio, mu)

@@ -15,7 +15,9 @@ class PreferenceDataset(Dataset):
 
         self.processed_data = []
         for item in processed_data:
-            item_len = len(item["s0"]["observations"])
+            item_len_s0 = len(item["s0"]["observations"])
+            item_len_s1 = len(item["s1"]["observations"])
+
             new_item = {
                 "s0": {
                     "observations": None,
@@ -26,21 +28,27 @@ class PreferenceDataset(Dataset):
                     "actions": None,
                 },
                 "mu": torch.tensor(item["mu"], dtype=torch.float32),
-                "mask": None,
+                "mask0": None,
+                "mask1": None,
             }
 
             s0_obs = torch.tensor(item["s0"]["observations"], dtype=torch.float32)
             s0_act = torch.tensor(item["s0"]["actions"], dtype=torch.float32)
             s1_obs = torch.tensor(item["s1"]["observations"], dtype=torch.float32)
             s1_act = torch.tensor(item["s1"]["actions"], dtype=torch.float32)
-            mask = torch.zeros(max_len, dtype=torch.float32)
-            mask[item_len:] = 1
+
+            mask0 = torch.zeros(max_len, dtype=torch.float32)
+            mask0[item_len_s0:] = 1
+
+            mask1 = torch.zeros(max_len, dtype=torch.float32)
+            mask1[item_len_s1:] = 1
 
             new_item["s0"]["observations"] = self.pad_sequence(s0_obs, max_len)
             new_item["s0"]["actions"] = self.pad_sequence(s0_act, max_len)
             new_item["s1"]["observations"] = self.pad_sequence(s1_obs, max_len)
             new_item["s1"]["actions"] = self.pad_sequence(s1_act, max_len)
-            new_item["mask"] = mask.unsqueeze(1)
+            new_item["mask0"] = mask0.unsqueeze(1)
+            new_item["mask1"] = mask1.unsqueeze(1)
 
             self.processed_data.append(new_item)
 
@@ -58,7 +66,8 @@ class PreferenceDataset(Dataset):
         s0 = self.processed_data[idx]["s0"]
         s1 = self.processed_data[idx]["s1"]
         mu = self.processed_data[idx]["mu"]
-        mask = self.processed_data[idx]["mask"]
+        mask0 = self.processed_data[idx]["mask0"]
+        mask1 = self.processed_data[idx]["mask1"]
 
         return (
             s0["observations"],
@@ -66,7 +75,8 @@ class PreferenceDataset(Dataset):
             s1["observations"],
             s1["actions"],
             mu,
-            mask,
+            mask0,
+            mask1,
         )
 
     def get_dimensions(self):
