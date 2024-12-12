@@ -50,55 +50,71 @@ def generate_and_save_cut_pairs(
         m0 = s0 + int((e0 - s0) * ratio)
         m1 = s1 + int((e1 - s1) * ratio)
 
-        i0_0 = (s0, m0)
-        i0_1 = (m0, e0)
-        i1_0 = (s1, m1)
-        i1_1 = (m1, e1)
+        i0_head = (s0, m0)
+        i0_tail = (m0, e0)
+        i1_head = (s1, m1)
+        i1_tail = (m1, e1)
 
-        r0_0 = np.sum(dataset["rewards"][s0:m0])
-        r0_1 = np.sum(dataset["rewards"][m0:e0])
-        r1_0 = np.sum(dataset["rewards"][s1:m1])
-        r1_1 = np.sum(dataset["rewards"][m1:e1])
+        r0_head = np.sum(dataset["rewards"][s0:m0])
+        r0_tail = np.sum(dataset["rewards"][m0:e0])
+        r1_head = np.sum(dataset["rewards"][s1:m1])
+        r1_tail = np.sum(dataset["rewards"][m1:e1])
 
-        r0 = r0_0 + r0_1
-        r1 = r1_0 + r1_1
+        r0 = r0_head + r0_tail
+        r1 = r1_head + r1_tail
 
-        if r0 < r1:
-            if r0_0 < r1_0:
-                if r0_1 < r1_1:
-                    cut_pairs.append((i0, i1, 1.0))
-                    cut_pairs.append((i0_0, i1_0, mu))
-                    cut_pairs.append((i0_1, i1_1, mu))
-                    valid_feedback += 3
-                else:
-                    cut_pairs.append((i0, i1, mu))
-                    cut_pairs.append((i0_0, i1_0, 1.0))
-                    cut_pairs.append((i0_1, i1_1, 1 - mu))
-                    valid_feedback += 3
-            else:
-                cut_pairs.append((i0, i1, mu))
-                cut_pairs.append((i0_0, i1_0, 1 - mu))
-                cut_pairs.append((i0_1, i1_1, 1.0))
-                valid_feedback += 2
+        is_total_better = r1 > r0
+        is_head_better = r1_head > r0_head
+        is_tail_better = r1_tail > r0_tail
+
+        # if total_better and head_better is different, valid feedback is 3
+        if is_total_better == is_head_better:
+            valid_feedback += 3
         else:
-            if r0_0 < r1_0:
-                cut_pairs.append((i0, i1, 1 - mu))
-                cut_pairs.append((i0_0, i1_0, mu))
-                cut_pairs.append((i0_1, i1_1, 0))
-                valid_feedback += 2
+            valid_feedback += 2
+
+        # append basic pairs
+        cut_pairs.append((i0, i1, 1.0 if is_total_better else 0.0))
+        cut_pairs.append((i0_head, i1_head, 1.0 if is_head_better else 0.0))
+        cut_pairs.append((i0_tail, i1_tail, 1.0 if is_tail_better else 0.0))
+
+        if (is_total_better == is_head_better) and (is_total_better == is_tail_better):
+            # 0, 0, 0 or 1, 1, 1
+            cut_pairs.append((i0, i0_head, 1 - mu if is_total_better else mu))
+            cut_pairs.append((i0, i0_tail, 1 - mu if is_total_better else mu))
+            cut_pairs.append((i1, i1_head, mu if is_total_better else 1 - mu))
+            cut_pairs.append((i1, i1_tail, mu if is_total_better else 1 - mu))
+        else:
+            if is_total_better == is_head_better:
+                # 0, 0, 1 or 1, 1, 0
+                i0_same = i0_head
+                i0_diff = i0_tail
+                i1_same = i1_head
+                i1_diff = i1_tail
+            elif is_total_better == is_tail_better:
+                # 0, 1, 0 or 1, 0, 1
+                i0_same = i0_tail
+                i0_diff = i0_head
+                i1_same = i1_tail
+                i1_diff = i1_head
             else:
-                if r0_1 < r1_1:
-                    cut_pairs.append((i0, i1, 1 - mu))
-                    cut_pairs.append((i0_0, i1_0, 0))
-                    cut_pairs.append((i0_1, i1_1, mu))
-                    valid_feedback += 3
-                else:
-                    cut_pairs.append((i0, i1, 0))
-                    cut_pairs.append((i0_0, i1_0, 1 - mu))
-                    cut_pairs.append((i0_1, i1_1, 1 - mu))
-                    valid_feedback += 3
+                # 0, 1, 1 or 1, 0, 0
+                print("Impossible case")
+                raise ValueError()
+
+            # same part is more powerful than total
+            cut_pairs.append((i0, i0_same, 1 - mu if is_total_better else mu))
+            cut_pairs.append((i0, i0_diff, 1.0 if is_total_better else 0.0))
+            cut_pairs.append((i1, i1_same, mu if is_total_better else 1 - mu))
+            cut_pairs.append((i1, i1_diff, 0.0 if is_total_better else 1.0))
+
+            cut_pairs.append((i0_same, i0_diff, 1.0 if is_total_better else 0.0))
+            cut_pairs.append((i1_same, i1_diff, 0.0 if is_total_better else 1.0))
+
+        mu = 0.75
+
         pair_index += 1
-    print(length, valid_feedback, pair_index)
+    print(length, valid_feedback, pair_index, len(cut_pairs))
 
     pairs_np = np.array(
         cut_pairs, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f")]
