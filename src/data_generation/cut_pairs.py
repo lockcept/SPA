@@ -10,6 +10,7 @@ def generate_and_save_cut_pairs(
     exp_name,
     pair_type,
     cut_type: Literal["0.5", "0.25", "half-random", "random"],
+    mu_scale,
     pairs,
 ):
     """
@@ -28,7 +29,7 @@ def generate_and_save_cut_pairs(
 
     valid_feedback = 0
 
-    mu = 0.75
+    mu = mu_scale
 
     while valid_feedback < length:
         i0, i1 = pairs[pair_index]
@@ -108,9 +109,6 @@ def generate_and_save_cut_pairs(
             cut_pairs.append((i1, i1_same, mu if is_total_better else 1 - mu))
             cut_pairs.append((i1, i1_diff, 0.0 if is_total_better else 1.0))
 
-            cut_pairs.append((i0_same, i0_diff, 1.0 if is_total_better else 0.0))
-            cut_pairs.append((i1_same, i1_diff, 0.0 if is_total_better else 1.0))
-
         mu = 0.75
 
         pair_index += 1
@@ -124,6 +122,6 @@ def generate_and_save_cut_pairs(
         env_name=env_name,
         exp_name=exp_name,
         pair_type=pair_type,
-        pair_algo=f"cut-{cut_type}",
+        pair_algo=f"cut-{mu_scale}",
     )
     np.savez(pair_path, data=pairs_np)
