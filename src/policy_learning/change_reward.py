@@ -13,23 +13,36 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def change_reward(env_name, model_list: List[RewardModelBase], dataset_path):
     dataset = load_dataset(env_name)
 
-    observations = torch.tensor(dataset["observations"], dtype=torch.float32).to(device)
-    actions = torch.tensor(dataset["actions"], dtype=torch.float32).to(device)
-
+    num_samples = len(dataset["observations"])
+    batch_size = num_samples // 20
     model_outputs = []
 
-    for model in model_list:
-        rewards = model.batched_forward_trajectory(
-            obs_batch=observations, act_batch=actions
-        )
-        model_outputs.append(rewards.detach().cpu().numpy())
+    for start_idx in range(0, num_samples, batch_size):
+        end_idx = min(start_idx + batch_size, num_samples)
 
-    predicted_rewards = np.mean(model_outputs, axis=0)
+        obs_batch = torch.tensor(
+            dataset["observations"][start_idx:end_idx], dtype=torch.float32
+        ).to(device)
+        act_batch = torch.tensor(
+            dataset["actions"][start_idx:end_idx], dtype=torch.float32
+        ).to(device)
+
+        batch_model_outputs = []
+        for model in model_list:
+            rewards = model.batched_forward_trajectory(
+                obs_batch=obs_batch, act_batch=act_batch
+            )
+            batch_model_outputs.append(rewards.detach().cpu().numpy())
+
+        batch_predicted_rewards = np.mean(batch_model_outputs, axis=0)
+        model_outputs.append(batch_predicted_rewards)
+
+    predicted_rewards = np.concatenate(model_outputs, axis=0).squeeze()
 
     terminals = dataset["terminals"] | dataset["timeouts"]
     observations = dataset["observations"]
     actions = dataset["actions"]
-    rewards = predicted_rewards.squeeze()
+    rewards = predicted_rewards
 
     print(
         observations.shape,
