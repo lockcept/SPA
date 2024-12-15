@@ -61,7 +61,7 @@ class MR(RewardModelBase):
         if self.linear_loss:
             reward_t = 1 + torch.tanh(reward_t)
         else:
-            reward_t = torch.tanh(reward_t)
+            reward_t = 10 * torch.tanh(reward_t)
         return reward_t
 
     def evaluate(self, data_loader, loss_fn):
@@ -184,9 +184,14 @@ class BradleyTerryLoss(nn.Module):
         self.cross_entropy_loss = nn.BCELoss()
 
     def forward(self, rewards_s0, rewards_s1, mu, mask0, mask1):
-        # Apply mask0 and mask1 to compute masked reward sums
-        reward_s0_mean = torch.mean(rewards_s0 * (1 - mask0), dim=1)
-        reward_s1_mean = torch.mean(rewards_s1 * (1 - mask1), dim=1)
+        reward_s0_sum = torch.sum(rewards_s0 * (1 - mask0), dim=1)
+        reward_s1_sum = torch.sum(rewards_s1 * (1 - mask1), dim=1)
+
+        active_s0 = torch.sum(1 - mask0, dim=1)
+        active_s1 = torch.sum(1 - mask1, dim=1)
+
+        reward_s0_mean = reward_s0_sum / active_s0
+        reward_s1_mean = reward_s1_sum / active_s1
 
         prob_s1_wins = torch.sigmoid(reward_s1_mean - reward_s0_mean)
         prob_s1_wins = prob_s1_wins.squeeze()
@@ -198,15 +203,21 @@ class BradleyTerryLoss(nn.Module):
 class LinearLoss(nn.Module):
     def __init__(self):
         super(LinearLoss, self).__init__()
-        self.mse_loss = nn.MSELoss()
+        self.cross_entropy_loss = nn.BCELoss()
 
     def forward(self, rewards_s0, rewards_s1, mu, mask0, mask1):
         # Apply mask0 and mask1 to compute masked reward sums
-        reward_s0_mean = torch.mean(rewards_s0 * (1 - mask0), dim=1)
-        reward_s1_mean = torch.mean(rewards_s1 * (1 - mask1), dim=1)
+        reward_s0_sum = torch.sum(rewards_s0 * (1 - mask0), dim=1)
+        reward_s1_sum = torch.sum(rewards_s1 * (1 - mask1), dim=1)
+
+        active_s0 = torch.sum(1 - mask0, dim=1)
+        active_s1 = torch.sum(1 - mask1, dim=1)
+
+        reward_s0_mean = reward_s0_sum / active_s0
+        reward_s1_mean = reward_s1_sum / active_s1
 
         linear_ratio = (reward_s1_mean) / (reward_s1_mean + reward_s0_mean + 1e-6)
         linear_ratio = linear_ratio.squeeze()
 
-        loss = self.mse_loss(linear_ratio, mu)
+        loss = self.cross_entropy_loss(linear_ratio, mu)
         return loss
