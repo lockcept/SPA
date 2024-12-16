@@ -109,8 +109,6 @@ def generate_and_save_cut_pairs(
             cut_pairs.append((i1, i1_same, mu if is_total_better else 1 - mu))
             cut_pairs.append((i1, i1_diff, 0.0 if is_total_better else 1.0))
 
-        mu = 0.75
-
         pair_index += 1
     print(length, valid_feedback, pair_index, len(cut_pairs))
 
