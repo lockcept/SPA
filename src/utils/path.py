@@ -73,7 +73,7 @@ def get_reward_model_path(
     """
     Return path of reward model file
     """
-    path = f"model/{env_name}/{exp_name}/reward/{pair_algo}/{reward_model_algo}-{reward_model_tag}.pth"
+    path = f"model/{env_name}/{exp_name}/reward/{pair_algo}/{reward_model_algo}_{reward_model_tag}.pth"
     make_dir_from_path(path)
     return path
 
