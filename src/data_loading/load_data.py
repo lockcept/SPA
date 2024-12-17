@@ -20,6 +20,21 @@ metaworld_ids = {
     "sweep-v2": "1u7f5WZYQlqXSxyJGI56kWlafYluFrgJb",
 }
 
+metaworld_quality = {
+    "box-close-v2": 0.8,
+    "button-press-topdown-v2": 0.1,
+    "button-press-topdown-wall-v2": 0.15,
+    "dial-turn-v2": 0.3,
+    "drawer-open-v2": 0.1,
+    "hammer-v2": 0.5,
+    "handle-pull-side-v2": 0.1,
+    "lever-pull-v2": 0.3,
+    "peg-insert-side-v2": 0.5,
+    "peg-unplug-side-v2": 0.25,
+    "sweep-into-v2": 0.1,
+    "sweep-v2": 0.1,
+}
+
 
 class MetaworldEnvWrapper:
     """
@@ -101,7 +116,8 @@ def save_metaworld_dataset(env_name, save_dir):
     import pickle  # pylint: disable=C0415
 
     file_id = metaworld_ids[env_name]
-    npz_path = os.path.join(save_dir, "raw_dataset.npz")
+    quality = metaworld_quality[env_name]
+    npz_path = os.path.join(save_dir, "qualified_dataset.npz")
     output_path = os.path.join(save_dir, f"{env_name}.zip")
 
     if not os.path.exists(npz_path):
@@ -154,11 +170,15 @@ def save_metaworld_dataset(env_name, save_dir):
         with open(file_path, "rb") as file:
             dataset = pickle.load(file)
 
-        all_observations.append(dataset["observations"])
-        all_actions.append(dataset["actions"])
-        all_rewards.append(dataset["rewards"])
-        all_terminals.append(dataset["dones"].astype(bool))
-        all_success.append(dataset["success"].astype(bool))
+        length = len(dataset["observations"])
+        print(f"Loaded {length} samples from {pkl_file}")
+        adjust_length = length * quality
+
+        all_observations.append(dataset["observations"][: int(adjust_length)])
+        all_actions.append(dataset["actions"][: int(adjust_length)])
+        all_rewards.append(dataset["rewards"][: int(adjust_length)])
+        all_terminals.append(dataset["dones"][: int(adjust_length)].astype(bool))
+        all_success.append(dataset["success"][: int(adjust_length)].astype(bool))
 
     save_data = {
         "observations": np.concatenate(all_observations, axis=0),
@@ -218,7 +238,7 @@ def save_dataset(env_name):
 
 def load_dataset(env_name):
     dir_path = f"dataset/{env_name}"
-    dataset_name = "raw_dataset.npz"
+    dataset_name = "qualified_dataset.npz"
     dataset = np.load(os.path.join(dir_path, dataset_name))
 
     return dataset
