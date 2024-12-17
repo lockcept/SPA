@@ -180,10 +180,12 @@ class RNN(nn.Module):
                 writer = csv.writer(file)
                 writer.writerow([epoch + 1, avg_epoch_loss, val_loss])
 
-            if val_loss < best_loss:
-                best_loss = val_loss
-                torch.save(self.state_dict(), self.path)
-                print(f"New best model saved with Val loss: {val_loss:.4f}")
+            # if val_loss < best_loss:
+            #     best_loss = val_loss
+            #     torch.save(self.state_dict(), self.path)
+            #     print(f"New best model saved with Val loss: {val_loss:.4f}")
+
+        torch.save(self.state_dict(), self.path)
 
 
 class BradleyTerryLoss(nn.Module):

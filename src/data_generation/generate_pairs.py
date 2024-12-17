@@ -233,21 +233,22 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
         dataset=dataset,
         env_name=env_name,
         exp_name=exp_name,
-        num_epochs=2000,
+        num_epochs=300,
         pair_algo="full-binary",
         score_model="rnn",
     )
 
     # rnn-cut-X
 
-    for cut_type in ["0.5"]:
+    for mu_scale in [0.75, 1.0]:
         generate_and_save_cut_pairs(
             dataset=dataset,
             env_name=env_name,
             exp_name=exp_name,
             pair_type="train",
             pairs=train_pairs,
-            cut_type=cut_type,
+            cut_type="0.5",
+            mu_scale=mu_scale,
         )
 
         generate_and_save_cut_pairs(
@@ -256,14 +257,15 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             exp_name=exp_name,
             pair_type="val",
             pairs=val_pairs,
-            cut_type=cut_type,
+            cut_type="0.5",
+            mu_scale=mu_scale,
         )
 
         generate_score_pairs(
             dataset=dataset,
             env_name=env_name,
             exp_name=exp_name,
-            num_epochs=2000,
-            pair_algo=f"cut-{cut_type}",
+            num_epochs=300,
+            pair_algo=f"cut-{mu_scale}",
             score_model="rnn",
         )
