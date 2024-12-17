@@ -12,6 +12,8 @@ from offlinerlkit.buffer import ReplayBuffer
 from offlinerlkit.utils.logger import Logger
 from offlinerlkit.policy import BasePolicy
 
+SAVE_POINTS = [250000, 500000, 750000, 1000000]
+
 
 # model-free policy trainer
 class MFPolicyTrainer:
@@ -115,6 +117,14 @@ class MFPolicyTrainer:
                     os.path.join(self.logger.model_dir, "best_policy.pth"),
                 )
 
+            if e * self._step_per_epoch in SAVE_POINTS:
+                torch.save(
+                    self.policy.state_dict(),
+                    os.path.join(
+                        self.logger.model_dir, f"policy_{e * self._step_per_epoch}.pth"
+                    ),
+                )
+
         self.logger.log("total time: {:.2f}s".format(time.time() - start_time))
         torch.save(
             self.policy.state_dict(),
@@ -126,7 +136,7 @@ class MFPolicyTrainer:
 
     def _evaluate(self) -> Dict[str, List[float]]:
         self.policy.eval()
-        obs = self.eval_env.reset(seed=0)
+        obs = self.eval_env.reset()
         eval_ep_info_buffer = []
         num_episodes = 0
         episode_reward, episode_length, episode_success = 0, 0, 0
@@ -151,7 +161,7 @@ class MFPolicyTrainer:
                 )
                 num_episodes += 1
                 episode_reward, episode_length, episode_success = 0, 0, 0
-                obs = self.eval_env.reset(seed=num_episodes)
+                obs = self.eval_env.reset()
 
         return {
             "eval/episode_reward": [

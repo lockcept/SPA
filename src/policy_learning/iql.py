@@ -30,9 +30,9 @@ def get_configs():
     tau = 0.005
     expectile = 0.7
     temperature = 3.0
-    epoch = 1000
-    step_per_epoch = 1000
-    eval_episodes = 10
+    epoch = 500
+    step_per_epoch = 2000
+    eval_episodes = 5
     batch_size = 256
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
