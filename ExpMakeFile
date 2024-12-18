@@ -2,7 +2,7 @@
 ENV=box-close-v2
 EXP_LIST ?= exp-00 exp-01 exp-02 exp-03 exp-04
 ALGO_PAIRS ?= full-binary:MR full-binary:MR-linear full-linear:MR-linear list-2:MR-linear list-3:MR-linear list-5:MR-linear list-11:MR-linear score-rnn:MR score-rnn:MR-linear
-N ?= 300
+N ?= 100
 
 # Default targets
 load_dataset:

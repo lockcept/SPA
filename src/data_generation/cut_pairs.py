@@ -25,6 +25,7 @@ def generate_and_save_cut_pairs(
 
     length = len(pairs)
     cut_pairs = []
+    used_set = []
     pair_index = 0
 
     valid_feedback = 0
@@ -33,6 +34,8 @@ def generate_and_save_cut_pairs(
 
     while valid_feedback < length:
         i0, i1 = pairs[pair_index]
+        used_set.append(i0)
+        used_set.append(i1)
 
         s0, e0 = i0
         s1, e1 = i1
@@ -69,10 +72,10 @@ def generate_and_save_cut_pairs(
         is_tail_better = r1_tail > r0_tail
 
         # if total_better and head_better is different, valid feedback is 3
-        if is_total_better == is_head_better:
-            valid_feedback += 3
-        else:
+        if is_head_better == is_tail_better:
             valid_feedback += 2
+        else:
+            valid_feedback += 3
 
         # append basic pairs
         cut_pairs.append((i0, i1, 1.0 if is_total_better else 0.0))
@@ -123,3 +126,4 @@ def generate_and_save_cut_pairs(
         pair_algo=f"cut-{mu_scale}",
     )
     np.savez(pair_path, data=pairs_np)
+    return used_set

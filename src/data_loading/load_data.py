@@ -32,7 +32,7 @@ metaworld_quality = {
     "peg-insert-side-v2": 0.5,
     "peg-unplug-side-v2": 0.25,
     "sweep-into-v2": 0.1,
-    "sweep-v2": 0.1,
+    "sweep-v2": 0.7,
 }
 
 

@@ -39,16 +39,17 @@ def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
                 second_trajectory[1] - second_trajectory[0],
             )
         )
-        start_point = np.random.randint(0, min_length - trajectory_length)
+        first_start_point = np.random.randint(0, min_length - trajectory_length)
+        second_start_point = np.random.randint(0, min_length - trajectory_length)
         pairs.append(
             (
                 (
-                    first_trajectory[0] + start_point,
-                    first_trajectory[0] + start_point + trajectory_length,
+                    first_trajectory[0] + first_start_point,
+                    first_trajectory[0] + first_start_point + trajectory_length,
                 ),
                 (
-                    second_trajectory[0] + start_point,
-                    second_trajectory[0] + start_point + trajectory_length,
+                    second_trajectory[0] + second_start_point,
+                    second_trajectory[0] + second_start_point + trajectory_length,
                 ),
             )
         )
@@ -132,7 +133,7 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
         indices = extract_trajectory_indices(dataset)
         np.random.shuffle(indices)
 
-        trajectory_length = 50
+        trajectory_length = 25
 
         train_trajectories_cnt = 1000
         val_trajectories_cnt = 1000
@@ -244,21 +245,11 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     if not include_score_pairs:
         return
 
-    # rnn-full-binary
-
-    generate_score_pairs(
-        dataset=dataset,
-        env_name=env_name,
-        exp_name=exp_name,
-        num_epochs=300,
-        pair_algo="full-binary",
-        score_model="rnn",
-    )
-
     # rnn-cut-X
 
     for mu_scale in [0.75, 1.0]:
-        generate_and_save_cut_pairs(
+        # overided pairs are OK
+        used_set_train = generate_and_save_cut_pairs(
             dataset=dataset,
             env_name=env_name,
             exp_name=exp_name,
@@ -268,7 +259,7 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             mu_scale=mu_scale,
         )
 
-        generate_and_save_cut_pairs(
+        used_set_val = generate_and_save_cut_pairs(
             dataset=dataset,
             env_name=env_name,
             exp_name=exp_name,
@@ -282,7 +273,32 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             dataset=dataset,
             env_name=env_name,
             exp_name=exp_name,
-            num_epochs=300,
+            num_epochs=100,
             pair_algo=f"cut-{mu_scale}",
             score_model="rnn",
         )
+
+    new_train_pairs = generate_pairs_from_indices(
+        used_set_train, train_pairs_cnt, trajectory_length
+    )
+    new_val_pairs = generate_pairs_from_indices(
+        used_set_val, val_pairs_cnt, trajectory_length
+    )
+
+    generate_and_save_full_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
+        pairs=new_train_pairs,
+        mu_types=["binary-with-0.5"],
+    )
+
+    generate_and_save_full_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="val",
+        pairs=new_val_pairs,
+        mu_types=["binary-with-0.5"],
+    )
