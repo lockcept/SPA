@@ -60,15 +60,6 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     """
     generate all algo pairs with hard-coded values
     """
-    trajectory_length = 50
-
-    train_trajectories_cnt = 1000
-    val_trajectories_cnt = 1000
-    test_trajectories_cnt = 1000
-
-    train_pairs_cnt = 500
-    val_pairs_cnt = 500
-    test_pairs_cnt = 500
 
     try:
         _ = load_pair(
@@ -140,6 +131,32 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     else:
         indices = extract_trajectory_indices(dataset)
         np.random.shuffle(indices)
+
+        trajectory_length = 50
+
+        train_trajectories_cnt = 1000
+        val_trajectories_cnt = 1000
+        test_trajectories_cnt = 1000
+
+        # hard coded values
+        if len(indices) == 600:
+            train_trajectories_cnt = 500
+            val_trajectories_cnt = 50
+            test_trajectories_cnt = 50
+            print("Using 0.1 dataset")
+        elif len(indices) == 1800:
+            train_trajectories_cnt = 1000
+            val_trajectories_cnt = 400
+            test_trajectories_cnt = 400
+            print("Using 0.3 dataset")
+
+        print(
+            f"train_trajectories_cnt: {train_trajectories_cnt}, val_trajectories_cnt: {val_trajectories_cnt}, test_trajectories_cnt: {test_trajectories_cnt}"
+        )
+
+        train_pairs_cnt = 500
+        val_pairs_cnt = 500
+        test_pairs_cnt = 500
 
         if (
             len(indices)
