@@ -247,5 +247,4 @@ if __name__ == "__main__":
             exp_name=exp_name,
             pair_algo=pair_algo,
             reward_model_algo=reward_model_algo,
-            num_epochs=num,
         )

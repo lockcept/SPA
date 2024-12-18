@@ -110,7 +110,6 @@ def train(
     exp_name,
     pair_algo,
     reward_model_algo,
-    num_epochs=1000,
 ):
     """
     Train IQL policy on the given dataset
@@ -253,7 +252,7 @@ def train(
         eval_env=env,
         buffer=buffer,
         logger=logger,
-        epoch=num_epochs,
+        epoch=configs["epoch"],
         step_per_epoch=configs["step_per_epoch"],
         batch_size=configs["batch_size"],
         eval_episodes=configs["eval_episodes"],
