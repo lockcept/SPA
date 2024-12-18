@@ -5,15 +5,94 @@ from typing import List
 import torch
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+import numpy as np
 
-from data_loading import load_dataset, get_dataloader
+from data_loading import load_dataset, get_dataloader, load_pair
 from reward_learning import RewardModelBase, MR
 from utils import get_reward_model_path, get_reward_model_log_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def calculate_pearson_correlation_with_d4rl(
+def compare_trajectory_rewards(
+    env_name,
+    exp_name,
+    pair_algo,
+    reward_model_algo,
+    models: List[RewardModelBase],
+):
+    dataset = load_dataset(env_name)
+    observations = dataset["observations"]
+    actions = dataset["actions"]
+    rewards = dataset["rewards"]
+
+    pairs = load_pair(
+        env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
+    )["data"]
+
+    output_path = get_reward_model_log_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        reward_model_algo=reward_model_algo,
+        log_file="Trajectory.png",
+    )
+
+    trajectories = []
+    for pair in pairs:
+        trajectories.append(pair[0])
+        trajectories.append(pair[1])
+
+    actual_reward_sum = []
+    predicted_reward_sum = []
+
+    for s, e in trajectories:
+        obs = observations[s:e]
+        act = actions[s:e]
+        reward = rewards[s:e]
+
+        actual_reward_sum.append(np.sum(reward))
+
+        obs_tensor = torch.tensor(obs, dtype=torch.float32).to(device)
+        act_tensor = torch.tensor(act, dtype=torch.float32).to(device)
+
+        with torch.no_grad():
+            predicted_rewards_list = []
+            for model in models:
+                predicted_rewards = model.batched_forward_trajectory(
+                    obs_batch=obs_tensor, act_batch=act_tensor
+                )
+                predicted_rewards_list.append(predicted_rewards)
+
+            mean_predicted_rewards = torch.mean(
+                torch.stack(predicted_rewards_list), dim=0
+            )
+
+        predicted_reward_sum.append(
+            torch.sum(mean_predicted_rewards, dim=0).squeeze().cpu().numpy()
+        )
+
+        output_name = output_path.split(".png")[0]
+
+    pearson_corr, _ = pearsonr(actual_reward_sum, predicted_reward_sum)
+
+    plt.figure(figsize=(8, 6))
+    plt.scatter(actual_reward_sum, predicted_reward_sum, alpha=0.3, label=output_name)
+    plt.xlabel("Actual Rewards")
+    plt.ylabel("Predicted Rewards")
+    plt.title(
+        f"Actual vs. Predicted Rewards (Trajectory)\nPearson Correlation: {pearson_corr:.2f}"
+    )
+    plt.legend(loc="upper right")
+    plt.grid(True)
+
+    plt.savefig(output_path, format="png")
+    plt.close()
+
+    return
+
+
+def calculate_pearson_correlation_from_dataset(
     env_name, models: List[RewardModelBase], output_path
 ):
     dataset = load_dataset(env_name)
@@ -119,7 +198,7 @@ def evaluate_reward_model(
 
     accuracy = correct_predictions / total_samples if total_samples > 0 else 0
     avg_mse = cumulative_mse / total_samples if total_samples > 0 else 0
-    pearson_corr = calculate_pearson_correlation_with_d4rl(
+    pearson_corr = calculate_pearson_correlation_from_dataset(
         env_name, models, output_path=output_path
     )
 
@@ -160,6 +239,7 @@ def evaluate_and_log_reward_models(
         pair_type="test",
         pair_algo="full-binary",
         drop_last=False,
+        shuffle=False,
     )
 
     obs_dim, act_dim = data_loader.dataset.get_dimensions()
@@ -190,6 +270,14 @@ def evaluate_and_log_reward_models(
         pair_algo=pair_algo,
         reward_model_algo=reward_model_algo,
         log_file="PCC.png",
+    )
+
+    compare_trajectory_rewards(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=pair_algo,
+        reward_model_algo=reward_model_algo,
+        models=models,
     )
 
     accuracy, mse, pcc = evaluate_reward_model(
