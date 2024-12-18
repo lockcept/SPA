@@ -39,8 +39,13 @@ def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
                 second_trajectory[1] - second_trajectory[0],
             )
         )
-        first_start_point = np.random.randint(0, min_length - trajectory_length)
-        second_start_point = np.random.randint(0, min_length - trajectory_length)
+
+        if min_length == trajectory_length:
+            first_start_point = 0
+            second_start_point = 0
+        else:
+            first_start_point = np.random.randint(0, min_length - trajectory_length)
+            second_start_point = np.random.randint(0, min_length - trajectory_length)
         pairs.append(
             (
                 (
@@ -61,6 +66,40 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     """
     generate all algo pairs with hard-coded values
     """
+    dataset = load_dataset(env_name=env_name)
+    indices = extract_trajectory_indices(dataset)
+    np.random.shuffle(indices)
+
+    trajectory_length = 25
+
+    train_trajectories_cnt = 1000
+    val_trajectories_cnt = 1000
+    test_trajectories_cnt = 1000
+
+    # hard coded values
+    if len(indices) == 600:
+        train_trajectories_cnt = 500
+        val_trajectories_cnt = 50
+        test_trajectories_cnt = 50
+        print("Using 0.1 dataset")
+    elif len(indices) == 1800:
+        train_trajectories_cnt = 1000
+        val_trajectories_cnt = 400
+        test_trajectories_cnt = 400
+        print("Using 0.3 dataset")
+    elif len(indices) == 2100:
+        train_trajectories_cnt = 1000
+        val_trajectories_cnt = 500
+        test_trajectories_cnt = 500
+        print("Using 0.7 dataset")
+
+    print(
+        f"train_trajectories_cnt: {train_trajectories_cnt}, val_trajectories_cnt: {val_trajectories_cnt}, test_trajectories_cnt: {test_trajectories_cnt}"
+    )
+
+    train_pairs_cnt = 500
+    val_pairs_cnt = 500
+    test_pairs_cnt = 500
 
     try:
         _ = load_pair(
@@ -73,7 +112,6 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
     except FileNotFoundError:
         is_already_exist = False
 
-    dataset = load_dataset(env_name=env_name)
     if is_already_exist:
         print("full-binary Pair already exists, use it for generating")
 
@@ -130,40 +168,6 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
         test_set = list(set(test_set))
 
     else:
-        indices = extract_trajectory_indices(dataset)
-        np.random.shuffle(indices)
-
-        trajectory_length = 25
-
-        train_trajectories_cnt = 1000
-        val_trajectories_cnt = 1000
-        test_trajectories_cnt = 1000
-
-        # hard coded values
-        if len(indices) == 600:
-            train_trajectories_cnt = 500
-            val_trajectories_cnt = 50
-            test_trajectories_cnt = 50
-            print("Using 0.1 dataset")
-        elif len(indices) == 1800:
-            train_trajectories_cnt = 1000
-            val_trajectories_cnt = 400
-            test_trajectories_cnt = 400
-            print("Using 0.3 dataset")
-        elif len(indices) == 2100:
-            train_trajectories_cnt = 1000
-            val_trajectories_cnt = 500
-            test_trajectories_cnt = 500
-            print("Using 0.7 dataset")
-
-        print(
-            f"train_trajectories_cnt: {train_trajectories_cnt}, val_trajectories_cnt: {val_trajectories_cnt}, test_trajectories_cnt: {test_trajectories_cnt}"
-        )
-
-        train_pairs_cnt = 500
-        val_pairs_cnt = 500
-        test_pairs_cnt = 500
-
         if (
             len(indices)
             < train_trajectories_cnt + val_trajectories_cnt + test_trajectories_cnt
@@ -252,7 +256,7 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
 
     # rnn-cut-X
 
-    for mu_scale in [0.75, 1.0]:
+    for mu_scale in [0.75]:
         # overided pairs are OK
         used_set_train = generate_and_save_cut_pairs(
             dataset=dataset,
@@ -278,7 +282,7 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             dataset=dataset,
             env_name=env_name,
             exp_name=exp_name,
-            num_epochs=100,
+            num_epochs=5,
             pair_algo=f"cut-{mu_scale}",
             score_model="rnn",
         )
