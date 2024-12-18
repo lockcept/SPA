@@ -256,7 +256,7 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
 
     # rnn-cut-X
 
-    for mu_scale in [0.75]:
+    for mu_scale in [0.75, 1.0]:
         # overided pairs are OK
         used_set_train = generate_and_save_cut_pairs(
             dataset=dataset,
@@ -282,7 +282,7 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             dataset=dataset,
             env_name=env_name,
             exp_name=exp_name,
-            num_epochs=5,
+            num_epochs=100,
             pair_algo=f"cut-{mu_scale}",
             score_model="rnn",
         )
