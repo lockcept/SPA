@@ -150,6 +150,11 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             val_trajectories_cnt = 400
             test_trajectories_cnt = 400
             print("Using 0.3 dataset")
+        elif len(indices) == 2100:
+            train_trajectories_cnt = 1000
+            val_trajectories_cnt = 500
+            test_trajectories_cnt = 500
+            print("Using 0.7 dataset")
 
         print(
             f"train_trajectories_cnt: {train_trajectories_cnt}, val_trajectories_cnt: {val_trajectories_cnt}, test_trajectories_cnt: {test_trajectories_cnt}"
