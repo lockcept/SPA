@@ -23,7 +23,7 @@ def plot_pair(env_name_list, exp_name, pair_algo_list):
             )
 
             # histogram of mu values
-            mu_values = [item[2] for item in pairs]
+            mu_values = [item["mu"] for item in pairs]
             plt.figure(figsize=(10, 6))
             plt.hist(mu_values, bins=50, alpha=0.75)
             plt.xlabel("Mu Values")
