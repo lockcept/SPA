@@ -8,7 +8,7 @@ from tqdm import tqdm
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-class RNNModel(nn.Module):
+class LSTMModel(nn.Module):
     @staticmethod
     def initialize(config, path=None, skip_if_exists=True):
         obs_dim = config.get("obs_dim")
@@ -16,7 +16,7 @@ class RNNModel(nn.Module):
         hidden_size = config.get("hidden_size", 256)
         lr = config.get("lr", 0.001)
 
-        model = RNNModel(
+        model = LSTMModel(
             config={"obs_dim": obs_dim, "act_dim": act_dim, "hidden_size": hidden_size},
             path=path,
         )
@@ -39,7 +39,7 @@ class RNNModel(nn.Module):
         config,
         path,
     ):
-        super(RNNModel, self).__init__()
+        super(LSTMModel, self).__init__()
 
         self.loss_fn = BradleyTerryLoss()
 
@@ -48,7 +48,7 @@ class RNNModel(nn.Module):
         self.state_dim = self.obs_dim + self.act_dim
         self.hidden_dim = config.get("hidden_size")
 
-        self.rnn = nn.RNN(
+        self.lstm = nn.LSTM(
             input_size=self.state_dim,
             hidden_size=self.hidden_dim,
             num_layers=1,
@@ -68,11 +68,11 @@ class RNNModel(nn.Module):
             packed_trajectory = nn.utils.rnn.pack_padded_sequence(
                 trajectory, lengths.cpu(), batch_first=True, enforce_sorted=False
             )
-            _, h_n = self.rnn(packed_trajectory)
+            packed_output, (h_n, c_n) = self.lstm(packed_trajectory)
         else:
-            _, h_n = self.rnn(trajectory)
+            _, (h_n, c_n) = self.lstm(trajectory)
 
-        score = self.fc(h_n)
+        score = self.fc(h_n[-1])  # Use the last hidden state
         return score.squeeze(0)
 
     def evaluate(self, data_loader):
@@ -95,18 +95,14 @@ class RNNModel(nn.Module):
                 s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
                 s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-                # Compute lengths for s0 and s1 separately using mask0_batch and mask1_batch
                 lengths_s0 = (1 - mask0_batch.squeeze()).sum(dim=1)
                 lengths_s1 = (1 - mask1_batch.squeeze()).sum(dim=1)
 
-                # Forward pass for s0 and s1
                 score_s0 = self.forward(s0_batch, lengths_s0)
                 score_s1 = self.forward(s1_batch, lengths_s1)
 
-                # Compute the loss
                 loss = self.loss_fn(score_s0, score_s1, mu_batch)
 
-                # Update loss and batch count
                 epoch_loss += loss.item()
                 num_batches += 1
 
@@ -145,11 +141,9 @@ class RNNModel(nn.Module):
                 s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
                 s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-                # Compute lengths for s0 and s1 separately using mask0_batch and mask1_batch
                 lengths_s0 = (1 - mask0_batch.squeeze()).sum(dim=1)
                 lengths_s1 = (1 - mask1_batch.squeeze()).sum(dim=1)
 
-                # Forward pass for s0 and s1
                 score_s0 = self.forward(s0_batch, lengths_s0)
                 score_s1 = self.forward(s1_batch, lengths_s1)
 
@@ -170,11 +164,6 @@ class RNNModel(nn.Module):
             with open(self.log_path, mode="a", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
                 writer.writerow([epoch + 1, avg_epoch_loss, val_loss])
-
-            # if val_loss < best_loss:
-            #     best_loss = val_loss
-            #     torch.save(self.state_dict(), self.path)
-            #     print(f"New best model saved with Val loss: {val_loss:.4f}")
 
         torch.save(self.state_dict(), self.path)
 

@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
-from data_generation import RNN
+from data_generation import RNNModel
 from data_loading import get_dataloader, load_pair, load_dataset
 from utils import get_score_model_path, get_score_model_log_path
 
@@ -30,7 +30,7 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
         score_model=pair_algo.split("-")[0],
     )
 
-    model, _ = RNN.initialize(
+    model, _ = RNNModel.initialize(
         config={"obs_dim": obs_dim, "act_dim": act_dim},
         path=model_path,
         skip_if_exists=False,

@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 
-from data_generation.score_rnn import RNN
+from data_generation.score_rnn import RNNModel
+from data_generation.score_lstm import LSTMModel
 from data_loading import get_dataloader, load_pair
 from utils import get_score_model_path
 
@@ -82,7 +83,13 @@ def generate_score_pairs(
     if score_model == "rnn":
         model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
         # train rnn with train data
-        model, optimizer = RNN.initialize(
+        model, optimizer = RNNModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
+        )
+    elif score_model == "lstm":
+        model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
+        # train lstm with train data
+        model, optimizer = LSTMModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
         )
     else:
@@ -100,11 +107,20 @@ def generate_score_pairs(
         num_epochs=num_epochs,
     )
 
-    best_model, _ = RNN.initialize(
-        config={"obs_dim": obs_dim, "act_dim": act_dim},
-        path=model_path,
-        skip_if_exists=False,
-    )
+    if score_model == "rnn":
+        best_model, _ = RNNModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            skip_if_exists=False,
+        )
+    elif score_model == "lstm":
+        best_model, _ = LSTMModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            skip_if_exists=False,
+        )
+    else:
+        best_model = None
 
     # fill feedback in pairs
     train_pairs = load_pair(
