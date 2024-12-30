@@ -3,6 +3,7 @@ import numpy as np
 from data_generation.cut_pairs import generate_and_save_cut_pairs
 from data_generation.full_pairs import generate_and_save_full_pairs
 from data_generation.list_pairs import generate_and_save_list_pairs
+from data_generation.raw_pairs import save_raw_pairs
 from data_generation.scored_pairs import generate_score_pairs
 from data_generation.utils import extract_trajectory_indices
 from data_loading.load_data import load_dataset, load_pair
@@ -119,19 +120,19 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             env_name=env_name,
             exp_name=exp_name,
             pair_type="train",
-            pair_algo="full-binary",
+            pair_algo="raw",
         )["data"]
         val_pairs_with_mu = load_pair(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="val",
-            pair_algo="full-binary",
+            pair_algo="raw",
         )["data"]
         test_pairs_with_mu = load_pair(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="test",
-            pair_algo="full-binary",
+            pair_algo="raw",
         )["data"]
 
         train_pairs = [
@@ -196,8 +197,27 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             test_set, test_pairs_cnt, trajectory_length
         )
 
-    # full
+    # raw
+    save_raw_pairs(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
+        pairs=train_pairs,
+    )
+    save_raw_pairs(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="val",
+        pairs=val_pairs,
+    )
+    save_raw_pairs(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="test",
+        pairs=test_pairs,
+    )
 
+    # full
     generate_and_save_full_pairs(
         dataset=dataset,
         env_name=env_name,

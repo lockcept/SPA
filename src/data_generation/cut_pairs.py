@@ -126,4 +126,5 @@ def generate_and_save_cut_pairs(
         pair_algo=f"cut-{mu_scale}",
     )
     np.savez(pair_path, data=pairs_np)
+    print(f"Preference pairs saved at {pair_path}")
     return used_set
