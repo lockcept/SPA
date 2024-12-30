@@ -161,10 +161,12 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
                     "TestPairType",
                     "ScoreModelAlgo",
                     "Accuracy",
+                    "PCC",
                 ]
             )
 
         formatted_accuracy = f"{answer_count/len(data_loader.dataset):.4f}"
+        formatted_pcc = f"{pearson_corr:.4f}"
 
         writer.writerow(
             [
@@ -174,5 +176,6 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
                 test_pair_type,
                 score_model_algo,
                 formatted_accuracy,
+                formatted_pcc,
             ]
         )
