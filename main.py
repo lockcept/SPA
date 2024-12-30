@@ -211,9 +211,7 @@ if __name__ == "__main__":
         # Generate preference pairs
         print("Generating preference pairs", env_name, exp_name)
 
-        generate_all_algo_pairs(
-            env_name=env_name, exp_name=exp_name, include_score_pairs=True
-        )
+        generate_all_algo_pairs(env_name=env_name, exp_name=exp_name)
     elif function_number == 3:
         # Train reward model
         print("Training reward model")

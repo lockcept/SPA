@@ -3,6 +3,7 @@ import torch
 
 from data_generation.score_rnn import RNNModel
 from data_generation.score_lstm import LSTMModel
+from data_generation.utils import generate_pairs_from_indices
 from data_loading import get_dataloader, load_pair
 from utils import get_score_model_path
 
@@ -15,7 +16,7 @@ def fill_feedback_from_pairs(dataset, pairs, model):
 
     Args:
         dataset: dict
-        pairs: list of tuples ((int, int), (int, int), float)
+        pairs: list of tuples ((int, int), (int, int))
         model: torch.nn.Module
 
     Returns:
@@ -30,7 +31,7 @@ def fill_feedback_from_pairs(dataset, pairs, model):
     model.eval()
 
     with torch.no_grad():
-        for s0, s1, _ in pairs:
+        for s0, s1 in pairs:
             s0_obs = observations[s0[0] : s0[1]]
             s0_act = actions[s0[0] : s0[1]]
             s1_obs = observations[s1[0] : s1[1]]
@@ -58,18 +59,13 @@ def fill_feedback_from_pairs(dataset, pairs, model):
     )
 
 
-def generate_score_pairs(
-    dataset,
+def train_model(
     env_name,
     exp_name,
     num_epochs,
     pair_algo,
     score_model,
 ):
-    """
-    learn score model and save score pairs
-    """
-
     train_data_loader = get_dataloader(
         env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
     )
@@ -79,15 +75,14 @@ def generate_score_pairs(
     val_data_loader = get_dataloader(
         env_name=env_name, exp_name=exp_name, pair_type="val", pair_algo=pair_algo
     )
+    model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
 
     if score_model == "rnn":
-        model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
         # train rnn with train data
         model, optimizer = RNNModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
         )
     elif score_model == "lstm":
-        model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
         # train lstm with train data
         model, optimizer = LSTMModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
@@ -107,6 +102,33 @@ def generate_score_pairs(
         num_epochs=num_epochs,
     )
 
+
+def generate_score_pairs(
+    dataset,
+    env_name,
+    exp_name,
+    num_epochs,
+    pair_algo,
+    score_model,
+    aug_list,
+    traj_set,
+):
+    """
+    learn score model and save score pairs
+    """
+    train_model(
+        env_name=env_name,
+        exp_name=exp_name,
+        num_epochs=num_epochs,
+        pair_algo=pair_algo,
+        score_model=score_model,
+    )
+
+    obs_dim, act_dim = dataset["observations"].shape[1], dataset["actions"].shape[1]
+
+    # generate pairs
+    model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
+
     if score_model == "rnn":
         best_model, _ = RNNModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim},
@@ -122,24 +144,51 @@ def generate_score_pairs(
     else:
         best_model = None
 
-    # fill feedback in pairs
-    train_pairs = load_pair(
+    train_pairs_with_mu = load_pair(
         env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
     )["data"]
-    val_pairs = load_pair(
+    val_pairs_with_mu = load_pair(
         env_name=env_name, exp_name=exp_name, pair_type="val", pair_algo=pair_algo
     )["data"]
-    train_pairs = fill_feedback_from_pairs(dataset, train_pairs, best_model)
-    val_pairs = fill_feedback_from_pairs(dataset, val_pairs, best_model)
 
-    # save pairs
+    train_pairs = [(s0, s1) for s0, s1, _ in train_pairs_with_mu]
+    val_pairs = [(s0, s1) for s0, s1, _ in val_pairs_with_mu]
+
+    # fill feedback in pairs
+    train_feedback_pairs = fill_feedback_from_pairs(dataset, train_pairs, best_model)
+    val_feedback_pairs = fill_feedback_from_pairs(dataset, val_pairs, best_model)
     np.savez(
         f"pair/{env_name}/{exp_name}/train/{score_model}-{pair_algo}.npz",
-        data=train_pairs,
+        data=train_feedback_pairs,
     )
     np.savez(
         f"pair/{env_name}/{exp_name}/val/{score_model}-{pair_algo}.npz",
-        data=val_pairs,
+        data=val_feedback_pairs,
     )
+
+    for aug in aug_list:
+        if aug == "10000":
+            aug_train_pairs = generate_pairs_from_indices(traj_set, 10000, 25)
+            aug_train_feedback_pairs = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_model
+            )
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_train_feedback_pairs],
+                axis=0,
+            )
+
+        else:
+            new_train_feedback_pairs = train_feedback_pairs
+
+        np.savez(
+            f"pair/{env_name}/{exp_name}/train/{score_model}-aug-{aug}-{pair_algo}.npz",
+            data=new_train_feedback_pairs,
+        )
+
+        # val feedback pairs are same as before
+        np.savez(
+            f"pair/{env_name}/{exp_name}/val/{score_model}-aug-{aug}-{pair_algo}.npz",
+            data=val_feedback_pairs,
+        )
 
     return
