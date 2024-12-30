@@ -10,7 +10,8 @@ load_dataset:
 
 pairs:
 	$(foreach exp, $(EXP_LIST), \
-		python main.py -f 2 -e $(ENV) -exp $(exp) -pa score-rnn;)
+		python main.py -f 2 -e $(ENV) -exp $(exp); \
+	)
 
 learn:
 	$(foreach exp, $(EXP_LIST), \
@@ -21,11 +22,16 @@ learn:
 			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 01 -pa $(algo) -n $(N) -ra $(reward); \
 			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 02 -pa $(algo) -n $(N) -ra $(reward); \
 			python main.py -f 4 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
-			python main.py -f 5 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward);))
+			python main.py -f 5 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+		)\
+	)
 eval:
 	$(foreach exp, $(EXP_LIST), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
 			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
-			python main.py -f -5.2 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward);))
+			python main.py -f -2 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+			python main.py -f -3 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+		) \
+	)
 
