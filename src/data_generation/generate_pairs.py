@@ -107,14 +107,14 @@ def generate_all_algo_pairs(env_name, exp_name, include_score_pairs=False):
             env_name=env_name,
             exp_name=exp_name,
             pair_type="train",
-            pair_algo="full-binary",
+            pair_algo="raw",
         )["data"]
         is_already_exist = True
     except FileNotFoundError:
         is_already_exist = False
 
     if is_already_exist:
-        print("full-binary Pair already exists, use it for generating")
+        print("Raw Pair already exists, use it for generating")
 
         train_pairs_with_mu = load_pair(
             env_name=env_name,
