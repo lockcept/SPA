@@ -139,7 +139,7 @@ if __name__ == "__main__":
         # Analyze Pairset
 
         plot_pair(
-            env_name_list=["box-close-v2"],
+            env_name_list=[env_name],
             exp_name=exp_name,
             pair_algo_list=[pair_algo],
         )
