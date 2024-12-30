@@ -54,6 +54,8 @@ def process_csv_files(csv_files):
         grouped["Success"]
         .apply(remove_max_min)
         .groupby("Timesteps")
+        .apply(lambda x: (x > 0))
+        .groupby("Timesteps")
         .apply(lambda x: (((x**2).mean() - x.mean() ** 2) ** 0.5) / ((len(x)) ** 0.5))
         .reset_index()
         .rename(columns={"Success": "Success_std"})
@@ -165,11 +167,11 @@ def plot_policy_models(exp_name):
         f"{exp_name}-04",
     ]
     postfix_list = [
-        "full-binary_MR",
         "full-binary_MR-linear",
+        "full-binary-with-0.5_MR-linear",
         "full-linear_MR-linear",
-        "rnn-cut-0.75_MR-linear",
-        "rnn-cut-1.0_MR-linear",
+        "lstm-cut-0.75_MR-linear",
+        "lstm-cut-1.0_MR-linear",
     ]
 
     for env_name in env_list:
