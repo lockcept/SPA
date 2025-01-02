@@ -84,10 +84,11 @@ def generate_and_save_cut_pairs(
 
         if (is_total_better == is_head_better) and (is_total_better == is_tail_better):
             # 0, 0, 0 or 1, 1, 1
-            cut_pairs.append((i0, i0_head, 1 - mu if is_total_better else mu))
-            cut_pairs.append((i0, i0_tail, 1 - mu if is_total_better else mu))
-            cut_pairs.append((i1, i1_head, mu if is_total_better else 1 - mu))
-            cut_pairs.append((i1, i1_tail, mu if is_total_better else 1 - mu))
+            # cut_pairs.append((i0, i0_head, 1 - mu if is_total_better else mu))
+            # cut_pairs.append((i0, i0_tail, 1 - mu if is_total_better else mu))
+            # cut_pairs.append((i1, i1_head, mu if is_total_better else 1 - mu))
+            # cut_pairs.append((i1, i1_tail, mu if is_total_better else 1 - mu))
+            pass
         else:
             if is_total_better == is_head_better:
                 # 0, 0, 1 or 1, 1, 0
@@ -107,10 +108,10 @@ def generate_and_save_cut_pairs(
                 raise ValueError()
 
             # same part is more powerful than total
-            cut_pairs.append((i0, i0_same, 1 - mu if is_total_better else mu))
-            cut_pairs.append((i0, i0_diff, 1.0 if is_total_better else 0.0))
-            cut_pairs.append((i1, i1_same, mu if is_total_better else 1 - mu))
-            cut_pairs.append((i1, i1_diff, 0.0 if is_total_better else 1.0))
+            # cut_pairs.append((i0, i0_same, 1 - mu if is_total_better else mu))
+            # cut_pairs.append((i0, i0_diff, 1.0 if is_total_better else 0.0))
+            # cut_pairs.append((i1, i1_same, mu if is_total_better else 1 - mu))
+            # cut_pairs.append((i1, i1_diff, 0.0 if is_total_better else 1.0))
 
         pair_index += 1
     print(length, valid_feedback, pair_index, len(cut_pairs))

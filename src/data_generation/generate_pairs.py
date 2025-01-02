@@ -73,8 +73,8 @@ def generate_all_algo_pairs(env_name, exp_name):
         train_all_pairs_with_mu = load_pair(
             env_name=env_name,
             exp_name=exp_name,
-            pair_type="train",
-            pair_algo="raw_all",
+            pair_type="train_all",
+            pair_algo="raw",
         )["data"]
         val_pairs_with_mu = load_pair(
             env_name=env_name,
@@ -213,6 +213,6 @@ def generate_all_algo_pairs(env_name, exp_name):
         num_epochs=100,
         pair_algo="full-binary-with-0.5",
         score_model="lstm",
-        aug_list=["10000"],
+        aug_list=["200000"],
         traj_set=all_traj_set,
     )
