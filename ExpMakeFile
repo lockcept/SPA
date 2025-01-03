@@ -13,7 +13,7 @@ pairs:
 		python main.py -f 2 -e $(ENV) -exp $(exp); \
 	)
 
-learn:
+reward:
 	$(foreach exp, $(EXP_LIST), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
