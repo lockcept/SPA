@@ -5,6 +5,8 @@ from data_generation.score_rnn import RNNModel
 from data_generation.score_lstm import LSTMModel
 from data_generation.utils import generate_pairs_from_indices
 from data_loading import get_dataloader, load_pair
+from data_loading.load_data import process_pairs
+from data_loading.preference_dataloader import get_dataloader_from_processed_data
 from utils import get_score_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -23,34 +25,51 @@ def fill_feedback_from_pairs(dataset, pairs, model):
         np array of ((int, int), (int, int), float)
     """
 
-    # evaluate model with result data
-    observations = dataset["observations"]
-    actions = dataset["actions"]
+    pairs_with_zero_mu = np.array(
+        [(s0, s1, 0.0) for s0, s1 in pairs],
+        dtype=[
+            ("s0", "i4", (2,)),
+            ("s1", "i4", (2,)),
+            ("mu", "f"),
+        ],
+    )
 
-    results = []
+    # evaluate model with result data
+    processed_data = process_pairs(dataset, pairs_with_zero_mu)
+    dataloader = get_dataloader_from_processed_data(
+        processed_data, shuffle=False, drop_last=False
+    )
+
+    mu_results = []
     model.eval()
 
     with torch.no_grad():
-        for s0, s1 in pairs:
-            s0_obs = observations[s0[0] : s0[1]]
-            s0_act = actions[s0[0] : s0[1]]
-            s1_obs = observations[s1[0] : s1[1]]
-            s1_act = actions[s1[0] : s1[1]]
+        for batch in dataloader:
+            (
+                s0_obs_batch,
+                s0_act_batch,
+                s1_obs_batch,
+                s1_act_batch,
+                _,
+                mask0_batch,
+                mask1_batch,
+            ) = [x.to(device) for x in batch]
 
-            s0_state = np.concatenate([s0_obs, s0_act], axis=1)
-            s1_state = np.concatenate([s1_obs, s1_act], axis=1)
+            s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
+            s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-            s0_tensor = torch.tensor(s0_state, dtype=torch.float32).to(device)
-            s1_tensor = torch.tensor(s1_state, dtype=torch.float32).to(device)
+            lengths_s0 = (1 - mask0_batch.squeeze()).sum(dim=1)
+            lengths_s1 = (1 - mask1_batch.squeeze()).sum(dim=1)
 
-            score_0 = model(s0_tensor).item()
-            score_1 = model(s1_tensor).item()
+            scores_0 = model(s0_batch, lengths_s0).cpu().numpy()
+            scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
 
-            mu = 1 / (1 + np.exp(score_0 - score_1))
-            results.append((s0, s1, mu))
+            mu_batch = 1 / (1 + np.exp(scores_0 - scores_1)).squeeze()
+
+            mu_results = np.concatenate((mu_results, mu_batch))
 
     return np.array(
-        results,
+        [(s0, s1, mu) for (s0, s1), mu in zip(pairs, mu_results)],
         dtype=[
             ("s0", "i4", (2,)),
             ("s1", "i4", (2,)),
@@ -190,6 +209,56 @@ def generate_score_pairs(
             mu_values = np.where(mu_values > 0.6, 1, mu_values)
             mu_values = np.where((mu_values != 0) & (mu_values != 1), 0.5, mu_values)
             new_train_feedback_pairs["mu"] = mu_values
+        elif aug == "10000-50":
+            total_cnt = 200000
+            aug_train_pairs = generate_pairs_from_indices(traj_set, total_cnt, 50)
+            aug_train_pairs_head = []
+            aug_train_pairs_tail = []
+            for s0, s1 in aug_train_pairs:
+                i0, e0 = s0
+                i1, e1 = s1
+                m0 = (i0 + e0) // 2
+                m1 = (i1 + e1) // 2
+                aug_train_pairs_head.append(((i0, m0), (i1, m1)))
+                aug_train_pairs_tail.append(((m0, e0), (m1, e1)))
+
+            aug_train_feedback_pairs = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_model
+            )
+            aug_train_feedback_pairs_head = fill_feedback_from_pairs(
+                dataset, aug_train_pairs_head, best_model
+            )
+            aug_train_feedback_pairs_tail = fill_feedback_from_pairs(
+                dataset, aug_train_pairs_tail, best_model
+            )
+
+            aug_valid_feedback_pairs = []
+
+            mu_diffs = []
+
+            for i in range(total_cnt):
+                is_s1_head_better = aug_train_feedback_pairs_head[i]["mu"] > 0.5
+                is_s1_tail_better = aug_train_feedback_pairs_tail[i]["mu"] > 0.5
+
+                if is_s1_head_better != is_s1_tail_better:
+                    mu_diff = np.abs(aug_train_feedback_pairs[i]["mu"] - 0.5)
+                    mu_diffs.append((i, mu_diff))
+
+            mu_diffs = np.array(mu_diffs, dtype=[("index", "i4"), ("mu_diff", "f4")])
+
+            top_indices = mu_diffs[np.argsort(-mu_diffs["mu_diff"])]["index"][:10000]
+
+            for idx in top_indices:
+                aug_valid_feedback_pairs.append(aug_train_feedback_pairs[idx])
+                aug_valid_feedback_pairs.append(aug_train_feedback_pairs_head[idx])
+                aug_valid_feedback_pairs.append(aug_train_feedback_pairs_tail[idx])
+
+            print(f"Augmented {len(aug_valid_feedback_pairs)} pairs")
+
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_valid_feedback_pairs],
+                axis=0,
+            )
         elif aug == "200000":
             aug_train_pairs = generate_pairs_from_indices(traj_set, 200000, 25)
             aug_train_feedback_pairs = fill_feedback_from_pairs(

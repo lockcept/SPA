@@ -86,6 +86,29 @@ class PreferenceDataset(Dataset):
         return obs_dim, act_dim
 
 
+def get_dataloader_from_processed_data(
+    processed_data,
+    batch_size=32,
+    shuffle=True,
+    drop_last=True,
+):
+    """
+    Returns a DataLoader object for the given processed data
+    """
+    dataset = PreferenceDataset(processed_data)
+
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        drop_last=drop_last,
+    )
+
+    print(f"Processed data with {len(dataset)} samples")
+
+    return dataloader
+
+
 def get_dataloader(
     env_name,
     exp_name,
@@ -98,21 +121,16 @@ def get_dataloader(
     """
     Returns a DataLoader object for the given pair data
     """
-    processed_data = get_processed_data(env_name, exp_name, pair_type, pair_algo)
-
-    dataset = PreferenceDataset(processed_data)
-
-    dataloader = DataLoader(
-        dataset,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        drop_last=drop_last,
-    )
 
     pair_path = get_pair_path(
         env_name=env_name, exp_name=exp_name, pair_type=pair_type, pair_algo=pair_algo
     )
+    print(f"Loaded {pair_path} dataset")
 
-    print(f"Loaded {pair_path} dataset with {len(dataset)} samples")
+    processed_data = get_processed_data(env_name, exp_name, pair_type, pair_algo)
+
+    dataloader = get_dataloader_from_processed_data(
+        processed_data, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last
+    )
 
     return dataloader

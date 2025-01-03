@@ -260,20 +260,17 @@ def load_pair(env_name, exp_name, pair_type, pair_algo):
     return pair
 
 
-def get_processed_data(env_name, exp_name, pair_type, pair_algo):
+def process_pairs(dataset, pair):
     """
     return structured array of (s0, s1, mu) pairs
-    s0, s1 is a structured array of (observations, actions)
-    mu is a float
+    s0, s1 is fully concatenated structured array of (observations, actions)
     """
-    dataset = load_dataset(env_name)
-
     observations = dataset["observations"]
     actions = dataset["actions"]
-    pair = load_pair(env_name, exp_name, pair_type, pair_algo)
+
     processed_data = []
 
-    for entry in pair["data"]:
+    for entry in pair:
         s0_idx, s1_idx, mu = (
             entry["s0"],
             entry["s1"],
@@ -306,3 +303,15 @@ def get_processed_data(env_name, exp_name, pair_type, pair_algo):
         )
 
     return np.array(processed_data, dtype=[("s0", "O"), ("s1", "O"), ("mu", "f4")])
+
+
+def get_processed_data(env_name, exp_name, pair_type, pair_algo):
+    """
+    return structured array of (s0, s1, mu) pairs
+    s0, s1 is a structured array of (observations, actions)
+    mu is a float
+    """
+    dataset = load_dataset(env_name)
+    pair = load_pair(env_name, exp_name, pair_type, pair_algo)["data"]
+
+    return process_pairs(dataset, pair)

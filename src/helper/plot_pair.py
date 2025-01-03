@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 import numpy as np
-from data_loading import get_processed_data, load_dataset, load_pair
+from data_loading import load_dataset, load_pair
 from utils import get_pair_log_path
 
 
