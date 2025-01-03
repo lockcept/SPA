@@ -176,6 +176,20 @@ def generate_score_pairs(
                 [train_feedback_pairs, aug_train_feedback_pairs],
                 axis=0,
             )
+        elif aug == "10000-0.5":
+            aug_train_pairs = generate_pairs_from_indices(traj_set, 10000, 25)
+            aug_train_feedback_pairs = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_model
+            )
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_train_feedback_pairs],
+                axis=0,
+            )
+            mu_values = new_train_feedback_pairs["mu"]
+            mu_values = np.where(mu_values < 0.4, 0, mu_values)
+            mu_values = np.where(mu_values > 0.6, 1, mu_values)
+            mu_values = np.where((mu_values != 0) & (mu_values != 1), 0.5, mu_values)
+            new_train_feedback_pairs["mu"] = mu_values
         elif aug == "200000":
             aug_train_pairs = generate_pairs_from_indices(traj_set, 200000, 25)
             aug_train_feedback_pairs = fill_feedback_from_pairs(
