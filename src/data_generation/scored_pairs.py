@@ -12,7 +12,7 @@ from utils import get_score_model_path
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def fill_feedback_from_pairs(dataset, pairs, model):
+def fill_feedback_from_pairs(dataset, pairs, model, linear_loss=False):
     """
     fill feedback in dataset with model
 
@@ -64,7 +64,10 @@ def fill_feedback_from_pairs(dataset, pairs, model):
             scores_0 = model(s0_batch, lengths_s0).cpu().numpy()
             scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
 
-            mu_batch = 1 / (1 + np.exp(scores_0 - scores_1)).squeeze()
+            if linear_loss:
+                mu_batch = (scores_1 / (scores_0 + scores_1)).squeeze()
+            else:
+                mu_batch = 1 / (1 + np.exp(scores_0 - scores_1)).squeeze()
 
             mu_results = np.concatenate((mu_results, mu_batch))
 
@@ -97,14 +100,18 @@ def train_model(
     model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
 
     if score_model == "rnn":
-        # train rnn with train data
         model, optimizer = RNNModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
         )
-    elif score_model == "lstm":
-        # train lstm with train data
+    elif score_model == "lstm.exp":
         model, optimizer = LSTMModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_path
+        )
+    elif score_model == "lstm.linear":
+        model, optimizer = LSTMModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            linear_loss=True,
         )
     else:
         model = None
@@ -148,18 +155,29 @@ def generate_score_pairs(
     # generate pairs
     model_path = get_score_model_path(env_name, exp_name, pair_algo, score_model)
 
+    linear_loss = False
+
     if score_model == "rnn":
         best_model, _ = RNNModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim},
             path=model_path,
             skip_if_exists=False,
         )
-    elif score_model == "lstm":
+    elif score_model == "lstm.exp":
         best_model, _ = LSTMModel.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim},
             path=model_path,
             skip_if_exists=False,
         )
+    elif score_model == "lstm.linear":
+        best_model, _ = LSTMModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            skip_if_exists=False,
+            linear_loss=True,
+        )
+        linear_loss = True
+
     else:
         best_model = None
 
@@ -174,8 +192,12 @@ def generate_score_pairs(
     val_pairs = [(s0, s1) for s0, s1, _ in val_pairs_with_mu]
 
     # fill feedback in pairs
-    train_feedback_pairs = fill_feedback_from_pairs(dataset, train_pairs, best_model)
-    val_feedback_pairs = fill_feedback_from_pairs(dataset, val_pairs, best_model)
+    train_feedback_pairs = fill_feedback_from_pairs(
+        dataset, train_pairs, best_model, linear_loss
+    )
+    val_feedback_pairs = fill_feedback_from_pairs(
+        dataset, val_pairs, best_model, linear_loss
+    )
     np.savez(
         f"pair/{env_name}/{exp_name}/train/{score_model}-{pair_algo}.npz",
         data=train_feedback_pairs,
@@ -189,7 +211,7 @@ def generate_score_pairs(
         if aug == "10000":
             aug_train_pairs = generate_pairs_from_indices(traj_set, 10000, 25)
             aug_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, aug_train_pairs, best_model
+                dataset, aug_train_pairs, best_model, linear_loss
             )
             new_train_feedback_pairs = np.concatenate(
                 [train_feedback_pairs, aug_train_feedback_pairs],
@@ -198,7 +220,7 @@ def generate_score_pairs(
         elif aug == "10000-0.5":
             aug_train_pairs = generate_pairs_from_indices(traj_set, 10000, 25)
             aug_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, aug_train_pairs, best_model
+                dataset, aug_train_pairs, best_model, linear_loss
             )
             new_train_feedback_pairs = np.concatenate(
                 [train_feedback_pairs, aug_train_feedback_pairs],
@@ -223,13 +245,13 @@ def generate_score_pairs(
                 aug_train_pairs_tail.append(((m0, e0), (m1, e1)))
 
             aug_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, aug_train_pairs, best_model
+                dataset, aug_train_pairs, best_model, linear_loss
             )
             aug_train_feedback_pairs_head = fill_feedback_from_pairs(
-                dataset, aug_train_pairs_head, best_model
+                dataset, aug_train_pairs_head, best_model, linear_loss
             )
             aug_train_feedback_pairs_tail = fill_feedback_from_pairs(
-                dataset, aug_train_pairs_tail, best_model
+                dataset, aug_train_pairs_tail, best_model, linear_loss
             )
 
             aug_valid_feedback_pairs = []
@@ -262,7 +284,7 @@ def generate_score_pairs(
         elif aug == "200000":
             aug_train_pairs = generate_pairs_from_indices(traj_set, 200000, 25)
             aug_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, aug_train_pairs, best_model
+                dataset, aug_train_pairs, best_model, linear_loss
             )
 
             distances = np.abs(aug_train_feedback_pairs["mu"] - 0.5)

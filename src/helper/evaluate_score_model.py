@@ -3,8 +3,7 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
-from data_generation import RNNModel
-from data_generation.score_lstm import LSTMModel
+from data_generation import RNNModel, LSTMModel
 from data_loading import get_dataloader, load_pair, load_dataset
 from utils import get_score_model_path, get_score_model_log_path
 
@@ -34,11 +33,26 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
         score_model=score_model_algo,
     )
 
-    model, _ = LSTMModel.initialize(
-        config={"obs_dim": obs_dim, "act_dim": act_dim},
-        path=model_path,
-        skip_if_exists=False,
-    )
+    if score_model_algo == "rnn":
+        model = RNNModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+        )
+    elif score_model_algo == "lstm.exp":
+        model, _ = LSTMModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            skip_if_exists=False,
+        )
+    elif score_model_algo == "lstm.linear":
+        model, _ = LSTMModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            skip_if_exists=False,
+            linear_loss=True,
+        )
+    else:
+        raise ValueError(f"Invalid score model algo: {score_model_algo}")
 
     model.eval()
 

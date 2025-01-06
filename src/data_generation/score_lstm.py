@@ -10,7 +10,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class LSTMModel(nn.Module):
     @staticmethod
-    def initialize(config, path=None, skip_if_exists=True):
+    def initialize(config, path=None, skip_if_exists=True, linear_loss=False):
         obs_dim = config.get("obs_dim")
         act_dim = config.get("act_dim")
         hidden_size = config.get("hidden_size", 256)
@@ -19,6 +19,7 @@ class LSTMModel(nn.Module):
         model = LSTMModel(
             config={"obs_dim": obs_dim, "act_dim": act_dim, "hidden_size": hidden_size},
             path=path,
+            linear_loss=linear_loss,
         )
 
         if path is not None:
@@ -38,10 +39,15 @@ class LSTMModel(nn.Module):
         self,
         config,
         path,
+        linear_loss,
     ):
         super(LSTMModel, self).__init__()
 
-        self.loss_fn = BradleyTerryLoss()
+        self.linear_loss = linear_loss
+        if self.linear_loss:
+            self.loss_fn = LinearLoss()
+        else:
+            self.loss_fn = BradleyTerryLoss()
 
         self.obs_dim = config.get("obs_dim")
         self.act_dim = config.get("act_dim")
@@ -72,8 +78,12 @@ class LSTMModel(nn.Module):
         else:
             _, (h_n, c_n) = self.lstm(trajectory)
 
-        score = self.fc(h_n[-1])  # Use the last hidden state
-        return score.squeeze(0)
+        score = self.fc(h_n[-1]).squeeze(0)
+
+        if self.linear_loss:
+            score = 1 + torch.tanh(score)
+
+        return score
 
     def evaluate(self, data_loader):
         self.eval()
@@ -175,6 +185,19 @@ class BradleyTerryLoss(nn.Module):
 
     def forward(self, score_0, score_1, mu):
         prob_s1_wins = torch.sigmoid(score_1 - score_0)
+        prob_s1_wins = prob_s1_wins.squeeze()
+
+        loss = self.cross_entropy_loss(prob_s1_wins, mu)
+        return loss
+
+
+class LinearLoss(nn.Module):
+    def __init__(self):
+        super(LinearLoss, self).__init__()
+        self.cross_entropy_loss = nn.BCELoss()
+
+    def forward(self, score_0, score_1, mu):
+        prob_s1_wins = score_1 / (score_0 + score_1 + 1e-6)
         prob_s1_wins = prob_s1_wins.squeeze()
 
         loss = self.cross_entropy_loss(prob_s1_wins, mu)
