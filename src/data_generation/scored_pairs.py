@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+from data_generation.score_encoder import EncoderModel
 from data_generation.score_rnn import RNNModel
 from data_generation.score_lstm import LSTMModel
 from data_generation.utils import generate_pairs_from_indices
@@ -113,6 +114,12 @@ def train_model(
             path=model_path,
             linear_loss=True,
         )
+    elif score_model == "encoder":
+        model, optimizer = EncoderModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+        )
+
     else:
         model = None
         optimizer = None
@@ -177,6 +184,12 @@ def generate_score_pairs(
             linear_loss=True,
         )
         linear_loss = True
+    elif score_model == "encoder":
+        best_model, _ = EncoderModel.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            skip_if_exists=False,
+        )
 
     else:
         best_model = None
