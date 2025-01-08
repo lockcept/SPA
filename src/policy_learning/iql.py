@@ -145,12 +145,18 @@ def train(
     print(configs)
 
     # seed
-    random.seed(configs["seed"])
-    np.random.seed(configs["seed"])
-    torch.manual_seed(configs["seed"])
-    torch.cuda.manual_seed_all(configs["seed"])
-    torch.backends.cudnn.deterministic = True
-    env.seed(configs["seed"])
+
+    # random.seed(configs["seed"])
+    # np.random.seed(configs["seed"])
+    # torch.manual_seed(configs["seed"])
+    # torch.cuda.manual_seed_all(configs["seed"])
+    # torch.backends.cudnn.deterministic = True
+    # env.seed(configs["seed"])
+
+    seed = random.randint(0, 2**31 - 1)
+    env.seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
     # create policy model
     actor_backbone = MLP(
