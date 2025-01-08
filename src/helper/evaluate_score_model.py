@@ -31,6 +31,7 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
         exp_name=exp_name,
         pair_algo=raw_pair_algo,
         score_model=score_model_algo,
+        ensemble_num=0,
     )
 
     if score_model_algo == "rnn":
@@ -111,6 +112,7 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
             exp_name=exp_name,
             pair_algo=raw_pair_algo,
             score_model=pair_algo.split("-")[0],
+            ensemble_num=0,
             log_file=f"score_s0_s1_{test_pair_type}.png",
         ),
         format="png",
@@ -146,13 +148,12 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
     plt.legend()
     plt.grid(True)
 
-    raw_pair_algo = "-".join(pair_algo.split("-")[1:])
-
     output_path = get_score_model_log_path(
         env_name=env_name,
         exp_name=exp_name,
         pair_algo=raw_pair_algo,
         score_model=pair_algo.split("-")[0],
+        ensemble_num=0,
         log_file=f"true_reward_{test_pair_type}.png",
     )
     plt.savefig(output_path, format="png")

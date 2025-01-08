@@ -8,6 +8,7 @@ def save_raw_pairs(
     exp_name,
     pair_type,
     pairs,
+    raw_name,
 ):
     """
     Args:
@@ -33,7 +34,7 @@ def save_raw_pairs(
         env_name=env_name,
         exp_name=exp_name,
         pair_type=pair_type,
-        pair_algo="raw",
+        pair_algo=raw_name,
     )
     np.savez(pair_path, data=pairs_np)
     print(f"Preference pairs saved at {pair_path}")

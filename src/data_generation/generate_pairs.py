@@ -150,24 +150,28 @@ def generate_all_algo_pairs(env_name, exp_name):
             exp_name=exp_name,
             pair_type="train",
             pairs=train_pairs,
+            raw_name="raw",
         )
         save_raw_pairs(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="val",
             pairs=val_pairs,
+            raw_name="raw",
         )
         save_raw_pairs(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="test",
             pairs=test_pairs,
+            raw_name="raw",
         )
         save_raw_pairs(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="train_all",
             pairs=train_all_pairs,
+            raw_name="raw",
         )
 
     # full

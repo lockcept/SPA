@@ -39,11 +39,12 @@ def get_score_model_path(
     exp_name,
     pair_algo,
     score_model: Literal["rnn"],
+    ensemble_num,
 ):
     """
     Return path of score model file
     """
-    path = f"model/{env_name}/{exp_name}/score/{score_model}-{pair_algo}.pth"
+    path = f"model/{env_name}/{exp_name}/score/{score_model}-{ensemble_num}-{pair_algo}.pth"
     make_dir_from_path(path)
     return path
 
@@ -53,12 +54,13 @@ def get_score_model_log_path(
     exp_name,
     pair_algo,
     score_model: Literal["rnn"],
+    ensemble_num,
     log_file,
 ):
     """
     Return path of score model log file
     """
-    path = f"log/{env_name}/{exp_name}/score/{score_model}-{pair_algo}/{log_file}"
+    path = f"log/{env_name}/{exp_name}/score/{score_model}-{ensemble_num}-{pair_algo}/{log_file}"
     make_dir_from_path(path)
     return path
 
