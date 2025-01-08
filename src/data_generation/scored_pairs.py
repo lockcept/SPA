@@ -66,7 +66,7 @@ def fill_feedback_from_pairs(dataset, pairs, model, linear_loss=False):
             scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
 
             if linear_loss:
-                mu_batch = (scores_1 / (scores_0 + scores_1)).squeeze()
+                mu_batch = (scores_1 / (scores_0 + scores_1 + 1e-6)).squeeze()
             else:
                 mu_batch = 1 / (1 + np.exp(scores_0 - scores_1)).squeeze()
 
