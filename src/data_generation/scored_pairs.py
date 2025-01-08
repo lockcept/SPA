@@ -239,7 +239,7 @@ def generate_score_pairs(
 
     for aug in aug_list:
         if aug == "5000-soft":
-            aug_train_pairs = generate_pairs_from_indices(traj_set, 200000, 25)
+            aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 200000, 25)
             aug_train_feedback_pairs = fill_feedback_from_pairs(
                 dataset, aug_train_pairs, best_model, linear_loss
             )
@@ -264,19 +264,25 @@ def generate_score_pairs(
             )
         elif aug == "5000-hard":
             # Must be run after 5000-soft
-            top_pairs = load_pair(
+            top_feedback_pairs = load_pair(
                 env_name=env_name,
                 exp_name=exp_name,
                 pair_type="train",
                 pair_algo="raw_5000",
             )
+            top_pairs = [(s0, s1) for s0, s1, _ in top_feedback_pairs["data"]]
 
             aug_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, aug_train_pairs, best_model, linear_loss
+                dataset, top_pairs, best_model, linear_loss
+            )
+
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_train_feedback_pairs],
+                axis=0,
             )
 
             hard_pairs = []
-            for s0, s1, mu in aug_train_feedback_pairs:
+            for s0, s1, mu in new_train_feedback_pairs:
                 if mu < 0.5:
                     hard_pairs.append((s0, s1, 0.0))
                 else:
@@ -290,10 +296,8 @@ def generate_score_pairs(
                     ("mu", "f"),
                 ],
             )
-            new_train_feedback_pairs = np.concatenate(
-                [train_feedback_pairs, hard_pairs],
-                axis=0,
-            )
+
+            new_train_feedback_pairs = hard_pairs
 
         else:
             new_train_feedback_pairs = train_feedback_pairs

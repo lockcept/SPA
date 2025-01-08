@@ -127,7 +127,7 @@ def generate_all_algo_pairs(env_name, exp_name):
         ]
 
         train_pairs = generate_pairs_from_indices(
-            train_set, train_pairs_cnt, trajectory_length
+            dataset, train_set, train_pairs_cnt, trajectory_length, except_same=True
         )
 
         train_all_pairs = generate_pairs_from_using_all(train_set)
@@ -138,10 +138,10 @@ def generate_all_algo_pairs(env_name, exp_name):
             all_traj_set.append(p[1])
 
         val_pairs = generate_pairs_from_indices(
-            val_set, val_pairs_cnt, trajectory_length
+            dataset, val_set, val_pairs_cnt, trajectory_length, except_same=True
         )
         test_pairs = generate_pairs_from_indices(
-            test_set, test_pairs_cnt, trajectory_length
+            dataset, test_set, test_pairs_cnt, trajectory_length, except_same=True
         )
 
         # raw
@@ -215,8 +215,8 @@ def generate_all_algo_pairs(env_name, exp_name):
         env_name=env_name,
         exp_name=exp_name,
         num_epochs=100,
-        pair_algo="full-binary-with-0.5",
-        score_model="lstm",
-        aug_list=["200000"],
+        pair_algo="full-binary",
+        score_model="lstm.exp",
+        aug_list=["5000-soft", "5000-hard"],
         traj_set=all_traj_set,
     )

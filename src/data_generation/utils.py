@@ -29,7 +29,9 @@ def generate_pairs_from_using_all(trajectories):
     return pairs
 
 
-def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
+def generate_pairs_from_indices(
+    dataset, trajectories, pair_count, trajectory_length, except_same=False
+):
     """
     choose pairs from indices and cut them to have a fixed length with same starting point
     To utilize as many pairs as possible, start by using pairs from the beginning.
@@ -39,7 +41,9 @@ def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
     valid_trajectories = [t for t in trajectories if (t[1] - t[0]) >= trajectory_length]
     total_trajectory_count = len(valid_trajectories)
 
-    for i in range(pair_count):
+    i = 0
+
+    while len(pairs) < pair_count:
         if i * 2 < total_trajectory_count:
             if i * 2 + 1 < total_trajectory_count:
                 first_pair_index = i * 2
@@ -47,6 +51,7 @@ def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
             else:
                 first_pair_index = i * 2
                 second_pair_index = np.random.randint(0, total_trajectory_count - 1)
+            i += 1
         else:
             first_pair_index, second_pair_index = np.random.randint(
                 0, total_trajectory_count - 1, 2
@@ -67,17 +72,22 @@ def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
         else:
             first_start_point = np.random.randint(0, min_length - trajectory_length)
             second_start_point = np.random.randint(0, min_length - trajectory_length)
-        pairs.append(
-            (
-                (
-                    first_trajectory[0] + first_start_point,
-                    first_trajectory[0] + first_start_point + trajectory_length,
-                ),
-                (
-                    second_trajectory[0] + second_start_point,
-                    second_trajectory[0] + second_start_point + trajectory_length,
-                ),
-            )
+
+        first_pair = (
+            first_trajectory[0] + first_start_point,
+            first_trajectory[0] + first_start_point + trajectory_length,
         )
+        second_pair = (
+            second_trajectory[0] + second_start_point,
+            second_trajectory[0] + second_start_point + trajectory_length,
+        )
+
+        if except_same:
+            first_rewards = dataset["rewards"][first_pair[0] : first_pair[1]]
+            second_rewards = dataset["rewards"][second_pair[0] : second_pair[1]]
+            if np.sum(first_rewards) == np.sum(second_rewards):
+                continue
+
+        pairs.append((first_pair, second_pair))
 
     return pairs
