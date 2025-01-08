@@ -39,7 +39,15 @@ def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
     )
 
     if mu_type == "binary":
-        mu_values = np.where(reward_sum_0 > reward_sum_1, 0, 1)
+        mu_values = np.where(
+            reward_sum_0 > reward_sum_1,
+            0,
+            np.where(
+                reward_sum_0 < reward_sum_1,
+                1,
+                0.5,
+            ),
+        )
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "binary-with-0.5":
         length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
