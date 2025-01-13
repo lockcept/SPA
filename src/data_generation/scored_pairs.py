@@ -17,6 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
     """
     Fill feedback in dataset using multiple models and average their mu values.
+    Also return the standard deviation of mu values.
 
     Args:
         dataset: dict
@@ -26,7 +27,9 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
             If True, use linear loss for mu calculation. Default is False.
 
     Returns:
-        np array of ((int, int), (int, int), float)
+        tuple:
+            - np array of ((int, int), (int, int), float): mu values.
+            - np array of float: standard deviation of mu values.
     """
 
     pairs_with_zero_mu = np.array(
@@ -45,6 +48,7 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
     )
 
     mu_results = []
+    std_dev_results = []
 
     with torch.no_grad():
         for batch in dataloader:
@@ -82,11 +86,15 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
                 mu_batch = np.squeeze(mu_batch, axis=-1)
                 batch_mu_results.append(mu_batch)
 
-            # Average mu across models for this batch
-            avg_mu_batch = np.mean(batch_mu_results, axis=0)
-            mu_results = np.concatenate((mu_results, avg_mu_batch))
+            batch_mu_results = np.array(batch_mu_results)
 
-    return np.array(
+            avg_mu_batch = np.mean(batch_mu_results, axis=0)
+            std_mu_batch = np.std(batch_mu_results, axis=0, ddof=1)
+
+            mu_results = np.concatenate((mu_results, avg_mu_batch))
+            std_dev_results = np.concatenate((std_dev_results, std_mu_batch))
+
+    mu_array = np.array(
         [(s0, s1, mu) for (s0, s1), mu in zip(pairs, mu_results)],
         dtype=[
             ("s0", "i4", (2,)),
@@ -94,6 +102,8 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
             ("mu", "f"),
         ],
     )
+
+    return mu_array, std_dev_results
 
 
 def train_model(
@@ -232,10 +242,10 @@ def generate_score_pairs(
     val_pairs = [(s0, s1) for s0, s1, _ in val_pairs_with_mu]
 
     # fill feedback in pairs
-    train_feedback_pairs = fill_feedback_from_pairs(
+    train_feedback_pairs, _ = fill_feedback_from_pairs(
         dataset, train_pairs, best_models, linear_loss
     )
-    val_feedback_pairs = fill_feedback_from_pairs(
+    val_feedback_pairs, _ = fill_feedback_from_pairs(
         dataset, val_pairs, best_models, linear_loss
     )
     np.savez(
@@ -269,7 +279,7 @@ def generate_score_pairs(
                     raw_name="raw_10000",
                 )
 
-            aug_train_feedback_pairs = fill_feedback_from_pairs(
+            aug_train_feedback_pairs, _ = fill_feedback_from_pairs(
                 dataset, aug_train_pairs, best_models, linear_loss
             )
 
@@ -298,7 +308,7 @@ def generate_score_pairs(
                     raw_name="raw_50000",
                 )
 
-            aug_train_feedback_pairs = fill_feedback_from_pairs(
+            aug_train_feedback_pairs, _ = fill_feedback_from_pairs(
                 dataset, aug_train_pairs, best_models, linear_loss
             )
 
@@ -337,12 +347,65 @@ def generate_score_pairs(
                             )
                         )
 
-            new_train_feedback_pairs = fill_feedback_from_pairs(
+            new_train_feedback_pairs, _ = fill_feedback_from_pairs(
                 dataset, aug_train_pairs, best_models, linear_loss
             )
+        elif aug == "uncertain":
+            try:
+                loaded_pairs = load_pair(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pair_algo="raw_200000",
+                )
+                aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
+            except FileNotFoundError:
+                aug_train_pairs = generate_pairs_from_indices(
+                    dataset, traj_set, 200000, 25
+                )
+
+                save_raw_pairs(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pairs=aug_train_pairs,
+                    raw_name="raw_200000",
+                )
+
+            _, std_dev = fill_feedback_from_pairs(
+                dataset, train_pairs, best_models, linear_loss
+            )
+
+            std_dev_criteria = np.mean(std_dev)
+
+            aug_train_feedback_pairs, aug_std_dev = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_models, linear_loss
+            )
+
+            filtered_pairs = [
+                pair
+                for pair, mu, std in zip(
+                    aug_train_feedback_pairs,
+                    aug_train_feedback_pairs["mu"],
+                    aug_std_dev,
+                )
+                if std > std_dev_criteria and (mu < 0.2 or mu > 0.8)
+            ]
+
+            print(std_dev_criteria, len(filtered_pairs))
+
+            aug_train_feedback_pairs = np.array(
+                filtered_pairs, dtype=aug_train_feedback_pairs.dtype
+            )
+
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_train_feedback_pairs],
+                axis=0,
+            )
+
         elif aug == "test":
             aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 1000, 25)
-            new_train_feedback_pairs = fill_feedback_from_pairs(
+            new_train_feedback_pairs, _ = fill_feedback_from_pairs(
                 dataset, aug_train_pairs, best_models, linear_loss
             )
         else:
