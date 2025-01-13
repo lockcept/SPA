@@ -28,7 +28,7 @@ def compare_trajectory_rewards(
 
     pairs = load_pair(
         env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
-    )["data"]
+    )
 
     output_path = get_reward_model_log_path(
         env_name=env_name,

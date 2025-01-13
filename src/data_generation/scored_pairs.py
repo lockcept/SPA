@@ -226,10 +226,10 @@ def generate_score_pairs(
 
     train_pairs_with_mu = load_pair(
         env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
-    )["data"]
+    )
     val_pairs_with_mu = load_pair(
         env_name=env_name, exp_name=exp_name, pair_type="val", pair_algo=pair_algo
-    )["data"]
+    )
 
     train_pairs = [(s0, s1) for s0, s1, _ in train_pairs_with_mu]
     val_pairs = [(s0, s1) for s0, s1, _ in val_pairs_with_mu]
@@ -251,28 +251,62 @@ def generate_score_pairs(
     )
 
     for aug in aug_list:
-        if aug == "5000-soft":
-            aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 200000, 25)
+        if aug == "10000":
+            try:
+                loaded_pairs = load_pair(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pair_algo="raw_10000",
+                )
+                aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
+            except FileNotFoundError:
+                aug_train_pairs = generate_pairs_from_indices(
+                    dataset, traj_set, 10000, 25
+                )
+                save_raw_pairs(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pairs=aug_train_pairs,
+                    raw_name="raw_10000",
+                )
+
             aug_train_feedback_pairs = fill_feedback_from_pairs(
                 dataset, aug_train_pairs, best_models, linear_loss
             )
 
-            distances = np.abs(aug_train_feedback_pairs["mu"] - 0.5)
-            sorted_indices = np.argsort(-distances)
-            top_feedback_pairs = aug_train_feedback_pairs[sorted_indices[:5000]]
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_train_feedback_pairs],
+                axis=0,
+            )
+        elif aug == "50000":
+            try:
+                loaded_pairs = load_pair(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pair_algo="raw_50000",
+                )
+                aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
+            except FileNotFoundError:
+                aug_train_pairs = generate_pairs_from_indices(
+                    dataset, traj_set, 50000, 25
+                )
+                save_raw_pairs(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pairs=aug_train_pairs,
+                    raw_name="raw_50000",
+                )
 
-            # save pairs for other experiments
-            top_pairs = [(s0, s1) for s0, s1, _ in top_feedback_pairs]
-            save_raw_pairs(
-                env_name=env_name,
-                exp_name=exp_name,
-                pair_type="train",
-                pairs=top_pairs,
-                raw_name="raw_5000",
+            aug_train_feedback_pairs = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_models, linear_loss
             )
 
             new_train_feedback_pairs = np.concatenate(
-                [train_feedback_pairs, top_feedback_pairs],
+                [train_feedback_pairs, aug_train_feedback_pairs],
                 axis=0,
             )
         elif aug == "test":

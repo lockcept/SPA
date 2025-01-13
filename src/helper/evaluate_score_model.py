@@ -131,7 +131,7 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
         pair_algo=test_pair_algo,
     )
     reward_sum_list = []
-    for s0, s1, _ in pairs["data"]:
+    for s0, s1, _ in pairs:
         reward_sum_0 = np.sum(dataset["rewards"][s0[0] : s0[1]])
         reward_sum_1 = np.sum(dataset["rewards"][s1[0] : s1[1]])
         reward_sum_list.append(reward_sum_0)

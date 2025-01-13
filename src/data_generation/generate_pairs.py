@@ -56,7 +56,7 @@ def generate_all_algo_pairs(env_name, exp_name):
             exp_name=exp_name,
             pair_type="train",
             pair_algo="raw",
-        )["data"]
+        )
         is_already_exist = True
     except FileNotFoundError:
         is_already_exist = False
@@ -69,25 +69,25 @@ def generate_all_algo_pairs(env_name, exp_name):
             exp_name=exp_name,
             pair_type="train",
             pair_algo="raw",
-        )["data"]
+        )
         train_all_pairs_with_mu = load_pair(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="train_all",
             pair_algo="raw",
-        )["data"]
+        )
         val_pairs_with_mu = load_pair(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="val",
             pair_algo="raw",
-        )["data"]
+        )
         test_pairs_with_mu = load_pair(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="test",
             pair_algo="raw",
-        )["data"]
+        )
 
         train_pairs = [
             ((p["s0"][0], p["s0"][1]), (p["s1"][0], p["s1"][1]))
@@ -217,6 +217,7 @@ def generate_all_algo_pairs(env_name, exp_name):
         num_epochs=100,
         pair_algo="full-binary",
         score_model="lstm.exp",
-        aug_list=["5000-soft", "5000-hard"],
+        aug_list=["10000", "50000"],
         traj_set=all_traj_set,
+        ensemble_size=5,
     )

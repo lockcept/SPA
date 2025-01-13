@@ -257,7 +257,7 @@ def load_pair(env_name, exp_name, pair_type, pair_algo):
 
     pair = np.load(path, allow_pickle=True)
 
-    return pair
+    return pair["data"]
 
 
 def process_pairs(dataset, pair):
@@ -312,6 +312,6 @@ def get_processed_data(env_name, exp_name, pair_type, pair_algo):
     mu is a float
     """
     dataset = load_dataset(env_name)
-    pair = load_pair(env_name, exp_name, pair_type, pair_algo)["data"]
+    pair = load_pair(env_name, exp_name, pair_type, pair_algo)
 
     return process_pairs(dataset, pair)

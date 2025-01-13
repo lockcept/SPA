@@ -14,7 +14,7 @@ def plot_pair(env_name_list, exp_name, pair_algo_list):
                 exp_name=exp_name,
                 pair_type="train",
                 pair_algo=pair_algo,
-            )["data"]
+            )
 
             log_path = get_pair_log_path(
                 env_name=env_name,
@@ -45,7 +45,7 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     true_values = []
     eval_values = []
 
-    for s0, s1, mu in data["data"]:
+    for s0, s1, mu in data:
         rewards_sum_0 = np.sum(dataset["rewards"][s0[0] : s0[1]])
         rewards_sum_1 = np.sum(dataset["rewards"][s1[0] : s1[1]])
 
