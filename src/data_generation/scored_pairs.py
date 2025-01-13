@@ -16,7 +16,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
     """
-    Fill feedback in dataset using multiple models and average their results.
+    Fill feedback in dataset using multiple models and average their mu values.
 
     Args:
         dataset: dict
@@ -45,8 +45,6 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
     )
 
     mu_results = []
-    for model in models:
-        model.eval()
 
     with torch.no_grad():
         for batch in dataloader:
@@ -66,28 +64,27 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
             lengths_s0 = (1 - mask0_batch.squeeze(dim=-1)).sum(dim=1)
             lengths_s1 = (1 - mask1_batch.squeeze(dim=-1)).sum(dim=1)
 
-            # Aggregate scores across models
-            scores_0_list = []
-            scores_1_list = []
+            batch_mu_results = []  # Collect mu values for the batch from all models
 
             for model in models:
+                model.eval()
+
+                # Calculate scores
                 scores_0 = model(s0_batch, lengths_s0).cpu().numpy()
                 scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
-                scores_0_list.append(scores_0)
-                scores_1_list.append(scores_1)
 
-            # Average scores across models
-            avg_scores_0 = np.mean(scores_0_list, axis=0)
-            avg_scores_1 = np.mean(scores_1_list, axis=0)
+                # Calculate mu for this model
+                if linear_loss:
+                    mu_batch = scores_1 / (scores_0 + scores_1 + 1e-6)
+                else:
+                    mu_batch = 1 / (1 + np.exp(scores_0 - scores_1))
 
-            # Calculate mu
-            if linear_loss:
-                mu_batch = avg_scores_1 / (avg_scores_0 + avg_scores_1 + 1e-6)
-            else:
-                mu_batch = 1 / (1 + np.exp(avg_scores_0 - avg_scores_1))
+                mu_batch = np.squeeze(mu_batch, axis=-1)
+                batch_mu_results.append(mu_batch)
 
-            mu_batch = np.squeeze(mu_batch, axis=-1)
-            mu_results = np.concatenate((mu_results, mu_batch))
+            # Average mu across models for this batch
+            avg_mu_batch = np.mean(batch_mu_results, axis=0)
+            mu_results = np.concatenate((mu_results, avg_mu_batch))
 
     return np.array(
         [(s0, s1, mu) for (s0, s1), mu in zip(pairs, mu_results)],
