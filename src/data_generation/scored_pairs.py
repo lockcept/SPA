@@ -14,14 +14,16 @@ from utils import get_score_model_path
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def fill_feedback_from_pairs(dataset, pairs, model, linear_loss=False):
+def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
     """
-    fill feedback in dataset with model
+    Fill feedback in dataset using multiple models and average their results.
 
     Args:
         dataset: dict
         pairs: list of tuples ((int, int), (int, int))
-        model: torch.nn.Module
+        models: list of torch.nn.Module
+        linear_loss: bool, optional
+            If True, use linear loss for mu calculation. Default is False.
 
     Returns:
         np array of ((int, int), (int, int), float)
@@ -36,14 +38,15 @@ def fill_feedback_from_pairs(dataset, pairs, model, linear_loss=False):
         ],
     )
 
-    # evaluate model with result data
+    # Evaluate model with result data
     processed_data = process_pairs(dataset, pairs_with_zero_mu)
     dataloader = get_dataloader_from_processed_data(
         processed_data, shuffle=False, drop_last=False
     )
 
     mu_results = []
-    model.eval()
+    for model in models:
+        model.eval()
 
     with torch.no_grad():
         for batch in dataloader:
@@ -63,13 +66,25 @@ def fill_feedback_from_pairs(dataset, pairs, model, linear_loss=False):
             lengths_s0 = (1 - mask0_batch.squeeze(dim=-1)).sum(dim=1)
             lengths_s1 = (1 - mask1_batch.squeeze(dim=-1)).sum(dim=1)
 
-            scores_0 = model(s0_batch, lengths_s0).cpu().numpy()
-            scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
+            # Aggregate scores across models
+            scores_0_list = []
+            scores_1_list = []
 
+            for model in models:
+                scores_0 = model(s0_batch, lengths_s0).cpu().numpy()
+                scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
+                scores_0_list.append(scores_0)
+                scores_1_list.append(scores_1)
+
+            # Average scores across models
+            avg_scores_0 = np.mean(scores_0_list, axis=0)
+            avg_scores_1 = np.mean(scores_1_list, axis=0)
+
+            # Calculate mu
             if linear_loss:
-                mu_batch = scores_1 / (scores_0 + scores_1 + 1e-6)
+                mu_batch = avg_scores_1 / (avg_scores_0 + avg_scores_1 + 1e-6)
             else:
-                mu_batch = 1 / (1 + np.exp(scores_0 - scores_1))
+                mu_batch = 1 / (1 + np.exp(avg_scores_0 - avg_scores_1))
 
             mu_batch = np.squeeze(mu_batch, axis=-1)
             mu_results = np.concatenate((mu_results, mu_batch))
@@ -209,9 +224,6 @@ def generate_score_pairs(
 
         best_models.append(best_model)
 
-    # Todo: use ensemble
-    best_model = best_models[0]
-
     train_pairs_with_mu = load_pair(
         env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
     )["data"]
@@ -224,10 +236,10 @@ def generate_score_pairs(
 
     # fill feedback in pairs
     train_feedback_pairs = fill_feedback_from_pairs(
-        dataset, train_pairs, best_model, linear_loss
+        dataset, train_pairs, best_models, linear_loss
     )
     val_feedback_pairs = fill_feedback_from_pairs(
-        dataset, val_pairs, best_model, linear_loss
+        dataset, val_pairs, best_models, linear_loss
     )
     np.savez(
         f"pair/{env_name}/{exp_name}/train/{score_model}-{pair_algo}.npz",
@@ -242,7 +254,7 @@ def generate_score_pairs(
         if aug == "5000-soft":
             aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 200000, 25)
             aug_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, aug_train_pairs, best_model, linear_loss
+                dataset, aug_train_pairs, best_models, linear_loss
             )
 
             distances = np.abs(aug_train_feedback_pairs["mu"] - 0.5)
@@ -263,46 +275,10 @@ def generate_score_pairs(
                 [train_feedback_pairs, top_feedback_pairs],
                 axis=0,
             )
-        elif aug == "5000-hard":
-            # Must be run after 5000-soft
-            top_feedback_pairs = load_pair(
-                env_name=env_name,
-                exp_name=exp_name,
-                pair_type="train",
-                pair_algo="raw_5000",
-            )
-            top_pairs = [(s0, s1) for s0, s1, _ in top_feedback_pairs["data"]]
-
-            aug_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, top_pairs, best_model, linear_loss
-            )
-
-            new_train_feedback_pairs = np.concatenate(
-                [train_feedback_pairs, aug_train_feedback_pairs],
-                axis=0,
-            )
-
-            hard_pairs = []
-            for s0, s1, mu in new_train_feedback_pairs:
-                if mu < 0.5:
-                    hard_pairs.append((s0, s1, 0.0))
-                else:
-                    hard_pairs.append((s0, s1, 1.0))
-
-            hard_pairs = np.array(
-                hard_pairs,
-                dtype=[
-                    ("s0", "i4", (2,)),
-                    ("s1", "i4", (2,)),
-                    ("mu", "f"),
-                ],
-            )
-
-            new_train_feedback_pairs = hard_pairs
         elif aug == "test":
             aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 1000, 25)
             new_train_feedback_pairs = fill_feedback_from_pairs(
-                dataset, aug_train_pairs, best_model, linear_loss
+                dataset, aug_train_pairs, best_models, linear_loss
             )
         else:
             new_train_feedback_pairs = train_feedback_pairs
