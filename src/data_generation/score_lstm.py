@@ -78,8 +78,7 @@ class LSTMModel(nn.Module):
         else:
             _, (h_n, c_n) = self.lstm(trajectory)
 
-        score = self.fc(h_n[-1]).squeeze(0)
-
+        score = self.fc(h_n[-1])
         if self.linear_loss:
             score = 1 + torch.tanh(score)
 

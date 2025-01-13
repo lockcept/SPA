@@ -60,17 +60,18 @@ def fill_feedback_from_pairs(dataset, pairs, model, linear_loss=False):
             s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
             s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-            lengths_s0 = (1 - mask0_batch.squeeze()).sum(dim=1)
-            lengths_s1 = (1 - mask1_batch.squeeze()).sum(dim=1)
+            lengths_s0 = (1 - mask0_batch.squeeze(dim=-1)).sum(dim=1)
+            lengths_s1 = (1 - mask1_batch.squeeze(dim=-1)).sum(dim=1)
 
             scores_0 = model(s0_batch, lengths_s0).cpu().numpy()
             scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
 
             if linear_loss:
-                mu_batch = (scores_1 / (scores_0 + scores_1 + 1e-6)).squeeze()
+                mu_batch = scores_1 / (scores_0 + scores_1 + 1e-6)
             else:
-                mu_batch = 1 / (1 + np.exp(scores_0 - scores_1)).squeeze()
+                mu_batch = 1 / (1 + np.exp(scores_0 - scores_1))
 
+            mu_batch = np.squeeze(mu_batch, axis=-1)
             mu_results = np.concatenate((mu_results, mu_batch))
 
     return np.array(
@@ -298,7 +299,11 @@ def generate_score_pairs(
             )
 
             new_train_feedback_pairs = hard_pairs
-
+        elif aug == "test":
+            aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 1000, 25)
+            new_train_feedback_pairs = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_model, linear_loss
+            )
         else:
             new_train_feedback_pairs = train_feedback_pairs
 
