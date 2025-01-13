@@ -306,6 +306,40 @@ def generate_score_pairs(
                 [train_feedback_pairs, aug_train_feedback_pairs],
                 axis=0,
             )
+
+        elif aug == "cutting":
+            aug_train_pairs = []
+
+            for s0, s1 in train_pairs:
+                split_points_0 = []
+                split_points_1 = []
+
+                for i in range(0, 5 + 1):
+                    # 내분점
+                    split_points_0.append((s0[0] * (5 - i) + s0[1] * i) // 5)
+                    split_points_1.append((s1[0] * (5 - i) + s1[1] * i) // 5)
+
+                for i in range(5):
+                    for j in range(5 - i):
+                        start_index = j
+                        end_index = j + i + 1
+
+                        aug_train_pairs.append(
+                            (
+                                (
+                                    split_points_0[start_index],
+                                    split_points_0[end_index],
+                                ),
+                                (
+                                    split_points_1[start_index],
+                                    split_points_1[end_index],
+                                ),
+                            )
+                        )
+
+            new_train_feedback_pairs = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_models, linear_loss
+            )
         elif aug == "test":
             aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 1000, 25)
             new_train_feedback_pairs = fill_feedback_from_pairs(
