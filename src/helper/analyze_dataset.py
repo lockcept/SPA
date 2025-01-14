@@ -52,6 +52,7 @@ def save_reward_graph_from_dataset(dataset, log_path, title):
     plt.xlabel("Reward")
     plt.ylabel("Frequency")
     plt.savefig(log_path, format="png")
+    plt.close()
 
 
 def save_reward_scatter_from_raw_dataset(dataset, raw_dataset, log_path, title):
@@ -66,6 +67,7 @@ def save_reward_scatter_from_raw_dataset(dataset, raw_dataset, log_path, title):
     plt.xlabel("Raw reward")
     plt.ylabel("Reward")
     plt.savefig(log_path, format="png")
+    plt.close()
 
 
 def save_reward_graph(
