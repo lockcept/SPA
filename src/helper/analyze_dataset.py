@@ -54,6 +54,20 @@ def save_reward_graph_from_dataset(dataset, log_path, title):
     plt.savefig(log_path, format="png")
 
 
+def save_reward_scatter_from_raw_dataset(dataset, raw_dataset, log_path, title):
+    """
+    Save the reward scatter plot from the given dataset and raw dataset.
+    """
+    raw_rewards = raw_dataset["rewards"]
+    rewards = dataset["rewards"]
+
+    plt.scatter(raw_rewards, rewards)
+    plt.title(f"Reward scatter plot of {title}")
+    plt.xlabel("Raw reward")
+    plt.ylabel("Reward")
+    plt.savefig(log_path, format="png")
+
+
 def save_reward_graph(
     env_name,
     exp_name,
@@ -69,17 +83,33 @@ def save_reward_graph(
     dataset_npz = np.load(dataset_path)
     dataset = {key: dataset_npz[key] for key in dataset_npz}
 
-    log_path = get_new_dataset_log_path(
-        env_name=env_name,
-        exp_name=exp_name,
-        pair_algo=pair_algo,
-        reward_model_algo=reward_model_algo,
-        log_file="reward_distribution.png",
-    )
+    raw_dataset = load_dataset(env_name)
 
     title = f"{env_name} {exp_name} {pair_algo} {reward_model_algo}"
 
-    save_reward_graph_from_dataset(dataset, log_path, title)
+    save_reward_graph_from_dataset(
+        dataset,
+        get_new_dataset_log_path(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            reward_model_algo=reward_model_algo,
+            log_file="reward_distribution.png",
+        ),
+        title,
+    )
+    save_reward_scatter_from_raw_dataset(
+        dataset,
+        raw_dataset,
+        get_new_dataset_log_path(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            reward_model_algo=reward_model_algo,
+            log_file="reward_scatter.png",
+        ),
+        title,
+    )
 
 
 def analyze_env_dataset(env_name):
