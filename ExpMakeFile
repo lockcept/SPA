@@ -34,13 +34,21 @@ policy:
 		)\
 	)
 
-eval:
+eval_pair:
 	$(foreach exp, $(EXP_LIST), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
 			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
 			python main.py -f -2 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
-			python main.py -f -2.2 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+			python main.py -f -2.1 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+		) \
+	)
+
+eval_reward:
+	$(foreach exp, $(EXP_LIST), \
+		$(foreach algo_pair, $(ALGO_PAIRS), \
+			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
+			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
 			python main.py -f -3 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
 		) \
 	)
