@@ -6,9 +6,13 @@ from data_generation.score_encoder import EncoderModel
 from data_generation.score_rnn import RNNModel
 from data_generation.score_lstm import LSTMModel
 from data_generation.utils import generate_pairs_from_indices
-from data_loading import get_dataloader, load_pair
-from data_loading.load_data import process_pairs
-from data_loading.preference_dataloader import get_dataloader_from_processed_data
+from data_loading import (
+    get_dataloader,
+    load_pair,
+    load_dataset,
+    process_pairs,
+    get_dataloader_from_processed_data,
+)
 from utils import get_score_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -113,16 +117,45 @@ def train_model(
     pair_algo,
     score_model,
     ensemble_num,
+    max_ensemble_num,
 ):
-    train_data_loader = get_dataloader(
-        env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
-    )
+    if max_ensemble_num > 1:
+        # split train and val pairs
+        dataset = load_dataset(env_name)
+        pairs = load_pair(
+            env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
+        )
+
+        chunk_size = len(pairs) // max_ensemble_num
+        remainder = len(pairs) % max_ensemble_num
+
+        start_idx = sum(
+            chunk_size + (1 if i < remainder else 0) for i in range(ensemble_num)
+        )
+        end_idx = start_idx + chunk_size + (1 if ensemble_num < remainder else 0)
+
+        train_pairs = pairs[:start_idx] + pairs[end_idx:]
+        val_pairs = pairs[start_idx:end_idx]
+
+        train_data_loader = get_dataloader_from_processed_data(
+            process_pairs(dataset=dataset, pair=train_pairs)
+        )
+
+        val_data_loader = get_dataloader_from_processed_data(
+            process_pairs(dataset=dataset, pair=val_pairs)
+        )
+
+    else:
+        train_data_loader = get_dataloader(
+            env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
+        )
+
+        val_data_loader = get_dataloader(
+            env_name=env_name, exp_name=exp_name, pair_type="val", pair_algo=pair_algo
+        )
 
     obs_dim, act_dim = train_data_loader.dataset.get_dimensions()
 
-    val_data_loader = get_dataloader(
-        env_name=env_name, exp_name=exp_name, pair_type="val", pair_algo=pair_algo
-    )
     model_path = get_score_model_path(
         env_name, exp_name, pair_algo, score_model, ensemble_num
     )
@@ -186,6 +219,7 @@ def generate_score_pairs(
             pair_algo=pair_algo,
             score_model=score_model,
             ensemble_num=ensemble_num,
+            max_ensemble_num=ensemble_size,
         )
 
     obs_dim, act_dim = dataset["observations"].shape[1], dataset["actions"].shape[1]

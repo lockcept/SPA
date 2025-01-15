@@ -129,8 +129,7 @@ class LSTMModel(nn.Module):
             writer = csv.writer(file)
             writer.writerow(["Epoch", "Train Loss", "Validation Loss"])
 
-        loss_history = []
-        val_loss_history = []
+        min_val_loss = float("inf")
 
         for epoch in tqdm(range(num_epochs), desc="learning score function"):
             self.train()
@@ -165,16 +164,15 @@ class LSTMModel(nn.Module):
                 epoch_loss += loss.item()
 
             avg_epoch_loss = epoch_loss / len(train_data_loader)
-            loss_history.append(avg_epoch_loss)
-
             val_loss = self.evaluate(data_loader=val_data_loader)
-            val_loss_history.append(val_loss)
+
+            if val_loss < min_val_loss:
+                min_val_loss = val_loss
+                torch.save(self.state_dict(), self.path)
 
             with open(self.log_path, mode="a", newline="", encoding="utf-8") as file:
                 writer = csv.writer(file)
                 writer.writerow([epoch + 1, avg_epoch_loss, val_loss])
-
-        torch.save(self.state_dict(), self.path)
 
 
 class BradleyTerryLoss(nn.Module):
