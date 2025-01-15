@@ -22,7 +22,7 @@ def plot_pair(env_name_list, exp_name, pair_algo_list):
             # Extract "mu" values for the filtered data
             filtered_mu_values = [item["mu"] for item in filtered_data]
 
-            # Plot histogram of filtered mu values
+            # Plot histogram of mu values
             plt.figure(figsize=(10, 6))
             plt.hist(filtered_mu_values, bins=50, alpha=0.75)
             plt.xlabel("Mu Values")
@@ -35,7 +35,7 @@ def plot_pair(env_name_list, exp_name, pair_algo_list):
                     exp_name=exp_name,
                     pair_type="train",
                     pair_algo=pair_algo,
-                    log_file="filtered_mu_histogram.png",
+                    log_file="mu_histogram.png",
                 )
             )
             plt.close()
@@ -70,7 +70,6 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     mu_values = np.where(rewards_sum_0 < rewards_sum_1, 1.0, 0.0)
 
     true_feedbacks = [(data[i][0], data[i][1], mu) for i, mu in enumerate(mu_values)]
-
     true_feedbacks = np.array(
         true_feedbacks,
         dtype=[
@@ -79,6 +78,9 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
             ("mu", "f"),
         ],
     )
+
+    answer_count = 0
+    total_count = 0
 
     for i in range(len(true_feedbacks)):
         truth, mean = (true_feedbacks["mu"][i], data["mu"][i])

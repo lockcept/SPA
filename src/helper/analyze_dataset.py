@@ -62,7 +62,7 @@ def save_reward_scatter_from_raw_dataset(dataset, raw_dataset, log_path, title):
     raw_rewards = raw_dataset["rewards"]
     rewards = dataset["rewards"]
 
-    plt.scatter(raw_rewards, rewards)
+    plt.scatter(raw_rewards, rewards, alpha=0.005)
     plt.title(f"Reward scatter plot of {title}")
     plt.xlabel("Raw reward")
     plt.ylabel("Reward")
