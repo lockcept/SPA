@@ -423,7 +423,7 @@ def generate_score_pairs(
                     aug_train_feedback_pairs["mu"],
                     aug_std_dev,
                 )
-                if std > std_dev_criteria and (mu < 0.2 or mu > 0.8)
+                if std > std_dev_criteria and (mu < 0.1 or mu > 0.9)
             ]
 
             print(std_dev_criteria, len(filtered_pairs))
