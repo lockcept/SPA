@@ -165,6 +165,7 @@ def train(
     group = f"{env_name}_{exp_name.split('-')[0]}_{pair_algo}_{reward_model_algo}"
     configs.update({"group": group})
     configs.update({"name": exp_name})
+    wandb_init(config=configs)
 
     # create policy model
     actor_backbone = MLP(

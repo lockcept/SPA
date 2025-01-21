@@ -111,7 +111,7 @@ class MFPolicyTrainer:
                 {
                     "eval/episode_reward": np.mean(eval_info["eval/episode_reward"]),
                     "eval/episode_success": np.mean(
-                        eval_info["eval/episode_success"] > 0
+                        np.array(eval_info["eval/episode_success"]) > 0
                     ),
                     "eval/episode_length": ep_length_mean,
                 }

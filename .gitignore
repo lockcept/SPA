@@ -199,3 +199,4 @@ pair/
 model/
 log/
 old_data/
+wandb/
