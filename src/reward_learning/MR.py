@@ -18,7 +18,7 @@ class MR(RewardModelBase):
         obs_dim = config.get("obs_dim")
         act_dim = config.get("act_dim")
         hidden_size = config.get("hidden_size", 256)
-        lr = config.get("lr", 0.003)
+        lr = config.get("lr", 0.001)
 
         model = MR(
             config={"obs_dim": obs_dim, "act_dim": act_dim, "hidden_size": hidden_size},

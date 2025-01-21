@@ -134,7 +134,7 @@ def train_model(
         )
         end_idx = start_idx + chunk_size + (1 if ensemble_num < remainder else 0)
 
-        train_pairs = pairs[:start_idx] + pairs[end_idx:]
+        train_pairs = np.concatenate((pairs[:start_idx], pairs[end_idx:]), axis=0)
         val_pairs = pairs[start_idx:end_idx]
 
         train_data_loader = get_dataloader_from_processed_data(
