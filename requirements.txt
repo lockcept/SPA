@@ -6,4 +6,5 @@ matplotlib==3.5.1
 torch==2.4.0
 tqdm
 gdown
+wandb==0.19.4
 git+https://github.com/Farama-Foundation/Metaworld.git@master#egg=metaworld

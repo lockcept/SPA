@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 import torch
+import wandb
 
 from offlinerlkit.nets import MLP
 from offlinerlkit.modules import ActorProb, Critic, DiagGaussian
@@ -18,8 +19,6 @@ def get_configs():
     suggested hypers
     expectile=0.7, temperature=3.0 for all D4RL-Gym tasks
     """
-    algo_name = "iql"
-    seed = 0
     hidden_dims = [256, 256]
     actor_lr = 3e-4
     critic_q_lr = 3e-4
@@ -37,8 +36,6 @@ def get_configs():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     return {
-        "algo_name": algo_name,
-        "seed": seed,
         "hidden_dims": hidden_dims,
         "actor_lr": actor_lr,
         "critic_q_lr": critic_q_lr,
@@ -105,6 +102,16 @@ def normalize_rewards(dataset):
     return dataset
 
 
+def wandb_init(config: dict) -> None:
+    wandb.init(
+        config=config,
+        project=config["project"],
+        group=config["group"],
+        name=config["name"],
+    )
+    wandb.run.save()
+
+
 def train(
     env_name,
     exp_name,
@@ -146,17 +153,18 @@ def train(
 
     # seed
 
-    # random.seed(configs["seed"])
-    # np.random.seed(configs["seed"])
-    # torch.manual_seed(configs["seed"])
-    # torch.cuda.manual_seed_all(configs["seed"])
-    # torch.backends.cudnn.deterministic = True
-    # env.seed(configs["seed"])
-
     seed = random.randint(0, 2**31 - 1)
     env.seed(seed)
     np.random.seed(seed)
     random.seed(seed)
+
+    # wandb
+
+    configs.update({"seed": seed})
+    configs.update({"project": "iql"})
+    group = f"{env_name}_{exp_name.split('-')[0]}_{pair_algo}_{reward_model_algo}"
+    configs.update({"group": group})
+    configs.update({"name": exp_name})
 
     # create policy model
     actor_backbone = MLP(
@@ -243,7 +251,6 @@ def train(
     buffer.load_dataset(dataset)
 
     # log
-    # log_dirs = make_log_dirs(env_name, configs["algo_name"], configs["seed"], configs)
     output_config = {
         "consoleout_backup": "stdout",
         "policy_training_progress": "csv",

@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import gym
 
+import wandb
+
 from typing import Optional, Dict, List
 from tqdm import tqdm
 from offlinerlkit.buffer import ReplayBuffer
@@ -55,6 +57,7 @@ class MFPolicyTrainer:
 
         # train loop
         for e in range(1, self._epoch + 1):
+            wandb_log = {}
 
             self.policy.train()
 
@@ -67,6 +70,7 @@ class MFPolicyTrainer:
                 for k, v in loss.items():
                     self.logger.logkv_mean(k, v)
 
+                wandb_log.update(loss)
                 num_timesteps += 1
 
             if self.lr_scheduler is not None:
@@ -102,6 +106,18 @@ class MFPolicyTrainer:
                     eval_info["eval/episode_success"],
                 ):
                     writer.writerow([num_timesteps, reward, length, success])
+
+            wandb_log.update(
+                {
+                    "eval/episode_reward": np.mean(eval_info["eval/episode_reward"]),
+                    "eval/episode_success": np.mean(
+                        eval_info["eval/episode_success"] > 0
+                    ),
+                    "eval/episode_length": ep_length_mean,
+                }
+            )
+
+            wandb.log(wandb_log, step=num_timesteps)
 
             # save checkpoint
             torch.save(
