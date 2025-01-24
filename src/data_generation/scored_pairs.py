@@ -1,3 +1,5 @@
+from itertools import combinations
+from random import sample
 import numpy as np
 import torch
 
@@ -16,6 +18,82 @@ from data_loading import (
 from utils import get_score_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def fill_score_from_pairs(dataset, pairs, models):
+    """
+    Fill scores in dataset using multiple models and average their mu values.
+
+    Args:
+        dataset: dict
+        pairs: list of tuples ((int, int), (int, int))
+        models: list of torch.nn.Module
+        linear_loss: bool, optional
+            If True, use linear loss for mu calculation. Default is False.
+
+    Returns:
+        np array of ((int, int), float): scores.
+    """
+
+    pairs_with_zero_mu = np.array(
+        [(s0, s1, 0.0) for s0, s1 in pairs],
+        dtype=[
+            ("s0", "i4", (2,)),
+            ("s1", "i4", (2,)),
+            ("mu", "f"),
+        ],
+    )
+
+    # Evaluate model with result data
+    processed_data = process_pairs(dataset, pairs_with_zero_mu)
+    dataloader = get_dataloader_from_processed_data(
+        processed_data, shuffle=False, drop_last=False
+    )
+
+    score_results = []
+
+    with torch.no_grad():
+        for batch in dataloader:
+            (
+                s0_obs_batch,
+                s0_act_batch,
+                s1_obs_batch,
+                s1_act_batch,
+                _,
+                mask0_batch,
+                mask1_batch,
+            ) = [x.to(device) for x in batch]
+
+            s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
+            s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
+
+            lengths_s0 = (1 - mask0_batch.squeeze(dim=-1)).sum(dim=1)
+            lengths_s1 = (1 - mask1_batch.squeeze(dim=-1)).sum(dim=1)
+
+            scores_0_batch = []
+            scores_1_batch = []
+
+            for model in models:
+                model.eval()
+
+                # Calculate scores
+                scores_0 = model(s0_batch, lengths_s0).cpu().numpy()
+                scores_1 = model(s1_batch, lengths_s1).cpu().numpy()
+
+                scores_0_batch.append(scores_0)
+                scores_1_batch.append(scores_1)
+            
+            scores_0_batch = np.array(scores_0_batch)
+            scores_1_batch = np.array(scores_1_batch)
+            
+            scores_0_batch = np.mean(scores_0_batch, axis=0)
+            scores_1_batch = np.mean(scores_1_batch, axis=0)
+
+            score_results.extend([score for pair in zip(scores_0_batch, scores_1_batch) for score in pair])
+    
+    all_trajs = [traj for pair in pairs for traj in pair]
+
+    return zip(all_trajs, score_results)
+    
 
 
 def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
@@ -350,7 +428,150 @@ def generate_score_pairs(
                 [train_feedback_pairs, aug_train_feedback_pairs],
                 axis=0,
             )
+        elif aug == "200000.5000":
+            try:
+                loaded_pairs = load_pair(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pair_algo="raw_5000",
+                )
+                aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
+                top_feedback_pairs, _ = fill_feedback_from_pairs(
+                    dataset, aug_train_pairs, best_models, linear_loss
+                )
+            except FileNotFoundError:
+                aug_train_pairs = generate_pairs_from_indices(
+                    dataset, traj_set, 200000, 25
+                )
 
+                aug_train_feedback_pairs, _ = fill_feedback_from_pairs(
+                    dataset, aug_train_pairs, best_models, linear_loss
+                )
+
+                distances = np.abs(aug_train_feedback_pairs["mu"] - 0.5)
+                sorted_indices = np.argsort(-distances)
+                top_feedback_pairs = aug_train_feedback_pairs[sorted_indices[:5000]]
+
+                # save pairs for other experiments
+                top_pairs = [(s0, s1) for s0, s1, _ in top_feedback_pairs]
+                save_raw_pairs(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pairs=top_pairs,
+                    raw_name="raw_5000",
+                )
+
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, top_feedback_pairs],
+                axis=0,
+            )
+        elif aug == "nC2.smoothing":
+            train_pairs_with_score = fill_score_from_pairs(
+                dataset, train_pairs, best_models
+            )
+            aug_feedback_pairs = []
+
+            sample_size = 50000
+            all_combinations = list(combinations(train_pairs_with_score, 2))
+            random_combinations = sample(all_combinations, sample_size)
+
+            for s0, s1 in random_combinations:
+                mu = 1 / (1 + np.exp((s0[1] - s1[1]) / 5))
+                aug_feedback_pairs.append((s0[0], s1[0], mu))
+
+            
+            aug_feedback_pairs = np.array(
+                aug_feedback_pairs,
+                dtype=[
+                    ("s0", "i4", (2,)),
+                    ("s1", "i4", (2,)),
+                    ("mu", "f"),
+                ],
+            )
+            
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_feedback_pairs],
+                axis=0,
+            )
+        elif aug == "nC2":
+            train_pairs_with_score = fill_score_from_pairs(
+                dataset, train_pairs, best_models
+            )
+            aug_feedback_pairs = []
+
+            for s0, s1 in combinations(train_pairs_with_score, 2):
+                if np.abs(s0[1] - s1[1]) > 5:
+                    aug_feedback_pairs.append(
+                        (s0[0], s1[0], 1.0 if s1[1] > s0[1] else 0.0)
+                    )
+            
+            aug_feedback_pairs = np.array(
+                aug_feedback_pairs,
+                dtype=[
+                    ("s0", "i4", (2,)),
+                    ("s1", "i4", (2,)),
+                    ("mu", "f"),
+                ],
+            )
+            
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_feedback_pairs],
+                axis=0,
+            )
+        elif aug == "certain":
+            try:
+                loaded_pairs = load_pair(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pair_algo="raw_200000",
+                )
+                aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
+            except FileNotFoundError:
+                aug_train_pairs = generate_pairs_from_indices(
+                    dataset, traj_set, 200000, 25
+                )
+
+                save_raw_pairs(
+                    env_name=env_name,
+                    exp_name=exp_name,
+                    pair_type="train",
+                    pairs=aug_train_pairs,
+                    raw_name="raw_200000",
+                )
+
+            _, std_dev = fill_feedback_from_pairs(
+                dataset, train_pairs, best_models, linear_loss
+            )
+
+            std_dev_criteria = np.mean(std_dev)
+
+            aug_train_feedback_pairs, aug_std_dev = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_models, linear_loss
+            )
+
+            filtered_pairs = [
+                pair
+                for pair, mu, std in zip(
+                    aug_train_feedback_pairs,
+                    aug_train_feedback_pairs["mu"],
+                    aug_std_dev,
+                )
+                if std < std_dev_criteria * 0.5
+            ]
+
+            print(std_dev_criteria, len(filtered_pairs))
+
+            aug_train_feedback_pairs = np.array(
+                filtered_pairs, dtype=aug_train_feedback_pairs.dtype
+            )
+
+            new_train_feedback_pairs = np.concatenate(
+                [train_feedback_pairs, aug_train_feedback_pairs],
+                axis=0,
+            )
         elif aug == "cutting":
             aug_train_pairs = []
 
