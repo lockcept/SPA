@@ -9,7 +9,6 @@ from utils import get_score_model_path, get_score_model_log_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pair_algo):
     data_loader = get_dataloader(
         env_name=env_name,
@@ -26,39 +25,43 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
     raw_pair_algo = "-".join(pair_algo.split("-")[1:])
     score_model_algo = pair_algo.split("-")[0]
 
-    model_path = get_score_model_path(
-        env_name=env_name,
-        exp_name=exp_name,
-        pair_algo=raw_pair_algo,
-        score_model=score_model_algo,
-        ensemble_num=0,
-    )
+    models = []
 
-    if score_model_algo == "rnn":
-        model = RNNModel.initialize(
-            config={"obs_dim": obs_dim, "act_dim": act_dim},
-            path=model_path,
+    for ensemble_num in range(5):
+        model_path = get_score_model_path(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo=raw_pair_algo,
+            score_model=score_model_algo,
+            ensemble_num=ensemble_num,
         )
-    elif score_model_algo == "lstm.exp":
-        model, _ = LSTMModel.initialize(
-            config={"obs_dim": obs_dim, "act_dim": act_dim},
-            path=model_path,
-            skip_if_exists=False,
-        )
-    elif score_model_algo == "lstm.linear":
-        model, _ = LSTMModel.initialize(
-            config={"obs_dim": obs_dim, "act_dim": act_dim},
-            path=model_path,
-            skip_if_exists=False,
-            linear_loss=True,
-        )
-    else:
-        raise ValueError(f"Invalid score model algo: {score_model_algo}")
 
-    model.eval()
+        if score_model_algo == "rnn":
+            model = RNNModel.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=model_path,
+            )
+        elif score_model_algo == "lstm.exp":
+            model, _ = LSTMModel.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=model_path,
+                skip_if_exists=False,
+            )
+        elif score_model_algo == "lstm.linear":
+            model, _ = LSTMModel.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=model_path,
+                skip_if_exists=False,
+                linear_loss=True,
+            )
+        else:
+            raise ValueError(f"Invalid score model algo: {score_model_algo}")
+        
+        model.eval()
+        models.append(model)
+    
 
     score_list = []
-
     answer_count = 0
 
     filtered_s0_scores = []
@@ -82,10 +85,21 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
             lengths_s0 = (1 - mask0_batch.squeeze()).sum(dim=1)
             lengths_s1 = (1 - mask1_batch.squeeze()).sum(dim=1)
 
-            s0_score = model(s0_batch, lengths_s0)
-            s1_score = model(s1_batch, lengths_s1)
-
             condition = (lengths_s0 > 0) & (lengths_s1 > 0)
+
+            s0_score_list = []
+            s1_score_list = []
+
+            for model in models:
+                s0_score = model(s0_batch, lengths_s0)
+                s1_score = model(s1_batch, lengths_s1)
+
+                s0_score_list.append(s0_score)
+                s1_score_list.append(s1_score)
+            
+            s0_score = torch.stack(s0_score_list, dim=1).mean(dim=1)
+            s1_score = torch.stack(s1_score_list, dim=1).mean(dim=1)
+
             filtered_s0_scores.extend(s0_score[condition].detach().cpu().numpy())
             filtered_s1_scores.extend(s1_score[condition].detach().cpu().numpy())
 
