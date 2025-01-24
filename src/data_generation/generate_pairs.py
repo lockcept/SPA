@@ -21,26 +21,23 @@ def generate_all_algo_pairs(env_name, exp_name):
 
     trajectory_length = 25
 
-    train_trajectories_cnt = 1000
-    val_trajectories_cnt = 1000
-    test_trajectories_cnt = 1000
-
     # hard coded values
-    if len(indices) == 600:
-        train_trajectories_cnt = 500
-        val_trajectories_cnt = 50
-        test_trajectories_cnt = 50
-        print("Using 0.1 dataset")
-    elif len(indices) == 1800:
+    if len(indices) >= 1800:
         train_trajectories_cnt = 1000
         val_trajectories_cnt = 400
         test_trajectories_cnt = 400
-        print("Using 0.3 dataset")
-    elif len(indices) == 2100:
+    elif len(indices) >= 1200:
         train_trajectories_cnt = 1000
-        val_trajectories_cnt = 500
-        test_trajectories_cnt = 500
-        print("Using 0.7 dataset")
+        val_trajectories_cnt = 100
+        test_trajectories_cnt = 100
+    elif len(indices) >= 600:
+        train_trajectories_cnt = 500
+        val_trajectories_cnt = 50
+        test_trajectories_cnt = 50
+    else:
+        train_trajectories_cnt = 100
+        val_trajectories_cnt = 100
+        test_trajectories_cnt = 100
 
     print(
         f"train_trajectories_cnt: {train_trajectories_cnt}, val_trajectories_cnt: {val_trajectories_cnt}, test_trajectories_cnt: {test_trajectories_cnt}"
