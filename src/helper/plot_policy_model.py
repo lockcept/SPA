@@ -158,7 +158,7 @@ def plot_policy_models(exp_name):
     """
     plot the policy models from hard-coded lists
     """
-    env_list = ["button-press-topdown-v2", "box-close-v2", "dial-turn-v2", "sweep-v2"]
+    env_list = ["box-close-v2", "button-press-topdown-wall-v2", "sweep-into-v2", "drawer-open-v2"]
     exp_list = [
         f"{exp_name}-00",
         f"{exp_name}-01",
@@ -169,9 +169,9 @@ def plot_policy_models(exp_name):
     postfix_list = [
         "full-binary_MR-linear",
         "full-binary-with-0.5_MR-linear",
-        "full-linear_MR-linear",
-        "lstm-cut-0.75_MR-linear",
-        "lstm-cut-1.0_MR-linear",
+        "lstm.exp-full-binary_MR-linear",
+        "lstm.exp-aug-10000-full-binary_MR-linear",
+        "lstm.exp-aug-50000-full-binary_MR-linear",
     ]
 
     for env_name in env_list:
