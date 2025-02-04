@@ -124,7 +124,7 @@ class DMControlEnvWrapper:
         self.env = suite.load(domain_name, task_name, task_kwargs={"random": seed})
         timestep = self.env.reset()
         obs = timestep.observation
-        obs_vector = np.concatenate([obs[key] for key in obs])
+        obs_vector = np.concatenate([np.ravel(obs[key]) for key in obs])
 
         return obs_vector
 
@@ -134,7 +134,7 @@ class DMControlEnvWrapper:
         """
         timestep = self.env.step(action)
         next_obs = timestep.observation
-        next_obs_vector = np.concatenate([next_obs[key] for key in next_obs])
+        next_obs_vector = np.concatenate([np.ravel(next_obs[key]) for key in next_obs])
         reward = timestep.reward
         terminal = timestep.last()
         info = {}
