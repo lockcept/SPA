@@ -154,7 +154,7 @@ def train(
     # seed
 
     seed = random.randint(0, 2**31 - 1)
-    env.seed(seed)
+    # env.seed(seed)
     np.random.seed(seed)
     random.seed(seed)
 

@@ -1,5 +1,6 @@
 import os
 import random
+from types import SimpleNamespace
 import numpy as np
 
 from utils import get_pair_path
@@ -41,6 +42,14 @@ dmcontrol_ids = {
     "humanoid-walk": "1tP51GJCyrpqBJQ-2th0_tVyInBnIyHnK",
     "quadruped-walk": "1oD0q90j05kChw_iZFnApXcX6olf0ACwG",
     "walker-walk": "1oKWU2isKTIehK38kqb1u3RdcEYt4brt5",
+}
+
+dmcontrol_quality = {
+    "cheetah-run": 1.0,
+    "hopper-hop": 0.8,
+    "humanoid-walk": 0.7,
+    "quadruped-walk": 1.0,
+    "walker-walk": 0.1,
 }
 
 
@@ -88,6 +97,20 @@ class DMControlEnvWrapper:
         self.env = None
         self.env_name = env_name
 
+        from dm_control import suite  # pylint: disable=C0415
+
+        domain_name, task_name = self.env_name.split("-")
+        self.env = suite.load(domain_name, task_name)
+
+        obs_spec = self.env.observation_spec()
+        obs_shape = (sum(np.prod(spec.shape) for spec in obs_spec.values()),)
+        self.observation_space = SimpleNamespace(shape=obs_shape)
+
+        action_spec = self.env.action_spec()
+        self.action_space = SimpleNamespace(
+            shape=action_spec.shape, low=action_spec.minimum, high=action_spec.maximum
+        )
+
     def reset(self, seed=None):
         """
         Reset the environment with a random seed
@@ -98,6 +121,7 @@ class DMControlEnvWrapper:
         domain_name, task_name = self.env_name.split("-")
         self.env = suite.load(domain_name, task_name, task_kwargs={"random": seed})
         obs, _ = self.env.reset()
+
         return obs
 
     def step(self, action):
@@ -166,7 +190,7 @@ def save_google_dataset(env_name, save_dir):
         quality = metaworld_quality[env_name]
     elif env_name in dmcontrol_ids:
         file_id = dmcontrol_ids[env_name]
-        quality = 1.0
+        quality = dmcontrol_quality[env_name]
     else:
         raise ValueError(f"Environment {env_name} not found in the list.")
 
@@ -231,7 +255,11 @@ def save_google_dataset(env_name, save_dir):
         all_actions.append(dataset["actions"][: int(adjust_length)])
         all_rewards.append(dataset["rewards"][: int(adjust_length)])
         all_terminals.append(dataset["dones"][: int(adjust_length)].astype(bool))
-        all_success.append(dataset["success"][: int(adjust_length)].astype(bool))
+
+        if "success" in dataset:
+            all_success.append(dataset["success"][: int(adjust_length)].astype(bool))
+        else:
+            all_success.append(np.zeros(int(adjust_length), dtype=bool))
 
     save_data = {
         "observations": np.concatenate(all_observations, axis=0),
@@ -271,12 +299,7 @@ def get_env(env_name, is_hidden=False):
             env.reset()
     elif env_name in dmcontrol_ids:
         # pylint: disable=C0415
-        from dm_control import suite
-
-        domain_name, task_name = env_name.split("-")
-
-        env_gen = suite.load(domain_name, task_name, task_kwargs={"random": seed})
-        env.reset()
+        env = DMControlEnvWrapper(env_name=env_name)
         return env
     else:
         import gym  # pylint: disable=C0415
