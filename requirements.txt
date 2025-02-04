@@ -8,3 +8,4 @@ tqdm
 gdown
 wandb==0.19.4
 git+https://github.com/Farama-Foundation/Metaworld.git@master#egg=metaworld
+dm_control

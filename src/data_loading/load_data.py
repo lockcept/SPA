@@ -35,6 +35,14 @@ metaworld_quality = {
     "sweep-v2": 0.7,
 }
 
+dmcontrol_ids = {
+    "cheetah-run": "1JSt7Hm9f3L6HrJMMDhgOjDWX1DJJ_1pi",
+    "hopper-hop": "1QnRfe0IYa8Sx4dQ7ILMBGP3PPTwKK_IA",
+    "humanoid-walk": "1tP51GJCyrpqBJQ-2th0_tVyInBnIyHnK",
+    "quadruped-walk": "1oD0q90j05kChw_iZFnApXcX6olf0ACwG",
+    "walker-walk": "1oKWU2isKTIehK38kqb1u3RdcEYt4brt5",
+}
+
 
 class MetaworldEnvWrapper:
     """
@@ -67,6 +75,44 @@ class MetaworldEnvWrapper:
     def get_normalized_score(self, reward):
         """
         do nothing for metaworld
+        """
+        return reward
+
+
+class DMControlEnvWrapper:
+    """
+    Wrapper for DMControl environments
+    """
+
+    def __init__(self, env_name):
+        self.env = None
+        self.env_name = env_name
+
+    def reset(self, seed=None):
+        """
+        Reset the environment with a random seed
+        """
+        from dm_control import suite  # pylint: disable=C0415
+
+        seed = seed if seed is not None else random.randint(0, 1000)
+        domain_name, task_name = self.env_name.split("-")
+        self.env = suite.load(domain_name, task_name, task_kwargs={"random": seed})
+        obs, _ = self.env.reset()
+        return obs
+
+    def step(self, action):
+        """
+        Take a step in the environment, combine terminal and truncated flags
+        """
+        next_obs, reward, terminal, truncated, info = self.env.step(action)
+        return (next_obs, reward, terminal | truncated, info)
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)
+
+    def get_normalized_score(self, reward):
+        """
+        do nothing for dmcontrol
         """
         return reward
 
@@ -107,21 +153,28 @@ def save_d4rl_dataset(env_name, save_dir):
     print(f"Dataset saved with keys: {save_data.keys()}")
 
 
-def save_metaworld_dataset(env_name, save_dir):
+def save_google_dataset(env_name, save_dir):
     """
-    Save metaworld dataset as a .npz file
+    Save google dataset as a .npz file
     """
     from zipfile import ZipFile  # pylint: disable=C0415
     import gdown  # pylint: disable=C0415
     import pickle  # pylint: disable=C0415
 
-    file_id = metaworld_ids[env_name]
-    quality = metaworld_quality[env_name]
+    if env_name in metaworld_ids:
+        file_id = metaworld_ids[env_name]
+        quality = metaworld_quality[env_name]
+    elif env_name in dmcontrol_ids:
+        file_id = dmcontrol_ids[env_name]
+        quality = 1.0
+    else:
+        raise ValueError(f"Environment {env_name} not found in the list.")
+
     npz_path = os.path.join(save_dir, "qualified_dataset.npz")
     output_path = os.path.join(save_dir, f"{env_name}.zip")
 
     if not os.path.exists(npz_path):
-        print("Generating Metaworld raw dataset")
+        print("Generating Google raw dataset")
 
         temp_dir = os.path.join(save_dir, "temp_unzip")
         os.makedirs(temp_dir, exist_ok=True)
@@ -216,6 +269,15 @@ def get_env(env_name, is_hidden=False):
             env_gen = ALL_V2_ENVIRONMENTS_GOAL_HIDDEN[f"{env_name}-goal-hidden"]
             env = MetaworldEnvWrapper(env_gen=env_gen)
             env.reset()
+    elif env_name in dmcontrol_ids:
+        # pylint: disable=C0415
+        from dm_control import suite
+
+        domain_name, task_name = env_name.split("-")
+
+        env_gen = suite.load(domain_name, task_name, task_kwargs={"random": seed})
+        env.reset()
+        return env
     else:
         import gym  # pylint: disable=C0415
 
@@ -230,8 +292,8 @@ def save_dataset(env_name):
     save_dir = f"dataset/{env_name}"
     os.makedirs(save_dir, exist_ok=True)
 
-    if env_name in metaworld_ids:
-        save_metaworld_dataset(env_name=env_name, save_dir=save_dir)
+    if env_name in metaworld_ids or env_name in dmcontrol_ids:
+        save_google_dataset(env_name=env_name, save_dir=save_dir)
     else:
         save_d4rl_dataset(env_name=env_name, save_dir=save_dir)
 
