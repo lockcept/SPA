@@ -103,12 +103,14 @@ class DMControlEnvWrapper:
         self.env = suite.load(domain_name, task_name)
 
         obs_spec = self.env.observation_spec()
-        obs_shape = (sum(np.prod(spec.shape) for spec in obs_spec.values()),)
+        obs_shape = (int(sum(np.prod(spec.shape) for spec in obs_spec.values())),) 
         self.observation_space = SimpleNamespace(shape=obs_shape)
 
         action_spec = self.env.action_spec()
         self.action_space = SimpleNamespace(
-            shape=action_spec.shape, low=action_spec.minimum, high=action_spec.maximum
+            shape=tuple(map(int, action_spec.shape)), 
+            low=action_spec.minimum.astype(float).tolist(),  
+            high=action_spec.maximum.astype(float).tolist(), 
         )
 
     def reset(self, seed=None):
@@ -120,16 +122,23 @@ class DMControlEnvWrapper:
         seed = seed if seed is not None else random.randint(0, 1000)
         domain_name, task_name = self.env_name.split("-")
         self.env = suite.load(domain_name, task_name, task_kwargs={"random": seed})
-        obs, _ = self.env.reset()
+        timestep = self.env.reset()
+        obs = timestep.observation
+        obs_vector = np.concatenate([obs[key] for key in obs])
 
-        return obs
+        return obs_vector
 
     def step(self, action):
         """
         Take a step in the environment, combine terminal and truncated flags
         """
-        next_obs, reward, terminal, truncated, info = self.env.step(action)
-        return (next_obs, reward, terminal | truncated, info)
+        timestep = self.env.step(action)
+        next_obs = timestep.observation
+        next_obs_vector = np.concatenate([next_obs[key] for key in next_obs])
+        reward = timestep.reward
+        terminal = timestep.last()
+        info = {}
+        return (next_obs_vector, reward, terminal, info)
 
     def __getattr__(self, name):
         return getattr(self.env, name)
