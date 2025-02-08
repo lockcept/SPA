@@ -61,7 +61,7 @@ class MR(RewardModelBase):
         if self.linear_loss:
             reward_t = 1 + torch.tanh(reward_t)
         else:
-            reward_t = 10 * torch.tanh(reward_t)
+            reward_t = torch.tanh(reward_t)
         return reward_t
 
     def evaluate(self, data_loader, loss_fn):
@@ -189,13 +189,7 @@ class BradleyTerryLoss(nn.Module):
         reward_s0_sum = torch.sum(rewards_s0 * (1 - mask0), dim=1)
         reward_s1_sum = torch.sum(rewards_s1 * (1 - mask1), dim=1)
 
-        active_s0 = torch.sum(1 - mask0, dim=1)
-        active_s1 = torch.sum(1 - mask1, dim=1)
-
-        reward_s0_mean = reward_s0_sum / active_s0
-        reward_s1_mean = reward_s1_sum / active_s1
-
-        prob_s1_wins = torch.sigmoid(reward_s1_mean - reward_s0_mean)
+        prob_s1_wins = torch.sigmoid(reward_s1_sum - reward_s0_sum)
         prob_s1_wins = prob_s1_wins.squeeze()
 
         loss = self.cross_entropy_loss(prob_s1_wins, mu)
@@ -212,13 +206,7 @@ class LinearLoss(nn.Module):
         reward_s0_sum = torch.sum(rewards_s0 * (1 - mask0), dim=1)
         reward_s1_sum = torch.sum(rewards_s1 * (1 - mask1), dim=1)
 
-        active_s0 = torch.sum(1 - mask0, dim=1)
-        active_s1 = torch.sum(1 - mask1, dim=1)
-
-        reward_s0_mean = reward_s0_sum / active_s0
-        reward_s1_mean = reward_s1_sum / active_s1
-
-        linear_ratio = (reward_s1_mean) / (reward_s1_mean + reward_s0_mean + 1e-6)
+        linear_ratio = (reward_s1_sum) / (reward_s1_sum + reward_s0_sum + 1e-6)
         linear_ratio = linear_ratio.squeeze()
 
         loss = self.cross_entropy_loss(linear_ratio, mu)
