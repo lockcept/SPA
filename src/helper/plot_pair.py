@@ -85,6 +85,9 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     for i in range(len(true_feedbacks)):
         truth, mean = (true_feedbacks["mu"][i], data["mu"][i])
 
+        if mean == 0.5:
+            continue
+
         total_count += 1
         if truth == 0 and mean < 0.5:
             answer_count += 1
