@@ -434,34 +434,39 @@ def generate_score_pairs(
                     env_name=env_name,
                     exp_name=exp_name,
                     pair_type="train",
-                    pair_algo="raw_5000",
+                    pair_algo="raw_200000",
                 )
                 aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
-                top_feedback_pairs, _ = fill_feedback_from_pairs(
-                    dataset, aug_train_pairs, best_models, linear_loss
-                )
             except FileNotFoundError:
                 aug_train_pairs = generate_pairs_from_indices(
                     dataset, traj_set, 200000, 25
                 )
 
-                aug_train_feedback_pairs, _ = fill_feedback_from_pairs(
-                    dataset, aug_train_pairs, best_models, linear_loss
-                )
-
-                distances = np.abs(aug_train_feedback_pairs["mu"] - 0.5)
-                sorted_indices = np.argsort(-distances)
-                top_feedback_pairs = aug_train_feedback_pairs[sorted_indices[:5000]]
-
-                # save pairs for other experiments
-                top_pairs = [(s0, s1) for s0, s1, _ in top_feedback_pairs]
                 save_raw_pairs(
                     env_name=env_name,
                     exp_name=exp_name,
                     pair_type="train",
-                    pairs=top_pairs,
-                    raw_name="raw_5000",
+                    pairs=aug_train_pairs,
+                    raw_name="raw_200000",
                 )
+
+            aug_train_feedback_pairs, _ = fill_feedback_from_pairs(
+                dataset, aug_train_pairs, best_models, linear_loss
+            )
+
+            distances = np.abs(aug_train_feedback_pairs["mu"] - 0.5)
+            sorted_indices = np.argsort(-distances)
+            top_feedback_pairs = aug_train_feedback_pairs[sorted_indices[:5000]]
+
+            # save pairs for other experiments
+            top_pairs = [(s0, s1) for s0, s1, _ in top_feedback_pairs]
+            save_raw_pairs(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_type="train",
+                pairs=top_pairs,
+                raw_name="raw_5000",
+            )
 
             new_train_feedback_pairs = np.concatenate(
                 [train_feedback_pairs, top_feedback_pairs],
