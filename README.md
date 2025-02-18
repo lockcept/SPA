@@ -1,4 +1,4 @@
-# Trajectory Cutter
+# SPA (Score-based Preference Augmentation)
 
 ## Installation
 
@@ -27,5 +27,5 @@ pip install -e .
 
 ```bash
 python main.py --help
-python main.py -e maze2d-medium-dense-v1 -f 1
+python main.py -e box-close-v2 -f 1
 ```

@@ -161,7 +161,7 @@ def train(
     # wandb
 
     configs.update({"seed": seed})
-    configs.update({"project": "iql"})
+    configs.update({"project": "SPA"})
     group = f"{env_name}_{exp_name.split('-')[0]}_{pair_algo}_{reward_model_algo}"
     configs.update({"group": group})
     configs.update({"name": exp_name})
