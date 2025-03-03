@@ -21,6 +21,7 @@ from src.helper import (
     plot_pair,
     evaluate_pair,
     plot_policy_models,
+    analyze_pair,
 )
 from src.data_loading import (
     save_dataset,
@@ -103,6 +104,7 @@ if __name__ == "__main__":
             "-2: Plot mu histogram\n"
             "-2.1: Analyze Pairset, mu accuracy\n"
             "-2.2: Evaluate score model\n"
+            "-2.3: Analyze Good Pairset\n",
             "-3: Evaluate reward model\n"
             "-4: Analyze changed dataset\n"
             "-5: Plot policy evaluation\n"
@@ -112,7 +114,7 @@ if __name__ == "__main__":
             "3: Train reward model\n"
             "4: Change reward and save dataset\n"
             "5: Train policy\n"
-            "Provide the number corresponding to the function you want to execute."
+            "Provide the number corresponding to the function you want to execute.",
         ),
     )
 
@@ -168,6 +170,10 @@ if __name__ == "__main__":
             test_pair_type="test",
             test_pair_algo="full-binary",
         )
+
+    elif function_number == -2.3:
+        # Analyze good pairset
+        analyze_pair(env_name, exp_name, "train", pair_algo)
 
     elif function_number == -3:
         # Evaluate reward model
