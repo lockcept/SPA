@@ -99,14 +99,14 @@ if __name__ == "__main__":
         default=0,
         help=(
             "0: Do nothing\n"
-            "-1: Analyze dataset\n"
-            "-2: Analyze Pairset, plot mu\n"
+            "-1: Analyze and plot dataset\n"
+            "-2: Plot mu histogram\n"
             "-2.1: Analyze Pairset, mu accuracy\n"
-            "-2.2: Analyze Score model\n"
+            "-2.2: Evaluate score model\n"
             "-3: Evaluate reward model\n"
             "-4: Analyze changed dataset\n"
             "-5: Plot policy evaluation\n"
-            "-5.2: Evaluate policy\n"
+            "-5.1: Evaluate policy\n"
             "1: Load and save dataset\n"
             "2: Generate preference pairs\n"
             "3: Train reward model\n"
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         # Analyze dataset
         analyze_env_dataset(env_name)
     elif function_number == -2:
-        # Analyze Pairset
+        # Plot mu histogram from pairset
 
         plot_pair(
             env_name_list=[env_name],
@@ -145,13 +145,13 @@ if __name__ == "__main__":
         )
 
     elif function_number == -2.1:
-        # Analyze Pairset
+        # Analyze Pairset (PCC, ACC, etc)
         evaluate_pair(
             env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
         )
 
     elif function_number == -2.2:
-        # Analyze Pairset
+        # Evaluate score model
         score_algo = pair_algo.split("-")[1]
         evaluate_score_model(
             env_name=env_name,
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         print("Plotting policy evaluation")
         plot_policy_models(exp_name=exp_name)
 
-    elif function_number == -5.2:
+    elif function_number == -5.1:
         # Evaluate policy
         evaluate_best_and_last_policy(
             env_name=env_name,
