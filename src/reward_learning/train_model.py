@@ -1,5 +1,5 @@
 from data_loading import get_dataloader
-from reward_learning.get_reward_model import get_reward_model
+from reward_learning.get_model import get_reward_model
 from utils import get_reward_model_path
 
 

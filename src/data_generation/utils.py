@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from utils.path import get_pair_path
+from utils import get_pair_path
 
 
 def extract_trajectory_indices(dataset):
