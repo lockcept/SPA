@@ -3,11 +3,12 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
-from data_generation import RNNModel, LSTMModel
+from data_generation import RNNModel, LSTMModel, EncoderModel
 from data_loading import get_dataloader, load_pair, load_dataset
 from utils import get_score_model_path, get_score_model_log_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pair_algo):
     data_loader = get_dataloader(
@@ -54,12 +55,16 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
                 skip_if_exists=False,
                 linear_loss=True,
             )
+        elif score_model_algo == "encoder":
+            model, _ = EncoderModel.initialize(
+                config={"obs_dim": obs_dim, "act_dim": act_dim},
+                path=model_path,
+            )
         else:
             raise ValueError(f"Invalid score model algo: {score_model_algo}")
-        
+
         model.eval()
         models.append(model)
-    
 
     score_list = []
     answer_count = 0
@@ -96,7 +101,7 @@ def evaluate_score_model(env_name, exp_name, pair_algo, test_pair_type, test_pai
 
                 s0_score_list.append(s0_score)
                 s1_score_list.append(s1_score)
-            
+
             s0_score = torch.stack(s0_score_list, dim=1).mean(dim=1)
             s1_score = torch.stack(s1_score_list, dim=1).mean(dim=1)
 

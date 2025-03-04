@@ -4,9 +4,9 @@ import numpy as np
 import torch
 
 from data_generation.raw_pairs import save_raw_pairs
-from data_generation.score_encoder import EncoderModel
-from data_generation.score_rnn import RNNModel
-from data_generation.score_lstm import LSTMModel
+from data_generation.score.score_encoder import EncoderModel
+from data_generation.score.score_rnn import RNNModel
+from data_generation.score.score_lstm import LSTMModel
 from data_generation.utils import generate_pairs_from_indices, save_feedbacks_npz
 from data_loading import (
     get_dataloader,
