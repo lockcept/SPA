@@ -8,7 +8,7 @@ from scipy.stats import pearsonr
 import numpy as np
 
 from data_loading import load_dataset, get_dataloader, load_pair
-from reward_learning import RewardModelBase, MR
+from reward_learning import RewardModelBase, get_reward_model
 from utils import get_reward_model_path, get_reward_model_log_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -247,18 +247,13 @@ def evaluate_and_log_reward_models(
     models = []
 
     for model_file in model_files:
-        if reward_model_algo == "MR":
-            model, _ = MR.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
-            )
-        elif reward_model_algo == "MR-linear":
-            model, _ = MR.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim},
-                path=model_file,
-                linear_loss=True,
-            )
-        else:
-            model = None  # pylint: disable=C0103
+        model, _ = get_reward_model(
+            reward_model_algo=reward_model_algo,
+            model_path=model_file,
+            allow_existing=True,
+            obs_dim=obs_dim,
+            act_dim=act_dim,
+        )
 
         if model is not None:
             model.eval()

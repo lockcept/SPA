@@ -14,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class MR(RewardModelBase):
 
     @staticmethod
-    def initialize(config, path=None, skip_if_exists=False, linear_loss=False):
+    def initialize(config, path=None, allow_existing=True, linear_loss=False):
         obs_dim = config.get("obs_dim")
         act_dim = config.get("act_dim")
         hidden_size = config.get("hidden_size", 256)
@@ -28,8 +28,8 @@ class MR(RewardModelBase):
 
         if path is not None:
             if os.path.isfile(path):
-                if skip_if_exists:
-                    print("Skipping model initialization")
+                if not allow_existing:
+                    print("Skipping model initialization because already exists")
                     return None, None
                 model.load_state_dict(
                     torch.load(path, weights_only=True, map_location=device)

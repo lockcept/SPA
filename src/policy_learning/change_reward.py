@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from data_loading import load_dataset
-from reward_learning import MR, RewardModelBase
+from reward_learning import RewardModelBase, get_reward_model
 from utils import get_reward_model_path, get_new_dataset_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,21 +82,15 @@ def change_reward_from_all_datasets(env_name, exp_name, pair_algo, reward_model_
     model_files = glob.glob(model_path_pattern)
     model_list = []
 
-    if reward_model_algo == "MR":
-        for model_file in model_files:
-            print(model_file)
-            model, _ = MR.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim}, path=model_file
-            )
-            model_list.append(model)
-    elif reward_model_algo == "MR-linear":
-        for model_file in model_files:
-            model, _ = MR.initialize(
-                config={"obs_dim": obs_dim, "act_dim": act_dim},
-                path=model_file,
-                linear_loss=True,
-            )
-            model_list.append(model)
+    for model_file in model_files:
+        model, _ = get_reward_model(
+            reward_model_algo=reward_model_algo,
+            obs_dim=obs_dim,
+            act_dim=act_dim,
+            model_path=model_file,
+            allow_existing=True,
+        )
+        model_list.append(model)
 
     new_dataset_path = get_new_dataset_path(
         env_name, exp_name, pair_algo, reward_model_algo
