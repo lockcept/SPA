@@ -1,5 +1,6 @@
 import numpy as np
 
+from data_generation.active.margin import generate_active_margin_pairs
 from data_generation.full_pairs import generate_and_save_full_pairs
 from data_generation.raw_pairs import save_raw_pairs
 from data_generation.scored_pairs import generate_score_pairs
@@ -207,14 +208,28 @@ def generate_all_algo_pairs(env_name, exp_name):
         mu_types=["binary"],
     )
 
-    generate_score_pairs(
+    # generate_score_pairs(
+    #     dataset=dataset,
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     num_epochs=10,
+    #     pair_algo="full-binary",
+    #     score_model="lstm.exp",
+    #     aug_list=["10000"],
+    #     traj_set=all_traj_set,
+    #     ensemble_size=5,
+    # )
+
+    generate_active_margin_pairs(
         dataset=dataset,
         env_name=env_name,
         exp_name=exp_name,
-        num_epochs=100,
-        pair_algo="full-binary",
-        score_model="lstm.exp",
-        aug_list=["10000", "50000"],
         traj_set=all_traj_set,
-        ensemble_size=5,
+        val_pairs=val_pairs,
+        total_pairs_count=500,
+        active_round=5,
+        pairs_scale=100,
+        num_epoch=10,
+        reward_model_algo="MR-linear",
+        reward_model_count=3,
     )

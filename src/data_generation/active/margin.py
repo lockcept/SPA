@@ -1,4 +1,5 @@
 import glob
+import os
 from typing import List
 
 import numpy as np
@@ -79,8 +80,8 @@ def generate_active_margin_pairs(
     dataset,
     env_name,
     exp_name,
-    pair_type,
     traj_set,
+    val_pairs,
     total_pairs_count=500,
     active_round=5,
     pairs_scale=100,
@@ -90,11 +91,26 @@ def generate_active_margin_pairs(
 ):
     pairs = []
     pairs_count_per_round = total_pairs_count // active_round
-    pair_algo = "active_margin"
+    pair_algo = "active-margin"
     intermediate_pair_algo = f"{pair_algo}-intermediate"
     obs_dim, act_dim = dataset["observations"].shape[1], dataset["actions"].shape[1]
 
-    for round_idx in range(active_round):
+    # remove models if exists
+    model_path_pattern = get_reward_model_path(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=intermediate_pair_algo,
+        reward_model_algo=reward_model_algo,
+        reward_model_tag="*",
+    )
+    model_files = glob.glob(model_path_pattern)
+
+    for model_file in model_files:
+        if model_file:
+            print("Removing", model_file)
+            os.remove(model_file)
+
+    for _ in range(active_round):
         if not pairs:
             pairs = generate_pairs_from_indices(
                 dataset=dataset,
@@ -112,6 +128,7 @@ def generate_active_margin_pairs(
                     reward_model_tag=f"{i:02d}",
                     num_epoch=num_epoch,
                     train_from_existing=True,
+                    no_val_data=True,
                 )
 
             # get reward models
@@ -168,9 +185,9 @@ def generate_active_margin_pairs(
         save_raw_pairs(
             env_name=env_name,
             exp_name=exp_name,
-            pair_type=pair_type,
+            pair_type="train",
             pairs=pairs,
-            raw_name=f"active_margin_round_{round_idx}",
+            raw_name=intermediate_pair_algo,
         )
 
     # save full-binary pairs from selected pairs
@@ -188,7 +205,21 @@ def generate_active_margin_pairs(
     save_feedbacks_npz(
         env_name=env_name,
         exp_name=exp_name,
-        pair_type=pair_type,
+        pair_type="train",
         pair_name=pair_algo,
         feedbacks=feedbacks,
+    )
+
+    val_feedbacks = fill_feedback_from_pairs(
+        dataset=dataset,
+        pairs=val_pairs,
+        models=models,
+    )
+
+    save_feedbacks_npz(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="val",
+        pair_name=pair_algo,
+        feedbacks=val_feedbacks,
     )

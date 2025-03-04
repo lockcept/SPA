@@ -184,6 +184,11 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
 
     mu_array = np.array(
         [(s0, s1, mu) for (s0, s1), mu in zip(pairs, mu_results)],
+        dtype=[
+            ("s0", "i4", (2,)),
+            ("s1", "i4", (2,)),
+            ("mu", "f"),
+        ],
     )
 
     return mu_array, std_dev_results
