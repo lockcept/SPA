@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.lib.recfunctions as rfn
 
-from utils import get_pair_path
+from data_generation.utils import save_feedbacks_npz
 
 
 def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
@@ -50,6 +50,7 @@ def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
         )
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "binary-with-0.5":
+        # warning: calculate legnth_values only on the first pair (s0)
         length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
         mu_values = np.where(
             np.abs(reward_sum_0 - reward_sum_1) < 0.5 * length_values,
@@ -63,41 +64,10 @@ def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
     elif mu_type == "random":
         mu_values = np.random.uniform(0, 1, len(reward_sum_0))
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
-    elif mu_type == "continuous":
-        length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
-        diff = (reward_sum_1 - reward_sum_0) / length_values
-        max_diff = np.max(np.abs(diff))
-        normalized_diff = diff / max_diff
-        mu_values = 0.5 + 0.5 * normalized_diff
-        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "sigmoid":
         diff_values = reward_sum_1 - reward_sum_0
         sigmoid_values = 1 / (1 + np.exp(-diff_values))
         pair_data = rfn.append_fields(pair_data, "mu", sigmoid_values, dtypes=float)
-    elif mu_type == "sigmoid-0.1":
-        diff_values = reward_sum_1 - reward_sum_0
-        sigmoid_values = 1 / (1 + np.exp(-diff_values))
-        round_unit = 0.1
-        rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
-        pair_data = rfn.append_fields(
-            pair_data, "mu", rounded_sigmoid_values, dtypes=float
-        )
-    elif mu_type == "sigmoid-0.25":
-        diff_values = reward_sum_1 - reward_sum_0
-        sigmoid_values = 1 / (1 + np.exp(-diff_values))
-        round_unit = 0.25
-        rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
-        pair_data = rfn.append_fields(
-            pair_data, "mu", rounded_sigmoid_values, dtypes=float
-        )
-    elif mu_type == "sigmoid-0.5":
-        diff_values = reward_sum_1 - reward_sum_0
-        sigmoid_values = 1 / (1 + np.exp(-diff_values))
-        round_unit = 0.5
-        rounded_sigmoid_values = np.round(sigmoid_values / round_unit) * round_unit
-        pair_data = rfn.append_fields(
-            pair_data, "mu", rounded_sigmoid_values, dtypes=float
-        )
     elif mu_type == "linear":
         mu_values = normalized_reward_sum_1 / (
             normalized_reward_sum_0 + normalized_reward_sum_1
@@ -126,7 +96,7 @@ def generate_and_save_full_pairs(
     reward_max = np.max(dataset["rewards"])
     reward_info = (reward_min, reward_max)
 
-    preference_pairs = []
+    pairs_with_rewards = []
 
     for i0, i1 in pairs:
         s0, e0 = i0
@@ -140,10 +110,10 @@ def generate_and_save_full_pairs(
 
         rewards_0 = dataset["rewards"][s0:e0]
         rewards_1 = dataset["rewards"][s1:e1]
-        preference_pairs.append(((s0, e0), (s1, e1), rewards_0, rewards_1))
+        pairs_with_rewards.append(((s0, e0), (s1, e1), rewards_0, rewards_1))
 
-    preference_pairs_np = np.array(
-        preference_pairs,
+    pairs_with_rewards_np = np.array(
+        pairs_with_rewards,
         dtype=[
             ("s0", "i4", (2,)),
             ("s1", "i4", (2,)),
@@ -153,17 +123,16 @@ def generate_and_save_full_pairs(
     )
 
     for mu_type in mu_types:
-        pair_data = get_pairs_by_mu_type(
+        feedbacks = get_pairs_by_mu_type(
             mu_type=mu_type,
-            pair_data=preference_pairs_np,
+            pair_data=pairs_with_rewards_np,
             reward_info=reward_info,
         )
 
-        save_path = get_pair_path(
+        save_feedbacks_npz(
             env_name=env_name,
             exp_name=exp_name,
             pair_type=pair_type,
-            pair_algo=f"full-{mu_type}",
+            pair_name=f"full-{mu_type}",
+            feedbacks=feedbacks,
         )
-        np.savez(save_path, data=pair_data)
-        print(f"Preference pairs saved at {save_path}")

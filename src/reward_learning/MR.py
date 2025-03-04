@@ -101,16 +101,15 @@ class MR(RewardModelBase):
     def _learn(
         self,
         optimizer,
-        train_data_loader,
-        val_data_loader,
         loss_fn,
+        train_data_loader,
+        val_data_loader=None,
         num_epochs=10,
     ):
         with open(self.log_path, mode="w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(["Epoch", "Train Loss", "Validation Loss"])
 
-        best_loss = float("inf")
         loss_history = []
         val_loss_history = []
 
@@ -145,8 +144,11 @@ class MR(RewardModelBase):
             avg_epoch_loss = epoch_loss / len(train_data_loader)
             loss_history.append(avg_epoch_loss)
 
-            val_loss = self.evaluate(data_loader=val_data_loader, loss_fn=loss_fn)
-            val_loss_history.append(val_loss)
+            if val_data_loader is not None:
+                val_loss = self.evaluate(data_loader=val_data_loader, loss_fn=loss_fn)
+                val_loss_history.append(val_loss)
+            else:
+                val_loss = 0.0
 
             with open(self.log_path, mode="a", newline="") as file:
                 writer = csv.writer(file)

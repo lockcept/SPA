@@ -1,4 +1,7 @@
+import os
 import numpy as np
+
+from utils.path import get_pair_path
 
 
 def extract_trajectory_indices(dataset):
@@ -91,3 +94,27 @@ def generate_pairs_from_indices(
         pairs.append((first_pair, second_pair))
 
     return pairs
+
+
+def save_feedbacks_npz(env_name, exp_name, pair_type, pair_name, feedbacks):
+    """
+    Save preference feedbacks using np.savez
+
+    Args:
+        env_name: str, Environment name
+        exp_name: str, Experiment name
+        pair_type: str, Type of pairs
+        pair_name: str, Name of pairs
+        feedbacks: list of ((int, int), (int, int))
+    """
+    save_path = get_pair_path(env_name, exp_name, pair_type, pair_name)
+    save_dir = os.path.dirname(save_path)
+    os.makedirs(save_dir, exist_ok=True)
+
+    feedbacks_np = np.array(
+        feedbacks, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f")]
+    )
+
+    np.savez(save_path, data=feedbacks_np)
+
+    print(f"Saved feedbacks at {save_path}")

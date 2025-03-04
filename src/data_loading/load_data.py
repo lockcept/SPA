@@ -103,14 +103,14 @@ class DMControlEnvWrapper:
         self.env = suite.load(domain_name, task_name)
 
         obs_spec = self.env.observation_spec()
-        obs_shape = (int(sum(np.prod(spec.shape) for spec in obs_spec.values())),) 
+        obs_shape = (int(sum(np.prod(spec.shape) for spec in obs_spec.values())),)
         self.observation_space = SimpleNamespace(shape=obs_shape)
 
         action_spec = self.env.action_spec()
         self.action_space = SimpleNamespace(
-            shape=tuple(map(int, action_spec.shape)), 
-            low=action_spec.minimum.astype(float).tolist(),  
-            high=action_spec.maximum.astype(float).tolist(), 
+            shape=tuple(map(int, action_spec.shape)),
+            low=action_spec.minimum.astype(float).tolist(),
+            high=action_spec.maximum.astype(float).tolist(),
         )
 
     def reset(self, seed=None):

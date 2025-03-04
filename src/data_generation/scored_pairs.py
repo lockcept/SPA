@@ -7,7 +7,7 @@ from data_generation.raw_pairs import save_raw_pairs
 from data_generation.score_encoder import EncoderModel
 from data_generation.score_rnn import RNNModel
 from data_generation.score_lstm import LSTMModel
-from data_generation.utils import generate_pairs_from_indices
+from data_generation.utils import generate_pairs_from_indices, save_feedbacks_npz
 from data_loading import (
     get_dataloader,
     load_pair,
@@ -18,6 +18,7 @@ from data_loading import (
 from utils import get_score_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def fill_score_from_pairs(dataset, pairs, models):
     """
@@ -81,19 +82,24 @@ def fill_score_from_pairs(dataset, pairs, models):
 
                 scores_0_batch.append(scores_0)
                 scores_1_batch.append(scores_1)
-            
+
             scores_0_batch = np.array(scores_0_batch)
             scores_1_batch = np.array(scores_1_batch)
-            
+
             scores_0_batch = np.mean(scores_0_batch, axis=0)
             scores_1_batch = np.mean(scores_1_batch, axis=0)
 
-            score_results.extend([score for pair in zip(scores_0_batch, scores_1_batch) for score in pair])
-    
+            score_results.extend(
+                [
+                    score
+                    for pair in zip(scores_0_batch, scores_1_batch)
+                    for score in pair
+                ]
+            )
+
     all_trajs = [traj for pair in pairs for traj in pair]
 
     return zip(all_trajs, score_results)
-    
 
 
 def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
@@ -178,11 +184,6 @@ def fill_feedback_from_pairs(dataset, pairs, models, linear_loss=False):
 
     mu_array = np.array(
         [(s0, s1, mu) for (s0, s1), mu in zip(pairs, mu_results)],
-        dtype=[
-            ("s0", "i4", (2,)),
-            ("s1", "i4", (2,)),
-            ("mu", "f"),
-        ],
     )
 
     return mu_array, std_dev_results
@@ -360,13 +361,20 @@ def generate_score_pairs(
     val_feedback_pairs, _ = fill_feedback_from_pairs(
         dataset, val_pairs, best_models, linear_loss
     )
-    np.savez(
-        f"pair/{env_name}/{exp_name}/train/{score_model}-{pair_algo}.npz",
-        data=train_feedback_pairs,
+
+    save_feedbacks_npz(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
+        pair_name=f"{score_model}-{pair_algo}",
+        feedbacks=train_feedback_pairs,
     )
-    np.savez(
-        f"pair/{env_name}/{exp_name}/val/{score_model}-{pair_algo}.npz",
-        data=val_feedback_pairs,
+    save_feedbacks_npz(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="val",
+        pair_name=f"{score_model}-{pair_algo}",
+        feedbacks=val_feedback_pairs,
     )
 
     for aug in aug_list:
@@ -486,7 +494,6 @@ def generate_score_pairs(
                 mu = 1 / (1 + np.exp((s0[1] - s1[1]) / 5))
                 aug_feedback_pairs.append((s0[0], s1[0], mu))
 
-            
             aug_feedback_pairs = np.array(
                 aug_feedback_pairs,
                 dtype=[
@@ -495,7 +502,7 @@ def generate_score_pairs(
                     ("mu", "f"),
                 ],
             )
-            
+
             new_train_feedback_pairs = np.concatenate(
                 [train_feedback_pairs, aug_feedback_pairs],
                 axis=0,
@@ -511,7 +518,7 @@ def generate_score_pairs(
                     aug_feedback_pairs.append(
                         (s0[0], s1[0], 1.0 if s1[1] > s0[1] else 0.0)
                     )
-            
+
             aug_feedback_pairs = np.array(
                 aug_feedback_pairs,
                 dtype=[
@@ -520,7 +527,7 @@ def generate_score_pairs(
                     ("mu", "f"),
                 ],
             )
-            
+
             new_train_feedback_pairs = np.concatenate(
                 [train_feedback_pairs, aug_feedback_pairs],
                 axis=0,
@@ -671,15 +678,21 @@ def generate_score_pairs(
         else:
             new_train_feedback_pairs = train_feedback_pairs
 
-        np.savez(
-            f"pair/{env_name}/{exp_name}/train/{score_model}-aug-{aug}-{pair_algo}.npz",
-            data=new_train_feedback_pairs,
+        save_feedbacks_npz(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="train",
+            pair_name=f"{score_model}-aug-{aug}-{pair_algo}",
+            feedbacks=new_train_feedback_pairs,
         )
 
         # val feedback pairs are same as before
-        np.savez(
-            f"pair/{env_name}/{exp_name}/val/{score_model}-aug-{aug}-{pair_algo}.npz",
-            data=val_feedback_pairs,
+        save_feedbacks_npz(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_type="val",
+            pair_name=f"{score_model}-aug-{aug}-{pair_algo}",
+            feedbacks=val_feedback_pairs,
         )
 
     return
