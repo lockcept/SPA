@@ -29,7 +29,7 @@ def get_configs():
     tau = 0.005
     expectile = 0.7
     temperature = 3.0
-    epoch = 300
+    epoch = 1000
     step_per_epoch = 1000
     eval_episodes = 5
     batch_size = 256
@@ -161,8 +161,9 @@ def train(
     # wandb
 
     configs.update({"seed": seed})
-    configs.update({"project": "SPA"})
-    group = f"{env_name}_{exp_name.split('-')[0]}_{pair_algo}_{reward_model_algo}"
+    configs.update({"project": "AESPA"})
+    new_exp_name = '-'.join(exp_name.split('-')[:-1])
+    group = f"{env_name}_{new_exp_name}_{pair_algo}_{reward_model_algo}"
     configs.update({"group": group})
     configs.update({"name": exp_name})
     wandb_init(config=configs)
