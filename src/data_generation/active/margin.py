@@ -205,18 +205,20 @@ def generate_active_margin_pairs(
             # sort with margin
             sorted_feedbacks = sorted(
                 candidate_feedbacks,
-                key=lambda x: abs(x[2] - 0.5),
+                key=lambda x: min(abs(x[2] - 0.25), abs(x[2] - 0.75)),
             )
 
             new_feedbacks = sorted_feedbacks[: (total_pairs_count // active_round)]
             new_pairs = [(f[0], f[1]) for f in new_feedbacks]
 
-            feedbacks.extend(
-                fill_feedback_from_raw_dataset(
-                    cumulative_rewards=cumulative_rewards,
-                    pairs=new_pairs,
-                )
+            print(sorted_feedbacks[:10], new_feedbacks[:10], new_pairs[:10])
+
+        feedbacks.extend(
+            fill_feedback_from_raw_dataset(
+                cumulative_rewards=cumulative_rewards,
+                pairs=new_pairs,
             )
+        )
 
         # save intermediate pairs
         save_feedbacks_npz(
