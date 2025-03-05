@@ -212,7 +212,7 @@ def generate_all_algo_pairs(env_name, exp_name):
     #     dataset=dataset,
     #     env_name=env_name,
     #     exp_name=exp_name,
-    #     num_epochs=10,
+    #     num_epochs=100,
     #     pair_algo="full-binary",
     #     score_model="lstm.exp",
     #     aug_list=["10000"],
@@ -229,7 +229,7 @@ def generate_all_algo_pairs(env_name, exp_name):
         total_pairs_count=500,
         active_round=5,
         pairs_scale=100,
-        num_epoch=10,
+        num_epoch=100,
         reward_model_algo="MR-linear",
         reward_model_count=3,
     )
