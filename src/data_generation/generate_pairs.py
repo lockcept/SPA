@@ -1,6 +1,6 @@
 import numpy as np
 
-from data_generation.active.margin import generate_active_margin_pairs
+from data_generation.picker.margin import generate_active_margin_pairs
 from data_generation.full_pairs import generate_and_save_full_pairs
 from data_generation.raw_pairs import save_raw_pairs
 from data_generation.scored_pairs import generate_score_pairs
