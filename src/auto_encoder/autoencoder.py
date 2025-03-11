@@ -53,7 +53,7 @@ def generate_indices(dataset, traj_len=25):
 
 
 def train_autoencoder(
-    env_name, num_epochs=50, batch_size=64, lr=0.001, max_batches_per_epoch=500
+    env_name, num_epochs=50, batch_size=64, lr=0.001
 ):
     """
     Train autoencoder model using mini-batch and limit the number of batches per epoch
@@ -87,16 +87,12 @@ def train_autoencoder(
         epoch_loss = 0.0
 
         progress_bar = tqdm(
-            enumerate(dataloader),
-            total=max_batches_per_epoch,
+            total=len(dataloader),
             desc=f"Epoch {epoch+1}/{num_epochs}",
-            leave=True,
+            leave=True
         )
 
-        for batch_idx, batch in progress_bar:
-            if batch_idx >= max_batches_per_epoch:
-                break
-
+        for _, batch in enumerate(dataloader):
             traj_batch = batch.to(device).view(batch_size, -1)
 
             optimizer.zero_grad()
@@ -107,14 +103,12 @@ def train_autoencoder(
 
             epoch_loss += loss.item()
 
-            progress_bar.set_postfix(
-                {
-                    "Batch": f"{batch_idx+1}/{max_batches_per_epoch}",
-                    "Loss": f"{loss.item():.6f}",
-                }
-            )
+            progress_bar.update(1)
+            progress_bar.set_postfix({"Loss": f"{loss.item():.6f}"})
 
-        avg_loss = epoch_loss / min(len(dataloader), max_batches_per_epoch)
+        progress_bar.close()
+
+        avg_loss = epoch_loss / len(dataloader)
         print(f"Epoch [{epoch+1}/{num_epochs}] - Loss: {avg_loss:.6f}")
 
         with open(log_path, mode="a", newline="", encoding="utf-8") as file:
