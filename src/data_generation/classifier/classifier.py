@@ -22,11 +22,12 @@ class Classifier(nn.Module):
 
         self.encoder = encoder
         self.classifier = nn.Sequential(
-            nn.Linear(latent_dim * 2, 32),
+            nn.Linear(latent_dim * 2, 64),
             nn.ReLU(),
-            nn.Linear(32, 3),
-            nn.Softmax(dim=1),
-        )
+            nn.Linear(64, 32), 
+            nn.ReLU(),
+            nn.Linear(32, 3), 
+        ) # softmax has included in the loss function (BCE)
 
     def forward(self, s0, s1):
         s0_encoded = self.encoder(s0)
