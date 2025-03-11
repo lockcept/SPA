@@ -159,3 +159,12 @@ def get_encoder_model_path(
     path = f"model/{env_name}/autoencoder/autoencoder.pth"
     make_dir_from_path(path)
     return path
+
+
+def get_classifier_model_path(env_name, exp_name, pair_algo):
+    """
+    Return path of classifier model file
+    """
+    path = f"model/{env_name}/{exp_name}/classifier/{pair_algo}/classifier.pth"
+    make_dir_from_path(path)
+    return path
