@@ -148,3 +148,14 @@ def get_policy_model_log_path(
     )
     make_dir_from_path(path)
     return path
+
+
+def get_encoder_model_path(
+    env_name,
+):
+    """
+    Return path of score model file
+    """
+    path = f"model/{env_name}/autoencoder/autoencoder.pth"
+    make_dir_from_path(path)
+    return path
