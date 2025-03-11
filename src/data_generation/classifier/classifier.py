@@ -70,6 +70,10 @@ def train_classifier(
         torch.load(autoencoder_path, weights_only=True, map_location=device)
     )
     encoder = autoencoder.encoder.to(device)
+    encoder.eval()
+
+    for param in encoder.parameters():
+        param.requires_grad = False
 
     model = Classifier(encoder).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -144,14 +148,14 @@ def train_classifier(
     print(f"Model saved at {model_path}")
 
 
-def evaluate_classifier(model, dataloader, device="cuda"):
+def evaluate_classifier(model, dataloader, device):
     """
     Evaluate the classifier's performance on a validation dataset.
 
     Args:
         model (torch.nn.Module): The trained classifier model.
         dataloader (torch.utils.data.DataLoader): DataLoader for validation data.
-        device (str): Device to run the evaluation on ("cuda" or "cpu").
+        device : Device to run the evaluation on.
 
     Returns:
         avg_loss (float): Average validation loss.

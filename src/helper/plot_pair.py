@@ -67,7 +67,7 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
         [segment_sum(start, end) for start, end in zip(s1_starts, s1_ends)]
     )
 
-    mu_values = np.where(rewards_sum_0 < rewards_sum_1, 1.0, 0.0)
+    mu_values = np.where(rewards_sum_0 > rewards_sum_1, 0.0, np.where(rewards_sum_0 < rewards_sum_1, 1.0, 0.5))
 
     true_feedbacks = [(data[i][0], data[i][1], mu) for i, mu in enumerate(mu_values)]
     true_feedbacks = np.array(
@@ -85,7 +85,7 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     for i in range(len(true_feedbacks)):
         truth, mean = (true_feedbacks["mu"][i], data["mu"][i])
 
-        if mean == 0.5:
+        if mean == 0.5 or truth == 0.5:
             continue
 
         total_count += 1
