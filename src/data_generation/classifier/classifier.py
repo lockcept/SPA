@@ -1,5 +1,6 @@
 import csv
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -166,6 +167,14 @@ def evaluate_classifier(model, dataloader, device):
     correct = 0
     total = 0
 
+    filtered_correct = 0
+    filtered_total = 0
+
+    prob_threshold = 0.99999
+
+    correct_class_probs = {0: [], 1: [], 2: []}
+    wrong_class_probs = {0: [], 1: [], 2: []}
+
     with torch.no_grad():
         for batch in dataloader:
             (
@@ -192,8 +201,66 @@ def evaluate_classifier(model, dataloader, device):
             output = model(s0_batch, s1_batch)
 
             _, predicted = torch.max(output, 1)
-            correct += (predicted == mu_class).sum().item()
-            total += mu_batch.size(0)
+            correct += ((predicted == mu_class)).sum().item()
+            total += (mu_class > -1).sum().item()
+
+            probabilities = torch.softmax(output, dim=1)  
+            max_prob, predicted = torch.max(probabilities, 1)
+
+
+            correct_mask = predicted == mu_class
+            wrong_mask = ~correct_mask
+
+            for cls in [0, 1, 2]:
+                class_mask = mu_class == cls  # 해당 클래스에 속하는 샘플 선택
+                
+                correct_samples = class_mask & correct_mask
+                correct_probs = probabilities[correct_samples]
+                if correct_probs.shape[0] > 0:
+                    correct_class_probs[cls].append(correct_probs)
+
+                wrong_samples = class_mask & wrong_mask
+                wrong_probs = probabilities[wrong_samples]
+                if wrong_probs.shape[0] > 0:
+                    wrong_class_probs[cls].append(wrong_probs)
+            
+            high_confidence_mask = max_prob >= prob_threshold
+            filtered_correct += ((predicted == mu_class) & high_confidence_mask).sum().item()
+            filtered_total += high_confidence_mask.sum().item()
+
+
+    def compute_mean_prob(class_probs):
+        means = []
+        for cls in [0, 1, 2]:
+            if len(class_probs[cls]) > 0:
+                means.append(torch.cat(class_probs[cls], dim=0).mean(dim=0).cpu().numpy())
+            else:
+                means.append(np.array([0.0, 0.0, 0.0])) 
+        return np.array(means)
+
+    correct_mean_probs = compute_mean_prob(correct_class_probs)
+    wrong_mean_probs = compute_mean_prob(wrong_class_probs)
+
+    correct_count = sum(tensor.shape[0] for cls in correct_class_probs for tensor in correct_class_probs[cls])
+    wrong_count = sum(tensor.shape[0] for cls in wrong_class_probs for tensor in wrong_class_probs[cls])
+
+
+    correct_mean_probs = np.round(correct_mean_probs, 2)
+    wrong_mean_probs = np.round(wrong_mean_probs, 2)
+
+    print(f"\n정답 {correct_count} 클래스별 평균 확률 (3×3):")
+    print(correct_mean_probs)
+
+    print(f"\n오답 {wrong_count} 클래스별 평균 확률 (3×3):")
+    print(wrong_mean_probs)
 
     accuracy = (correct / total) * 100
+    print ("Correct:", correct, "Total:", total)
+    print ("Accuracy:", accuracy)
+
+    filtered_accuracy = (filtered_correct / filtered_total) * 100
+    print (f"\n신뢰도 기준: {100 * prob_threshold:.2f}%")
+    print(f"샘플 개수: {filtered_total}")
+    print(f"정답 개수: {filtered_correct}")
+    print(f"정답률: {filtered_accuracy:.4f}%")
     return accuracy
