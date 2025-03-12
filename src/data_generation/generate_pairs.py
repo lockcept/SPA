@@ -2,14 +2,14 @@ import numpy as np
 
 from data_generation.picker.margin import generate_active_margin_pairs
 from data_generation.full_pairs import generate_and_save_full_pairs
+from data_generation.picker.margin_classifier import generate_classifier_margin_pairs
 from data_generation.raw_pairs import save_raw_pairs
 from data_generation.scored_pairs import generate_score_pairs
 from data_generation.utils import (
-    extract_trajectory_indices,
     generate_pairs_from_indices,
     generate_pairs_from_using_all,
 )
-from data_loading.load_data import load_dataset, load_pair
+from data_loading import load_dataset, load_pair, extract_trajectory_indices
 
 
 def generate_all_algo_pairs(env_name, exp_name):
@@ -220,16 +220,28 @@ def generate_all_algo_pairs(env_name, exp_name):
     #     ensemble_size=5,
     # )
 
-    generate_active_margin_pairs(
+    # generate_active_margin_pairs(
+    #     dataset=dataset,
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     traj_set=all_traj_set,
+    #     val_pairs=val_pairs,
+    #     total_pairs_count=500,
+    #     active_round=5,
+    #     pairs_scale=100,
+    #     num_epoch=100,
+    #     reward_model_algo="MR-linear",
+    #     reward_model_count=3,
+    # )
+
+    generate_classifier_margin_pairs(
         dataset=dataset,
         env_name=env_name,
         exp_name=exp_name,
         traj_set=all_traj_set,
         val_pairs=val_pairs,
         total_pairs_count=500,
-        active_round=5,
+        active_round=10,
         pairs_scale=100,
         num_epoch=100,
-        reward_model_algo="MR-linear",
-        reward_model_count=3,
     )

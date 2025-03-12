@@ -1,7 +1,6 @@
 import csv
 import os
-from data_generation.utils import extract_trajectory_indices
-from data_loading.load_data import load_dataset, load_pair
+from data_loading import load_dataset, load_pair, extract_trajectory_indices
 
 
 def analyze_pair(env_name, exp_name, pair_type, pair_algo):

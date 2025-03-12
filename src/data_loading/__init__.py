@@ -7,6 +7,7 @@ from .load_data import (
     get_env,
     process_pairs,
 )
+from .extract_indices import extract_trajectory_indices
 
 __all__ = [
     "get_dataloader",
@@ -17,4 +18,5 @@ __all__ = [
     "get_processed_data",
     "get_env",
     "process_pairs",
+    "extract_trajectory_indices",
 ]

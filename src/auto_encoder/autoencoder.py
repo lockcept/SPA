@@ -6,9 +6,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from auto_encoder.trajectory_dataset import TrajectoryDataset
-from data_generation import extract_trajectory_indices
-from data_loading import load_dataset
-
+from data_loading import load_dataset, extract_trajectory_indices
 from utils import get_encoder_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,9 +50,7 @@ def generate_indices(dataset, traj_len=25):
     return traj_list
 
 
-def train_autoencoder(
-    env_name, num_epochs=50, batch_size=64, lr=0.001
-):
+def train_autoencoder(env_name, num_epochs=50, batch_size=64, lr=0.001):
     """
     Train autoencoder model using mini-batch and limit the number of batches per epoch
     """
@@ -87,9 +83,7 @@ def train_autoencoder(
         epoch_loss = 0.0
 
         progress_bar = tqdm(
-            total=len(dataloader),
-            desc=f"Epoch {epoch+1}/{num_epochs}",
-            leave=True
+            total=len(dataloader), desc=f"Epoch {epoch+1}/{num_epochs}", leave=True
         )
 
         for _, batch in enumerate(dataloader):

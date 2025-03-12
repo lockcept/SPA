@@ -1,4 +1,5 @@
 import csv
+import os
 
 import numpy as np
 import torch
@@ -25,10 +26,10 @@ class Classifier(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(latent_dim * 2, 64),
             nn.ReLU(),
-            nn.Linear(64, 32), 
+            nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(32, 3), 
-        ) # softmax has included in the loss function (BCE)
+            nn.Linear(32, 3),
+        )  # softmax has included in the loss function (BCE)
 
     def forward(self, s0, s1):
         s0_encoded = self.encoder(s0)
@@ -38,14 +39,48 @@ class Classifier(nn.Module):
         return output
 
 
+def get_classifier_model(env_name, exp_name, pair_algo, latent_dim=64):
+    """
+    Load the trained classifier model.
+    """
+    model_path = get_classifier_model_path(env_name, exp_name, pair_algo)
+    autoencoder_path = get_encoder_model_path(env_name)
+
+    autoencoder = AutoEncoder(input_dim=43 * 25)
+    autoencoder.load_state_dict(
+        torch.load(autoencoder_path, weights_only=True, map_location=device)
+    )
+    encoder = autoencoder.encoder.to(device)
+    encoder.eval()
+
+    model = Classifier(encoder, latent_dim=latent_dim)
+    model.load_state_dict(
+        torch.load(model_path, weights_only=True, map_location=device)
+    )
+    model.to(device)
+    model.eval()
+
+    return model
+
+
 def train_classifier(
-    env_name, exp_name, pair_algo, num_epochs=200, batch_size=64, lr=0.001
+    env_name,
+    exp_name,
+    pair_algo,
+    num_epochs=200,
+    batch_size=64,
+    lr=0.001,
+    remove_if_exists=True,
 ):
     """
     Train classifier using the pre-trained autoencoder's encoder
     """
 
     model_path = get_classifier_model_path(env_name, exp_name, pair_algo)
+
+    if remove_if_exists and os.path.exists(model_path):
+        os.remove(model_path)
+
     log_path = f"model/{env_name}/{exp_name}/classifier/{pair_algo}/epoch_loss_log.csv"
 
     with open(log_path, mode="w", newline="", encoding="utf-8") as file:
@@ -64,6 +99,8 @@ def train_classifier(
         pair_type="train",
         pair_algo=pair_algo,
         batch_size=batch_size,
+        shuffle=True,
+        drop_last=False,
     )
 
     autoencoder_path = get_encoder_model_path(env_name)
@@ -78,6 +115,12 @@ def train_classifier(
         param.requires_grad = False
 
     model = Classifier(encoder).to(device)
+    # load if exist
+    if os.path.exists(model_path):
+        model.load_state_dict(
+            torch.load(model_path, weights_only=True, map_location=device)
+        )
+
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
@@ -106,8 +149,10 @@ def train_classifier(
             s0_batch = torch.cat((s0_obs_batch, s0_act_batch), dim=-1)
             s1_batch = torch.cat((s1_obs_batch, s1_act_batch), dim=-1)
 
-            s0_batch = s0_batch.view(batch_size, -1)
-            s1_batch = s1_batch.view(batch_size, -1)
+            batch_dim = s0_batch.shape[0]
+
+            s0_batch = s0_batch.view(batch_dim, -1)
+            s1_batch = s1_batch.view(batch_dim, -1)
 
             # 0 > 1 -> class 0
             # 0 < 1 -> class 1
@@ -204,16 +249,15 @@ def evaluate_classifier(model, dataloader, device):
             correct += ((predicted == mu_class)).sum().item()
             total += (mu_class > -1).sum().item()
 
-            probabilities = torch.softmax(output, dim=1)  
+            probabilities = torch.softmax(output, dim=1)
             max_prob, predicted = torch.max(probabilities, 1)
-
 
             correct_mask = predicted == mu_class
             wrong_mask = ~correct_mask
 
             for cls in [0, 1, 2]:
                 class_mask = mu_class == cls  # 해당 클래스에 속하는 샘플 선택
-                
+
                 correct_samples = class_mask & correct_mask
                 correct_probs = probabilities[correct_samples]
                 if correct_probs.shape[0] > 0:
@@ -223,27 +267,37 @@ def evaluate_classifier(model, dataloader, device):
                 wrong_probs = probabilities[wrong_samples]
                 if wrong_probs.shape[0] > 0:
                     wrong_class_probs[cls].append(wrong_probs)
-            
-            high_confidence_mask = max_prob >= prob_threshold
-            filtered_correct += ((predicted == mu_class) & high_confidence_mask).sum().item()
-            filtered_total += high_confidence_mask.sum().item()
 
+            high_confidence_mask = max_prob >= prob_threshold
+            filtered_correct += (
+                ((predicted == mu_class) & high_confidence_mask).sum().item()
+            )
+            filtered_total += high_confidence_mask.sum().item()
 
     def compute_mean_prob(class_probs):
         means = []
         for cls in [0, 1, 2]:
             if len(class_probs[cls]) > 0:
-                means.append(torch.cat(class_probs[cls], dim=0).mean(dim=0).cpu().numpy())
+                means.append(
+                    torch.cat(class_probs[cls], dim=0).mean(dim=0).cpu().numpy()
+                )
             else:
-                means.append(np.array([0.0, 0.0, 0.0])) 
+                means.append(np.array([0.0, 0.0, 0.0]))
         return np.array(means)
 
     correct_mean_probs = compute_mean_prob(correct_class_probs)
     wrong_mean_probs = compute_mean_prob(wrong_class_probs)
 
-    correct_count = sum(tensor.shape[0] for cls in correct_class_probs for tensor in correct_class_probs[cls])
-    wrong_count = sum(tensor.shape[0] for cls in wrong_class_probs for tensor in wrong_class_probs[cls])
-
+    correct_count = sum(
+        tensor.shape[0]
+        for cls in correct_class_probs
+        for tensor in correct_class_probs[cls]
+    )
+    wrong_count = sum(
+        tensor.shape[0]
+        for cls in wrong_class_probs
+        for tensor in wrong_class_probs[cls]
+    )
 
     correct_mean_probs = np.round(correct_mean_probs, 2)
     wrong_mean_probs = np.round(wrong_mean_probs, 2)
@@ -255,11 +309,11 @@ def evaluate_classifier(model, dataloader, device):
     print(wrong_mean_probs)
 
     accuracy = (correct / total) * 100
-    print ("Correct:", correct, "Total:", total)
-    print ("Accuracy:", accuracy)
+    print("Correct:", correct, "Total:", total)
+    print("Accuracy:", accuracy)
 
     filtered_accuracy = (filtered_correct / filtered_total) * 100
-    print (f"\n신뢰도 기준: {100 * prob_threshold:.2f}%")
+    print(f"\n신뢰도 기준: {100 * prob_threshold:.2f}%")
     print(f"샘플 개수: {filtered_total}")
     print(f"정답 개수: {filtered_correct}")
     print(f"정답률: {filtered_accuracy:.4f}%")
