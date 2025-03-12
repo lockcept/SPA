@@ -242,6 +242,6 @@ def generate_all_algo_pairs(env_name, exp_name):
         val_pairs=val_pairs,
         total_pairs_count=500,
         active_round=10,
-        pairs_scale=100,
+        pairs_scale=2000,
         num_epoch=100,
     )

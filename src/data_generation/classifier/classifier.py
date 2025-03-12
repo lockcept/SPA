@@ -130,7 +130,7 @@ def train_classifier(
         total = 0
 
         progress_bar = tqdm(
-            total=len(dataloader), desc=f"Epoch {epoch+1}/{num_epochs}", leave=True
+            total=len(dataloader), desc=f"Epoch {epoch+1}/{num_epochs}", leave=False
         )
 
         model.train()
@@ -183,9 +183,6 @@ def train_classifier(
 
         avg_loss = epoch_loss / len(dataloader)
         accuracy = (correct / total) * 100
-        print(
-            f"Epoch [{epoch+1}/{num_epochs}] - Loss: {avg_loss:.6f}, Accuracy: {accuracy:.2f}%"
-        )
 
         with open(log_path, mode="a", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)

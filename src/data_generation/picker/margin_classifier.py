@@ -13,6 +13,7 @@ from utils.path import get_classifier_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TRAJECTORY_LENGTH = 25
+EQUAL_THRESHOLD = 0.5
 
 
 def fill_feedback_from_raw_dataset(cumulative_rewards, pairs):
@@ -30,7 +31,10 @@ def fill_feedback_from_raw_dataset(cumulative_rewards, pairs):
             cumulative_rewards[s1[0] - 1] if s1[0] > 0 else 0
         )
 
-        if np.abs(sum_of_rewards_0 - sum_of_rewards_1) < TRAJECTORY_LENGTH / 2:
+        if (
+            np.abs(sum_of_rewards_0 - sum_of_rewards_1)
+            < TRAJECTORY_LENGTH * EQUAL_THRESHOLD
+        ):
             mu = 0.5
         else:
             mu = 0 if sum_of_rewards_0 > sum_of_rewards_1 else 1
@@ -126,7 +130,6 @@ def generate_classifier_margin_pairs(
     pairs_count_per_round = total_pairs_count // active_round
     pair_algo = "classifier-margin"
     intermediate_pair_algo = f"{pair_algo}-intermediate"
-    obs_dim, act_dim = dataset["observations"].shape[1], dataset["actions"].shape[1]
     cumulative_rewards = np.cumsum(dataset["rewards"], dtype=np.float64)
 
     # remove classifier model if exists
@@ -168,9 +171,11 @@ def generate_classifier_margin_pairs(
             # select feedbacks with the largest margin
             sorted_feedbacks = sorted(
                 candidate_feedback_with_prob,
-                key=lambda x: np.sort(x[3])[0] - np.sort(x[3])[2],
+                key=lambda x: np.sort(x[3])[2] - np.sort(x[3])[0],
             )
             filtered_feedbacks = sorted_feedbacks[: (total_pairs_count // active_round)]
+            print(filtered_feedbacks[0][3])
+            print(filtered_feedbacks[-1][3])
             new_pairs = [(f[0], f[1]) for f in filtered_feedbacks]
 
         new_feedbacks = fill_feedback_from_raw_dataset(
@@ -202,6 +207,7 @@ def generate_classifier_margin_pairs(
                 exp_name=exp_name,
                 pair_algo=intermediate_pair_algo,
                 num_epochs=num_epoch,
+                remove_if_exists=False,
             )
 
     save_feedbacks_npz(
