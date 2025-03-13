@@ -4,7 +4,7 @@ import numpy.lib.recfunctions as rfn
 from data_generation.utils import save_feedbacks_npz
 
 
-def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
+def get_pairs_by_mu_type(mu_type, pair_data, average_reward, reward_info=(0, 1)):
     """
     Args:
         mu_type: str, type of mu
@@ -53,7 +53,7 @@ def get_pairs_by_mu_type(mu_type, pair_data, reward_info=(0, 1)):
         # warning: calculate legnth_values only on the first pair (s0)
         length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
         mu_values = np.where(
-            np.abs(reward_sum_0 - reward_sum_1) < 0.5 * length_values,
+            np.abs(reward_sum_0 - reward_sum_1) < average_reward * length_values * 0.1,
             0.5,
             np.where(reward_sum_0 > reward_sum_1, 0, 1),
         )
@@ -122,10 +122,13 @@ def generate_and_save_full_pairs(
         ],
     )
 
+    average_reward = np.mean(dataset["rewards"])
+
     for mu_type in mu_types:
         feedbacks = get_pairs_by_mu_type(
             mu_type=mu_type,
             pair_data=pairs_with_rewards_np,
+            average_reward=average_reward,
             reward_info=reward_info,
         )
 

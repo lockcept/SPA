@@ -13,10 +13,9 @@ from utils.path import get_classifier_model_path
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TRAJECTORY_LENGTH = 25
-EQUAL_THRESHOLD = 0.5
 
 
-def fill_feedback_from_raw_dataset(cumulative_rewards, pairs):
+def fill_feedback_from_raw_dataset(average_reward, cumulative_rewards, pairs):
     """
     Fill feedback in dataset using cumulative rewards and calculate mu values.
     """
@@ -33,7 +32,7 @@ def fill_feedback_from_raw_dataset(cumulative_rewards, pairs):
 
         if (
             np.abs(sum_of_rewards_0 - sum_of_rewards_1)
-            < TRAJECTORY_LENGTH * EQUAL_THRESHOLD
+            < average_reward * TRAJECTORY_LENGTH * 0.1
         ):
             mu = 0.5
         else:
@@ -131,6 +130,7 @@ def generate_classifier_margin_pairs(
     pair_algo = "classifier-margin"
     intermediate_pair_algo = f"{pair_algo}-intermediate"
     cumulative_rewards = np.cumsum(dataset["rewards"], dtype=np.float64)
+    average_reward = np.mean(dataset["rewards"])
 
     # remove classifier model if exists
     classifier_path = get_classifier_model_path(
@@ -171,7 +171,7 @@ def generate_classifier_margin_pairs(
             # select feedbacks with the largest margin
             sorted_feedbacks = sorted(
                 candidate_feedback_with_prob,
-                key=lambda x: np.sort(x[3])[2] - np.sort(x[3])[0],
+                key=lambda x: np.sort(x[3])[2] - np.sort(x[3])[1],
             )
             filtered_feedbacks = sorted_feedbacks[: (total_pairs_count // active_round)]
             print(filtered_feedbacks[0][3])
@@ -179,6 +179,7 @@ def generate_classifier_margin_pairs(
             new_pairs = [(f[0], f[1]) for f in filtered_feedbacks]
 
         new_feedbacks = fill_feedback_from_raw_dataset(
+            average_reward=average_reward,
             cumulative_rewards=cumulative_rewards,
             pairs=new_pairs,
         )
@@ -193,12 +194,16 @@ def generate_classifier_margin_pairs(
             feedbacks=feedbacks,
         )
 
+        flipped_feedbacks = [
+            (s1, s0, 1.0 - mu) for s0, s1, mu in feedbacks
+        ]
+
         save_feedbacks_npz(
             env_name=env_name,
             exp_name=exp_name,
             pair_type="train",
             pair_name=intermediate_pair_algo,
-            feedbacks=feedbacks,
+            feedbacks=feedbacks + flipped_feedbacks,
         )
 
         if round_num < active_round - 1:
@@ -219,6 +224,7 @@ def generate_classifier_margin_pairs(
     )
 
     val_feedbacks = fill_feedback_from_raw_dataset(
+        average_reward=average_reward,
         cumulative_rewards=cumulative_rewards,
         pairs=val_pairs,
     )

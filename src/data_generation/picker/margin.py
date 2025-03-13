@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TRAJECTORY_LENGTH = 25
 
 
-def fill_feedback_from_raw_dataset(cumulative_rewards, pairs):
+def fill_feedback_from_raw_dataset(average_reward, cumulative_rewards, pairs):
     """
     Fill feedback in dataset using cumulative rewards and calculate mu values.
     """
@@ -27,7 +27,7 @@ def fill_feedback_from_raw_dataset(cumulative_rewards, pairs):
             cumulative_rewards[s1[0] - 1] if s1[0] > 0 else 0
         )
 
-        if np.abs(sum_of_rewards_0 - sum_of_rewards_1) < TRAJECTORY_LENGTH / 2:
+        if np.abs(sum_of_rewards_0 - sum_of_rewards_1) < average_reward * TRAJECTORY_LENGTH * 0.1:
             mu = 0.5
         else:
             mu = 0 if sum_of_rewards_0 > sum_of_rewards_1 else 1
@@ -124,6 +124,7 @@ def generate_active_margin_pairs(
     intermediate_pair_algo = f"{pair_algo}-intermediate"
     obs_dim, act_dim = dataset["observations"].shape[1], dataset["actions"].shape[1]
 
+    average_reward = np.mean(dataset["rewards"])
     cumulative_rewards = np.cumsum(dataset["rewards"], dtype=np.float64)
 
     # remove models if exists
@@ -215,6 +216,7 @@ def generate_active_margin_pairs(
 
         feedbacks.extend(
             fill_feedback_from_raw_dataset(
+                average_reward=average_reward,
                 cumulative_rewards=cumulative_rewards,
                 pairs=new_pairs,
             )
@@ -246,6 +248,7 @@ def generate_active_margin_pairs(
     )
 
     val_feedbacks = fill_feedback_from_raw_dataset(
+        average_reward=average_reward,
         cumulative_rewards=cumulative_rewards,
         pairs=val_pairs,
     )
