@@ -166,6 +166,7 @@ def train(
     group = f"{env_name}_{new_exp_name}_{pair_algo}_{reward_model_algo}"
     configs.update({"group": group})
     configs.update({"name": exp_name})
+    configs.update({"env":env_name, "exp_name": new_exp_name, "pair_algo": pair_algo, "reward_model_algo": reward_model_algo})
     wandb_init(config=configs)
 
     # create policy model
