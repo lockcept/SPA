@@ -168,3 +168,12 @@ def get_classifier_model_path(env_name, exp_name, pair_algo):
     path = f"model/{env_name}/{exp_name}/classifier/{pair_algo}/classifier.pth"
     make_dir_from_path(path)
     return path
+
+
+def get_binary_classifier_model_path(env_name, exp_name, pair_algo):
+    """
+    Return path of binary classifier model file
+    """
+    path = f"model/{env_name}/{exp_name}/classifier/{pair_algo}/binary-classifier.pth"
+    make_dir_from_path(path)
+    return path

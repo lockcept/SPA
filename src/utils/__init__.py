@@ -11,6 +11,7 @@ from .path import (
     get_policy_model_log_path,
     get_encoder_model_path,
     get_classifier_model_path,
+    get_binary_classifier_model_path,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "get_policy_model_log_path",
     "get_encoder_model_path",
     "get_classifier_model_path",
+    "get_binary_classifier_model_path",
 ]

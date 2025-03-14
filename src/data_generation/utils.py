@@ -43,12 +43,8 @@ def generate_pairs_from_indices(
             )
         )
 
-        if min_length == trajectory_length:
-            first_start_point = 0
-            second_start_point = 0
-        else:
-            first_start_point = np.random.randint(0, min_length - trajectory_length)
-            second_start_point = np.random.randint(0, min_length - trajectory_length)
+        first_start_point = np.random.randint(0, min_length - trajectory_length + 1)
+        second_start_point = np.random.randint(0, min_length - trajectory_length + 1)
 
         first_pair = (
             first_trajectory[0] + first_start_point,
