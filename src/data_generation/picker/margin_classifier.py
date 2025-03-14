@@ -74,6 +74,9 @@ def fill_feedback_from_classifier(dataset, pairs, classifier: Classifier):
         processed_data, shuffle=False, drop_last=False
     )
 
+    predicted_list = []
+    probabilities_list = []
+
     with torch.no_grad():
         for batch in dataloader:
             (
@@ -103,10 +106,16 @@ def fill_feedback_from_classifier(dataset, pairs, classifier: Classifier):
                 predicted.cpu().numpy() == 2, 0.5, predicted.cpu().numpy()
             )
 
-            for idx in range(len(s0_obs_batch)):
-                feedbacks.append(
-                    (pairs[idx][0], pairs[idx][1], mu_values[idx], probabilities[idx])
-                )
+            predicted_list.append(mu_values)
+            probabilities_list.append(probabilities)
+
+    predicted_array = np.concatenate(predicted_list, axis=0)
+    probabilities_array = np.concatenate(probabilities_list, axis=0)
+
+    feedbacks = [
+        (s0, s1, pred, prob)
+        for (s0, s1), pred, prob in zip(pairs, predicted_array, probabilities_array)
+    ]
 
     return feedbacks
 
@@ -194,9 +203,7 @@ def generate_classifier_margin_pairs(
             feedbacks=feedbacks,
         )
 
-        flipped_feedbacks = [
-            (s1, s0, 1.0 - mu) for s0, s1, mu in feedbacks
-        ]
+        flipped_feedbacks = [(s1, s0, 1.0 - mu) for s0, s1, mu in feedbacks]
 
         save_feedbacks_npz(
             env_name=env_name,

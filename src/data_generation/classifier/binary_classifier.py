@@ -15,6 +15,7 @@ from utils import (
 from auto_encoder import AutoEncoder
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+same_threshold = 0.66
 
 
 class BinaryClassifier(nn.Module):
@@ -173,8 +174,8 @@ def train_binary_classifier(
             probabilities = torch.softmax(output, dim=1)
 
             predicted = torch.full_like(mu_batch, 2, dtype=torch.long)
-            predicted[probabilities[:, 1] < 0.4] = 0
-            predicted[probabilities[:, 1] > 0.6] = 1
+            predicted[probabilities[:, 1] < 1 - same_threshold] = 0
+            predicted[probabilities[:, 1] > same_threshold] = 1
 
             mu_class_labels = torch.full_like(mu_batch, 2, dtype=torch.long)
             mu_class_labels[mu_batch == 0] = 0
@@ -255,8 +256,8 @@ def evaluate_binary_classifier(model, dataloader, device):
             print(probabilities)
 
             predicted = torch.full_like(mu_batch, 2, dtype=torch.long)
-            predicted[probabilities[:, 1] < 0.4] = 0
-            predicted[probabilities[:, 1] > 0.6] = 1
+            predicted[probabilities[:, 1] < 1 - same_threshold] = 0
+            predicted[probabilities[:, 1] > same_threshold] = 1
 
             correct += ((predicted == mu_class)).sum().item()
             total += (mu_class > -1).sum().item()
