@@ -19,7 +19,7 @@ def generate_pairs_from_using_all(trajectories):
 
 
 def generate_pairs_from_indices(
-    dataset, trajectories, pair_count, trajectory_length, except_same=False
+    dataset, trajectories, pair_count, trajectory_length
 ):
     """
     choose pairs from indices and cut them to have a fixed length with same starting point
@@ -54,12 +54,6 @@ def generate_pairs_from_indices(
             second_trajectory[0] + second_start_point,
             second_trajectory[0] + second_start_point + trajectory_length,
         )
-
-        if except_same:
-            first_rewards = dataset["rewards"][first_pair[0] : first_pair[1]]
-            second_rewards = dataset["rewards"][second_pair[0] : second_pair[1]]
-            if np.sum(first_rewards) == np.sum(second_rewards):
-                continue
 
         pairs.append((first_pair, second_pair))
 
