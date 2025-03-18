@@ -18,7 +18,7 @@ class AutoEncoder(nn.Module):
     """
 
     def __init__(self, input_dim):
-        super(AutoEncoder, self).__init__()
+        super().__init__()
 
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 128),
