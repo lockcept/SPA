@@ -79,16 +79,17 @@ def generate_vae_pairs(
                 trajectory_length=TRAJECTORY_LENGTH,
             )
 
-            pairs, errors = evaluate_vae_error(
+            pairs_with_errors = evaluate_vae_error(
                 env_name=env_name,
                 exp_name=exp_name,
-                pair_algo=pair_algo,
+                pair_algo=intermediate_pair_algo,
                 pairs=candidate_pairs,
             )
 
-            new_pairs = sorted(zip(pairs, errors), key=lambda x: x[1], reverse=True)[
-                :pairs_count_per_round
-            ]
+            new_pairs_with_errors = sorted(
+                pairs_with_errors, key=lambda x: x[1], reverse=True
+            )
+            new_pairs = [x[0] for x in new_pairs_with_errors[:pairs_count_per_round]]
 
         new_feedbacks = fill_feedback_from_raw_dataset(
             average_reward=average_reward,

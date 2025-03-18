@@ -82,22 +82,19 @@ class TrajectoryPairDataset(Dataset):
         return len(self.traj_pairs)
 
     def __getitem__(self, idx):
-        (s1, e1), (s2, e2), _ = self.traj_pairs[idx]
+        (s1, e1), (s2, e2) = self.traj_pairs[idx]
 
         obs_1 = self.observations[s1:e1]
         act_1 = self.actions[s1:e1]
         obs_2 = self.observations[s2:e2]
         act_2 = self.actions[s2:e2]
 
-        traj_1 = np.concatenate([obs_1, act_1])
-        traj_2 = np.concatenate([obs_2, act_2])
+        traj_1 = torch.cat((obs_1, act_1), dim=-1)
+        traj_2 = torch.cat((obs_2, act_2), dim=-1)
 
-        traj_pair = np.concatenate([traj_1, traj_2])
+        traj_pair = torch.cat((traj_1, traj_2), dim=0)
 
-        return torch.tensor(traj_pair, dtype=torch.float32)
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return traj_pair.view(-1).to(device)
 
 
 def loss_function(recon_x, x, mu, logvar):
@@ -122,9 +119,11 @@ def train_vae(
     traj_len = 25
     input_dim = (obs_dim + act_dim) * traj_len
 
-    pairs = load_pair(
+    feedbacks = load_pair(
         env_name=env_name, exp_name=exp_name, pair_type="train", pair_algo=pair_algo
     )
+
+    pairs = [(s0, s1) for s0, s1, _ in feedbacks]
     dataset = TrajectoryPairDataset(dataset, pairs)
     dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True, drop_last=False
@@ -133,13 +132,17 @@ def train_vae(
     model = VAE(input_dim, latent_dim).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    model.load_state_dict(
-        torch.load(model_path, map_location=device, weights_only=True)
-    )
+    if os.path.exists(model_path):
+        model.load_state_dict(
+            torch.load(model_path, map_location=device, weights_only=True)
+        )
+        print(f"Loaded model from {model_path}")
 
     for epoch in range(num_epochs):
         epoch_loss = 0.0
-        progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
+        progress_bar = tqdm(
+            dataloader, desc=f"Epoch {epoch+1}/{num_epochs}", leave=False
+        )
 
         for batch in progress_bar:
             batch = batch.to(device)
@@ -153,9 +156,6 @@ def train_vae(
 
             epoch_loss += loss.item()
             progress_bar.set_postfix({"Loss": f"{loss.item():.6f}"})
-
-        avg_loss = epoch_loss / len(dataloader)
-        print(f"Epoch [{epoch+1}/{num_epochs}] - Loss: {avg_loss:.6f}")
 
     torch.save(model.state_dict(), model_path)
     print(f"Model saved at {model_path}")
@@ -198,7 +198,9 @@ def evaluate_vae_error(
 
     # Load VAE model
     model = VAE(input_dim, latent_dim).to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(
+        torch.load(model_path, map_location=device, weights_only=True)
+    )
     model.eval()
 
     uncertainties = []
