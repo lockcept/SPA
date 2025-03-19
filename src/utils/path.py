@@ -154,9 +154,22 @@ def get_encoder_model_path(
     env_name,
 ):
     """
-    Return path of score model file
+    Return path of encoder model file
     """
     path = f"model/{env_name}/autoencoder/autoencoder.pth"
+    make_dir_from_path(path)
+    return path
+
+
+def get_ae_model_path(
+    env_name,
+    exp_name,
+    pair_algo,
+):
+    """
+    Return path of ae model file
+    """
+    path = f"model/{env_name}/{exp_name}/ae/{pair_algo}.pth"
     make_dir_from_path(path)
     return path
 
@@ -167,7 +180,7 @@ def get_vae_model_path(
     pair_algo,
 ):
     """
-    Return path of score model file
+    Return path of vae model file
     """
     path = f"model/{env_name}/{exp_name}/vae/{pair_algo}.pth"
     make_dir_from_path(path)
