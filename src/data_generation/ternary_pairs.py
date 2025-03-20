@@ -36,15 +36,8 @@ def get_pairs_by_mu_type(mu_type, pair_data, average_reward):
         flip_mask = np.random.choice([0, 1], len(pair_data), p=[0.9, 0.1])
         mu_values = np.where(flip_mask, 1 - mu_values, mu_values)
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
-    elif mu_type == "opposite":
-        flip_mask = np.full(len(pair_data), True)
-        mu_values = np.where(flip_mask, 1 - mu_values, mu_values)
-        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     elif mu_type == "random":
         mu_values = np.random.uniform(0, 1, len(reward_sum_0))
-        pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
-    elif mu_type == "zero":
-        mu_values = np.zeros(len(reward_sum_0))
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
     else:
         pair_data = rfn.append_fields(pair_data, "mu", mu_values, dtypes=float)
@@ -58,6 +51,8 @@ def get_pairs_by_mu_type(mu_type, pair_data, average_reward):
         pair_data = pair_data[:10000]
     elif "1000" in mu_type:
         pair_data = pair_data[:1000]
+    elif "500" in mu_type:
+        pair_data = pair_data[:500]
     else:
         pair_data = pair_data[:1000]
 
@@ -65,7 +60,12 @@ def get_pairs_by_mu_type(mu_type, pair_data, average_reward):
 
 
 def generate_and_save_ternary_pairs(
-    dataset, env_name, exp_name, pair_type, pairs, mu_types,
+    dataset,
+    env_name,
+    exp_name,
+    pair_type,
+    pairs,
+    mu_types,
 ):
     """
     Args:

@@ -18,9 +18,7 @@ def generate_pairs_from_using_all(trajectories):
     return pairs
 
 
-def generate_pairs_from_indices(
-    dataset, trajectories, pair_count, trajectory_length
-):
+def generate_pairs_from_indices(trajectories, pair_count, trajectory_length):
     """
     choose pairs from indices and cut them to have a fixed length with same starting point
     """

@@ -1,17 +1,18 @@
 import numpy as np
+import torch
 
-from data_generation.picker.flip_classifier import generate_classifier_flip_pairs
-from data_generation.picker.margin import generate_active_margin_pairs
-from data_generation.full_pairs import generate_and_save_full_pairs
-from data_generation.picker.margin_classifier import generate_classifier_margin_pairs
 from data_generation.raw_pairs import save_raw_pairs
-from data_generation.scored_pairs import generate_score_pairs
 from data_generation.ternary_pairs import generate_and_save_ternary_pairs
+from data_generation.picker.trajectory_pair_classifier_with_flip import (
+    generate_classifier_flip_pairs,
+)
 from data_generation.utils import (
     generate_pairs_from_indices,
     generate_pairs_from_using_all,
 )
 from data_loading import load_dataset, load_pair, extract_trajectory_indices
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def generate_all_algo_pairs(env_name, exp_name):
@@ -126,12 +127,12 @@ def generate_all_algo_pairs(env_name, exp_name):
             + test_trajectories_cnt
         ]
 
-        print ("Generating train pairs")
+        print("Generating train pairs")
         train_pairs = generate_pairs_from_indices(
-            dataset, train_set, train_pairs_cnt, trajectory_length
+            train_set, train_pairs_cnt, trajectory_length
         )
 
-        print ("Generating train all pairs")
+        print("Generating train all pairs")
         train_all_pairs = generate_pairs_from_using_all(train_set)
 
         all_traj_set = []
@@ -139,14 +140,14 @@ def generate_all_algo_pairs(env_name, exp_name):
             all_traj_set.append(p[0])
             all_traj_set.append(p[1])
 
-        print ("Generating val pairs")
+        print("Generating val pairs")
         val_pairs = generate_pairs_from_indices(
-            dataset, val_set, val_pairs_cnt, trajectory_length
+            val_set, val_pairs_cnt, trajectory_length
         )
 
-        print ("Generating test pairs")
+        print("Generating test pairs")
         test_pairs = generate_pairs_from_indices(
-            dataset, test_set, test_pairs_cnt, trajectory_length
+            test_set, test_pairs_cnt, trajectory_length
         )
 
         # raw
@@ -186,15 +187,7 @@ def generate_all_algo_pairs(env_name, exp_name):
         pair_type="train",
         pairs=train_pairs,
         mu_types=[
-            "1000",
-            "10000",
-            "100000",
-            "flip-1000",
-            "flip-10000",
-            "flip-100000",
-            "opposite",
-            "random",
-            "zero",
+            "500",
         ],
     )
     generate_and_save_ternary_pairs(
@@ -204,15 +197,7 @@ def generate_all_algo_pairs(env_name, exp_name):
         pair_type="val",
         pairs=val_pairs,
         mu_types=[
-            "1000",
-            "10000",
-            "100000",
-            "flip-1000",
-            "flip-10000",
-            "flip-100000",
-            "opposite",
-            "random",
-            "zero",
+            "500",
         ],
     )
     generate_and_save_ternary_pairs(
@@ -221,91 +206,13 @@ def generate_all_algo_pairs(env_name, exp_name):
         exp_name=exp_name,
         pair_type="test",
         pairs=val_pairs,
-        mu_types=["1000"],
+        mu_types=["500"],
     )
 
-    # full
-    # generate_and_save_full_pairs(
-    #     dataset=dataset,
-    #     env_name=env_name,
-    #     exp_name=exp_name,
-    #     pair_type="train",
-    #     pairs=train_pairs,
-    #     mu_types=[
-    #         "binary",
-    #         "linear",
-    #         "binary-with-0.5",
-    #     ],
-    # )
-    # generate_and_save_full_pairs(
-    #     dataset=dataset,
-    #     env_name=env_name,
-    #     exp_name=exp_name,
-    #     pair_type="val",
-    #     pairs=val_pairs,
-    #     mu_types=[
-    #         "binary",
-    #         "linear",
-    #         "binary-with-0.5",
-    #     ],
-    # )
-
-    # test
-    # generate_and_save_full_pairs(
-    #     dataset=dataset,
-    #     env_name=env_name,
-    #     exp_name=exp_name,
-    #     pair_type="test",
-    #     pairs=test_pairs,
-    #     mu_types=["binary"],
-    # )
-
-    # generate_score_pairs(
-    #     dataset=dataset,
-    #     env_name=env_name,
-    #     exp_name=exp_name,
-    #     num_epochs=100,
-    #     pair_algo="full-binary",
-    #     score_model="lstm.exp",
-    #     aug_list=["10000"],
-    #     traj_set=all_traj_set,
-    #     ensemble_size=5,
-    # )
-
-    # generate_active_margin_pairs(
-    #     dataset=dataset,
-    #     env_name=env_name,
-    #     exp_name=exp_name,
-    #     traj_set=all_traj_set,
-    #     val_pairs=val_pairs,
-    #     total_pairs_count=500,
-    #     active_round=5,
-    #     pairs_scale=100,
-    #     num_epoch=100,
-    #     reward_model_algo="MR-linear",
-    #     reward_model_count=3,
-    # )
-
-    # generate_classifier_margin_pairs(
-    #     dataset=dataset,
-    #     env_name=env_name,
-    #     exp_name=exp_name,
-    #     traj_set=all_traj_set,
-    #     val_pairs=val_pairs,
-    #     total_pairs_count=500,
-    #     active_round=10,
-    #     pairs_scale=2000,
-    #     num_epoch=100,
-    # )
-
-    # generate_classifier_flip_pairs(
-    #     dataset=dataset,
-    #     env_name=env_name,
-    #     exp_name=exp_name,
-    #     traj_set=all_traj_set,
-    #     val_pairs=val_pairs,
-    #     total_pairs_count=500,
-    #     active_round=10,
-    #     pairs_scale=2000,
-    #     num_epoch=100,
-    # )
+    generate_classifier_flip_pairs(
+        env_name=env_name,
+        exp_name=exp_name,
+        traj_set=all_traj_set,
+        val_pairs=val_pairs,
+        device=device,
+    )

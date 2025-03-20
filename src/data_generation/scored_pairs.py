@@ -393,9 +393,7 @@ def generate_score_pairs(
                 )
                 aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
             except FileNotFoundError:
-                aug_train_pairs = generate_pairs_from_indices(
-                    dataset, traj_set, 10000, 25
-                )
+                aug_train_pairs = generate_pairs_from_indices(traj_set, 10000, 25)
                 save_raw_pairs(
                     env_name=env_name,
                     exp_name=exp_name,
@@ -422,9 +420,7 @@ def generate_score_pairs(
                 )
                 aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
             except FileNotFoundError:
-                aug_train_pairs = generate_pairs_from_indices(
-                    dataset, traj_set, 50000, 25
-                )
+                aug_train_pairs = generate_pairs_from_indices(traj_set, 50000, 25)
                 save_raw_pairs(
                     env_name=env_name,
                     exp_name=exp_name,
@@ -451,9 +447,7 @@ def generate_score_pairs(
                 )
                 aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
             except FileNotFoundError:
-                aug_train_pairs = generate_pairs_from_indices(
-                    dataset, traj_set, 200000, 25
-                )
+                aug_train_pairs = generate_pairs_from_indices(traj_set, 200000, 25)
 
                 save_raw_pairs(
                     env_name=env_name,
@@ -547,9 +541,7 @@ def generate_score_pairs(
                 )
                 aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
             except FileNotFoundError:
-                aug_train_pairs = generate_pairs_from_indices(
-                    dataset, traj_set, 200000, 25
-                )
+                aug_train_pairs = generate_pairs_from_indices(traj_set, 200000, 25)
 
                 save_raw_pairs(
                     env_name=env_name,
@@ -632,9 +624,7 @@ def generate_score_pairs(
                 )
                 aug_train_pairs = [(pair["s0"], pair["s1"]) for pair in loaded_pairs]
             except FileNotFoundError:
-                aug_train_pairs = generate_pairs_from_indices(
-                    dataset, traj_set, 200000, 25
-                )
+                aug_train_pairs = generate_pairs_from_indices(traj_set, 200000, 25)
 
                 save_raw_pairs(
                     env_name=env_name,
@@ -676,7 +666,7 @@ def generate_score_pairs(
             )
 
         elif aug == "test":
-            aug_train_pairs = generate_pairs_from_indices(dataset, traj_set, 1000, 25)
+            aug_train_pairs = generate_pairs_from_indices(traj_set, 1000, 25)
             new_train_feedback_pairs, _ = fill_feedback_from_pairs(
                 dataset, aug_train_pairs, best_models, linear_loss
             )
