@@ -44,6 +44,7 @@ def plot_pair(env_name_list, exp_name, pair_algo_list):
 def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     dataset = load_dataset(env_name)
     data = load_pair(env_name, exp_name, pair_type, pair_algo)
+    average_reward = np.mean(dataset["rewards"])
 
     answer_count = 0
     total_count = 0
@@ -67,7 +68,11 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
         [segment_sum(start, end) for start, end in zip(s1_starts, s1_ends)]
     )
 
-    mu_values = np.where(rewards_sum_0 > rewards_sum_1, 0.0, np.where(rewards_sum_0 < rewards_sum_1, 1.0, 0.5))
+    mu_values = np.where(
+        np.abs(rewards_sum_0 - rewards_sum_1) < average_reward * 0.1 * 25,
+        0.5,
+        np.where(rewards_sum_0 > rewards_sum_1, 0, 1),
+    )
 
     true_feedbacks = [(data[i][0], data[i][1], mu) for i, mu in enumerate(mu_values)]
     true_feedbacks = np.array(
@@ -85,8 +90,8 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     for i in range(len(true_feedbacks)):
         truth, mean = (true_feedbacks["mu"][i], data["mu"][i])
 
-        if mean == 0.5 or truth == 0.5:
-            continue
+        # if mean == 0.5 or truth == 0.5:
+        #     continue
 
         total_count += 1
         if truth == 0 and mean < 0.5:

@@ -340,7 +340,7 @@ def load_dataset(env_name):
 
 def load_pair(env_name, exp_name, pair_type, pair_algo):
     """
-    {data: [(s0, s1, mu)]}
+    {[(s0, s1, mu)]}
     """
     path = get_pair_path(
         env_name=env_name, exp_name=exp_name, pair_type=pair_type, pair_algo=pair_algo

@@ -18,10 +18,9 @@ def generate_classifier_flip_pairs(
     env_name,
     exp_name,
     traj_set,
-    val_pairs,
     num_epochs=100,
     batch_size=32,
-    top_k=10000,
+    top_k=100000,
     device="cpu",
 ):
     """
@@ -49,7 +48,7 @@ def generate_classifier_flip_pairs(
 
     test_pairs = generate_pairs_from_indices(
         trajectories=traj_set,
-        pair_count=100000,
+        pair_count=500000,
         trajectory_length=TRAJECTORY_LENGTH,
     )
 
@@ -71,10 +70,14 @@ def generate_classifier_flip_pairs(
         pair_type="test",
         pair_algo=test_feedback_name,
         batch_size=batch_size,
+        shuffle=False,
+        drop_last=False,
     )
 
     classifier = TrajectoryPairClassifier(input_dim=43 * 25).to(device)
-    classifier.load_state_dict(torch.load(model_path))
+    classifier.load_state_dict(
+        torch.load(model_path, map_location=device, weights_only=True)
+    )
     classifier.eval()
 
     predicted_mu_list = []
@@ -120,7 +123,7 @@ def generate_classifier_flip_pairs(
             return 0.5
 
     filtered_feedbacks = [
-        (test_pairs[i]["s0"], test_pairs[i]["s1"], categorize_mu(predicted_mu_array[i]))
+        (test_pairs[i][0], test_pairs[i][1], categorize_mu(predicted_mu_array[i]))
         for i in top_indices
     ]
 
@@ -131,7 +134,8 @@ def generate_classifier_flip_pairs(
         pair_algo=train_pair_algo,
     )
 
-    new_feedbacks = existed_feedbacks + filtered_feedbacks
+    existed_feedbacks_list = existed_feedbacks.tolist()
+    new_feedbacks = existed_feedbacks_list + filtered_feedbacks
 
     save_feedbacks_npz(
         env_name=env_name,
@@ -142,10 +146,17 @@ def generate_classifier_flip_pairs(
     )
 
     # save val pairs with same pair_name
+    val_feedbacks = load_pair(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="val",
+        pair_algo=train_pair_algo,
+    )
+
     save_feedbacks_npz(
         env_name=env_name,
         exp_name=exp_name,
         pair_type="val",
         pair_name="flip_augmented",
-        feedbacks=val_pairs,
+        feedbacks=val_feedbacks,
     )

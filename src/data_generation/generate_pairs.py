@@ -213,6 +213,5 @@ def generate_all_algo_pairs(env_name, exp_name):
         env_name=env_name,
         exp_name=exp_name,
         traj_set=all_traj_set,
-        val_pairs=val_pairs,
         device=device,
     )
