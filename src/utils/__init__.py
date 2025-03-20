@@ -13,6 +13,7 @@ from .path import (
     get_vae_model_path,
     get_classifier_model_path,
     get_binary_classifier_model_path,
+    get_trajectory_pair_classifier_path,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "get_vae_model_path",
     "get_classifier_model_path",
     "get_binary_classifier_model_path",
+    "get_trajectory_pair_classifier_path",
 ]

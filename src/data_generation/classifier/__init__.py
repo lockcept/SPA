@@ -4,6 +4,10 @@ from .binary_classifier import (
     get_binary_classifier_model,
     train_binary_classifier,
 )
+from .trajectory_pair_classifier import (
+    TrajectoryPairClassifier,
+    train_trajectory_pair_classifier,
+)
 
 __all__ = [
     "Classifier",
@@ -12,4 +16,6 @@ __all__ = [
     "BinaryClassifier",
     "get_binary_classifier_model",
     "train_binary_classifier",
+    "TrajectoryPairClassifier",
+    "train_trajectory_pair_classifier",
 ]

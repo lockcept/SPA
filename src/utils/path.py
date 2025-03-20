@@ -203,3 +203,12 @@ def get_binary_classifier_model_path(env_name, exp_name, pair_algo):
     path = f"model/{env_name}/{exp_name}/classifier/{pair_algo}/binary-classifier.pth"
     make_dir_from_path(path)
     return path
+
+
+def get_trajectory_pair_classifier_path(env_name, exp_name, pair_algo):
+    """
+    Return path of trajectory pair classifier model file
+    """
+    path = f"model/{env_name}/{exp_name}/classifier/{pair_algo}/trajectory-pair-classifier.pth"
+    make_dir_from_path(path)
+    return path
