@@ -94,9 +94,12 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
         #     continue
 
         total_count += 1
-        if truth == 0 and mean < 0.5:
-            answer_count += 1
-        elif truth == 1 and mean > 0.5:
+        # if truth == 0 and mean < 0.5:
+        #     answer_count += 1
+        # elif truth == 1 and mean > 0.5:
+        #     answer_count += 1
+
+        if truth == mean:
             answer_count += 1
 
     log_path = "log/main_evaluate_pair.csv"

@@ -187,14 +187,16 @@ def evaluate_reward_model(
             mu_batch = mu_batch.unsqueeze(1)
 
             correct_predictions += torch.sum(
-                ((pred_probs_s1 < 0.5) & (mu_batch < 0.5))
-                | ((pred_probs_s1 >= 0.5) & (mu_batch >= 0.5))
+                ((pred_probs_s1 <= 1/2) & (mu_batch == 0))
+                | ((pred_probs_s1 >= 1/2) & (mu_batch == 1))
             ).item()
 
             mse_batch = mse_loss(pred_probs_s1, mu_batch)
             cumulative_mse += mse_batch.item() * mu_batch.size(0)
 
-            total_samples += mu_batch.size(0)
+            total_samples += torch.sum(
+                (mu_batch == 0) | (mu_batch == 1)
+            ).item()
 
     accuracy = correct_predictions / total_samples if total_samples > 0 else 0
     avg_mse = cumulative_mse / total_samples if total_samples > 0 else 0
@@ -237,7 +239,7 @@ def evaluate_and_log_reward_models(
         env_name=env_name,
         exp_name=exp_name,
         pair_type="test",
-        pair_algo="full-binary",
+        pair_algo="ternary-500",
         drop_last=False,
         shuffle=False,
     )
