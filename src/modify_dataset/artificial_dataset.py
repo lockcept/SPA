@@ -96,7 +96,7 @@ def make_artificial_dataset(env_name, exp_name):
             start, end = indices[idx]
             selected_observations.append(observations[start:end])
             selected_actions.append(actions[start:end])
-            selected_rewards.append(rewards[start:end])
+            selected_rewards.append(true_rewards[start:end])
             selected_terminals.append(terminals[start:end])
             selected_true_rewards.append(true_rewards[start:end])
 
