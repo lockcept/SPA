@@ -6,14 +6,14 @@ from data_loading import load_dataset
 from utils import get_new_dataset_path, get_new_dataset_log_path
 
 
-def save_trajectory_lengths(dataset, env_name):
-    terminals, timeouts = dataset["terminals"], dataset["timeouts"]
+def save_trajectory_lengths(dataset, log_path):
+    terminals = dataset["terminals"]
     indices = []
     length = len(terminals)
     start = 0
     success_count = 0
     for i in range(length):
-        if terminals[i] or timeouts[i]:
+        if terminals[i]:
             if "success" in dataset:
                 success = np.sum(dataset["success"][start : i + 1])
                 if success > 0:
@@ -23,11 +23,6 @@ def save_trajectory_lengths(dataset, env_name):
 
     lengths = [end - start for start, end in indices]
     print(success_count, len(indices))
-
-    with open(
-        f"dataset/{env_name}/trajectory_lengths.json", "w", encoding="utf-8"
-    ) as f:
-        json.dump(lengths, f)
 
     print("Number of trajectories: ", len(lengths))
     print("Average length: ", np.mean(lengths))
@@ -39,7 +34,7 @@ def save_trajectory_lengths(dataset, env_name):
     plt.title("Histogram of trajectory lengths")
     plt.xlabel("Length")
     plt.ylabel("Frequency")
-    plt.savefig(f"log/dataset_trajectory_length_{env_name}.png")
+    plt.savefig(log_path, format="png")
 
 
 def save_reward_graph_from_dataset(dataset, log_path, title):
@@ -59,7 +54,8 @@ def save_reward_scatter_from_raw_dataset(dataset, raw_dataset, log_path, title):
     """
     Save the reward scatter plot from the given dataset and raw dataset.
     """
-    raw_rewards = raw_dataset["rewards"]
+    # raw_rewards = raw_dataset["rewards"]
+    raw_rewards = dataset["true_rewards"]
     rewards = dataset["rewards"]
 
     plt.scatter(raw_rewards, rewards, alpha=0.005)
@@ -112,6 +108,15 @@ def save_reward_graph(
         ),
         title,
     )
+    save_trajectory_lengths(dataset, get_new_dataset_log_path(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            reward_model_algo=reward_model_algo,
+            log_file="trajectory_length.png",
+        ), 
+        title,
+    )
 
 
 def analyze_env_dataset(env_name):
@@ -121,4 +126,3 @@ def analyze_env_dataset(env_name):
     dataset = load_dataset(env_name)
     print(dataset["observations"].shape)
     save_reward_graph_from_dataset(dataset, f"log/{env_name}.png", env_name)
-    save_trajectory_lengths(dataset, env_name)

@@ -15,6 +15,7 @@ def make_artificial_dataset(env_name, exp_name):
 
     print("obs_dim:", obs_dim, "act_dim:", act_dim)
 
+    reward_mean = np.mean(dataset["rewards"])
     reward_std = np.std(dataset["rewards"])
 
     # original
@@ -28,7 +29,7 @@ def make_artificial_dataset(env_name, exp_name):
     observations = dataset["observations"]
     actions = dataset["actions"]
     rewards = dataset["rewards"]
-    terminals = dataset["terminals"]
+    terminals = dataset["terminals"] | dataset["timeouts"]
 
     save_data = {
         "observations": observations,
@@ -48,16 +49,13 @@ def make_artificial_dataset(env_name, exp_name):
             reward_model_algo=f"noise_{noise}",
         )
 
-        # add noise for noise 확률
         rewards = true_rewards.copy()
+
         has_noise = np.random.rand(len(rewards)) < noise
 
-        noise_values = np.zeros_like(rewards)
-        noise_values[has_noise] = np.random.normal(
-            loc=0.0, scale=reward_std, size=rewards[has_noise].shape
+        rewards[has_noise] = np.random.normal(
+            loc=reward_mean, scale=reward_std, size=rewards[has_noise].shape
         )
-
-        rewards += noise_values
 
         save_data = {
             "observations": observations,
