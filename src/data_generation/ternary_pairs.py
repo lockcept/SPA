@@ -53,6 +53,10 @@ def get_pairs_by_mu_type(mu_type, pair_data, average_reward):
         pair_data = pair_data[:1000]
     elif "500" in mu_type:
         pair_data = pair_data[:500]
+    elif "200" in mu_type:
+        pair_data = pair_data[:200]
+    elif "100" in mu_type:
+        pair_data = pair_data[:100]
     else:
         pair_data = pair_data[:1000]
 
