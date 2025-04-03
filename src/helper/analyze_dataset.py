@@ -55,7 +55,14 @@ def save_reward_scatter_from_raw_dataset(dataset, raw_dataset, log_path, title):
     Save the reward scatter plot from the given dataset and raw dataset.
     """
     # raw_rewards = raw_dataset["rewards"]
-    raw_rewards = dataset["true_rewards"]
+    if "true_rewards" in dataset:
+        raw_rewards = dataset["true_rewards"]
+    elif raw_dataset["rewards"].shape[0] == dataset["rewards"].shape[0]:
+        raw_rewards = raw_dataset["rewards"]
+    else:
+        raise ValueError(
+            "cannot find true rewards in dataset or raw dataset"
+        )
     rewards = dataset["rewards"]
 
     plt.scatter(raw_rewards, rewards, alpha=0.005)
@@ -115,7 +122,6 @@ def save_reward_graph(
             reward_model_algo=reward_model_algo,
             log_file="trajectory_length.png",
         ), 
-        title,
     )
 
 
