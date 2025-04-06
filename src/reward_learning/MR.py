@@ -113,6 +113,8 @@ class MR(RewardModelBase):
         loss_history = []
         val_loss_history = []
 
+        best_train_loss = float("inf") 
+
         for epoch in tqdm(range(num_epochs), desc="learning MR reward"):
             self.train()
             epoch_loss = 0.0
@@ -154,12 +156,11 @@ class MR(RewardModelBase):
                 writer = csv.writer(file)
                 writer.writerow([epoch + 1, avg_epoch_loss, val_loss])
 
-            # if val_loss < best_loss:
-            #     best_loss = val_loss
-            #     torch.save(self.state_dict(), self.path)
-            #     print(f"New best model saved with Val loss: {val_loss:.4f}")
-
-        torch.save(self.state_dict(), self.path)
+            # train loss가 최소일 때만 저장
+            if avg_epoch_loss < best_train_loss:
+                best_train_loss = avg_epoch_loss
+                torch.save(self.state_dict(), self.path)
+                print(f"New best model saved (Train loss: {avg_epoch_loss:.4f})")
 
     def train_model(self, optimizer, train_loader, val_loader, num_epochs):
         loss_fn = None

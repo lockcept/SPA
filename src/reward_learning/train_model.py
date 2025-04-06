@@ -11,7 +11,7 @@ def train_reward_model(
     reward_model_tag,
     num_epoch,
     train_from_existing=False,
-    no_val_data=False,
+    no_val_data=True,
 ):
     """
     train reward model

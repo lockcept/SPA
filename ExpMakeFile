@@ -21,6 +21,19 @@ reward:
 			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 00 -pa $(algo) -n $(N) -ra $(reward); \
 			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 01 -pa $(algo) -n $(N) -ra $(reward); \
 			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 02 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 03 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 04 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 05 -pa $(algo) -n $(N) -ra $(reward); \
+			python main.py -f 3 -e $(ENV) -exp $(exp) -rt 06 -pa $(algo) -n $(N) -ra $(reward); \
+		)\
+	)
+
+dataset:
+	$(foreach exp, $(EXP_LIST), \
+		$(foreach algo_pair, $(ALGO_PAIRS), \
+			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
+			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
+			python main.py -f 4 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
 		)\
 	)
 
@@ -29,7 +42,6 @@ policy:
 		$(foreach algo_pair, $(ALGO_PAIRS), \
 			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
 			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
-			python main.py -f 4 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
 			python main.py -f 5 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
 		)\
 	)
