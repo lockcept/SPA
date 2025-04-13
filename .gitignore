@@ -200,3 +200,5 @@ model/
 log/
 old_data/
 wandb/
+feedback_stats/
+reward_eval_stats/
