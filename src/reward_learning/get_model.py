@@ -5,7 +5,7 @@ def get_reward_model(reward_model_algo, model_path, allow_existing, obs_dim, act
     """
     Return reward model
     """
-    if reward_model_algo == "MR":
+    if reward_model_algo == "MR-exp":
         model, optimizer = MR.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim},
             path=model_path,
