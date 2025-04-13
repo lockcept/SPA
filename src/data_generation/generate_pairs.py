@@ -21,31 +21,8 @@ def generate_all_algo_pairs(env_name, exp_name):
     """
     dataset = load_dataset(env_name=env_name)
     indices = extract_trajectory_indices(dataset)
-    np.random.shuffle(indices)
 
     trajectory_length = 25
-
-    # hard coded values
-    if len(indices) >= 1800:
-        train_trajectories_cnt = len(indices) - 800
-        val_trajectories_cnt = 400
-        test_trajectories_cnt = 400
-    elif len(indices) >= 1200:
-        train_trajectories_cnt = 1000
-        val_trajectories_cnt = 100
-        test_trajectories_cnt = 100
-    elif len(indices) >= 600:
-        train_trajectories_cnt = 500
-        val_trajectories_cnt = 50
-        test_trajectories_cnt = 50
-    else:
-        train_trajectories_cnt = 100
-        val_trajectories_cnt = 100
-        test_trajectories_cnt = 100
-
-    print(
-        f"train_trajectories_cnt: {train_trajectories_cnt}, val_trajectories_cnt: {val_trajectories_cnt}, test_trajectories_cnt: {test_trajectories_cnt}"
-    )
 
     train_pairs_cnt = 100000
     val_pairs_cnt = 100000
@@ -109,23 +86,9 @@ def generate_all_algo_pairs(env_name, exp_name):
             all_traj_set.append(p[1])
 
     else:
-        if (
-            len(indices)
-            < train_trajectories_cnt + val_trajectories_cnt + test_trajectories_cnt
-        ):
-            print("Not enough trajectories")
-            return
-
-        train_set = indices[:train_trajectories_cnt]
-        val_set = indices[
-            train_trajectories_cnt : train_trajectories_cnt + val_trajectories_cnt
-        ]
-        test_set = indices[
-            train_trajectories_cnt
-            + val_trajectories_cnt : train_trajectories_cnt
-            + val_trajectories_cnt
-            + test_trajectories_cnt
-        ]
+        train_set = [traj for i, traj in enumerate(indices) if i % 5 in (0, 1, 2)]  # 60%
+        val_set   = [traj for i, traj in enumerate(indices) if i % 5 == 3]         # 20%
+        test_set  = [traj for i, traj in enumerate(indices) if i % 5 == 4]         # 20%
 
         print("Generating train pairs")
         train_pairs = generate_pairs_from_indices(
@@ -187,7 +150,10 @@ def generate_all_algo_pairs(env_name, exp_name):
         pair_type="train",
         pairs=train_pairs,
         mu_types=[
+            "100",
+            "200",
             "500",
+            "1000",
         ],
     )
     generate_and_save_ternary_pairs(
@@ -197,7 +163,10 @@ def generate_all_algo_pairs(env_name, exp_name):
         pair_type="val",
         pairs=val_pairs,
         mu_types=[
+            "100",
+            "200",
             "500",
+            "1000",
         ],
     )
     generate_and_save_ternary_pairs(
@@ -206,12 +175,18 @@ def generate_all_algo_pairs(env_name, exp_name):
         exp_name=exp_name,
         pair_type="test",
         pairs=val_pairs,
-        mu_types=["500"],
+        mu_types=[
+            "100",
+            "200",
+            "500",
+            "1000",
+            "100000",
+            ],
     )
 
-    generate_classifier_flip_pairs(
-        env_name=env_name,
-        exp_name=exp_name,
-        traj_set=all_traj_set,
-        device=device,
-    )
+    # generate_classifier_flip_pairs(
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     traj_set=all_traj_set,
+    #     device=device,
+    # )
