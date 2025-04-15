@@ -11,13 +11,14 @@ from data_generation.classifier.trajectory_pair_classifier import (
 )
 from data_generation.utils import generate_pairs_from_indices, save_feedbacks_npz
 from data_loading import get_dataloader, load_pair
-from data_loading.load_data import load_dataset 
+from data_loading.load_data import load_dataset
 from reward_learning.get_model import get_reward_model
 from reward_learning.train_model import train_reward_model
 from utils import get_reward_model_path
 from utils.path import get_trajectory_pair_classifier_path
 
 TRAJECTORY_LENGTH = 25
+
 
 def predict_rewards(
     env_name,
@@ -81,6 +82,7 @@ def predict_rewards(
 
     return predicted_rewards
 
+
 def generate_temp_pairs(
     env_name,
     exp_name,
@@ -113,7 +115,9 @@ def generate_temp_pairs(
         )
 
         dst_path1 = reward_model_path.replace(train_pair_algo, "ternary-500-aug-mr")
-        dst_path2 = reward_model_path.replace(train_pair_algo, "ternary-500-aug-classifier")
+        dst_path2 = reward_model_path.replace(
+            train_pair_algo, "ternary-500-aug-classifier"
+        )
 
         os.makedirs(os.path.dirname(dst_path1), exist_ok=True)
         os.makedirs(os.path.dirname(dst_path2), exist_ok=True)
@@ -122,7 +126,6 @@ def generate_temp_pairs(
         shutil.copy(reward_model_path, dst_path2)
 
     # 3. learn classifier
-
     feedbacks = load_pair(
         env_name=env_name,
         exp_name=exp_name,
@@ -133,8 +136,8 @@ def generate_temp_pairs(
     feedbacks_flipped = []
     for s0, s1, mu in feedbacks:
         feedbacks_flipped.append((s0, s1, mu))
-        feedbacks_flipped.append((s1, s0, 1-mu))
-    
+        feedbacks_flipped.append((s1, s0, 1 - mu))
+
     save_feedbacks_npz(
         env_name=env_name,
         exp_name=exp_name,
@@ -164,7 +167,7 @@ def generate_temp_pairs(
     for p in train_all_pairs_with_mu:
         all_traj_set.append(p[0])
         all_traj_set.append(p[1])
-    
+
     pair_candidates = generate_pairs_from_indices(
         trajectories=traj_set,
         pair_count=100000,
@@ -183,7 +186,7 @@ def generate_temp_pairs(
     feedbacks_mr = []
 
     predicted_rewards = np.array(predicted_rewards)
-    predicted_cumsum = np.cumsum(predicted_rewards)
+    predicted_cumsum = np.cumsum(predicted_rewards, dtype=np.float64)
 
     for i0, i1 in pair_candidates:
         s0, e0 = i0
@@ -195,8 +198,6 @@ def generate_temp_pairs(
         sum_of_rewards_1 = predicted_cumsum[e1 - 1] - (
             predicted_cumsum[s1 - 1] if s1 > 0 else 0
         )
-
-        print(sum_of_rewards_0, sum_of_rewards_1)
 
         mu = (sum_of_rewards_1 + 1e-6) / (sum_of_rewards_0 + sum_of_rewards_1 + 2e-6)
 
@@ -216,8 +217,7 @@ def generate_temp_pairs(
     anchor_score_list.sort(key=lambda x: x[3])
 
     feedbacks_mr_final = [
-        (t0, t1, anchor)
-        for (t0, t1, anchor, _) in anchor_score_list[:10000]
+        (t0, t1, anchor) for (t0, t1, anchor, _) in anchor_score_list[:10000]
     ]
 
     save_feedbacks_npz(
@@ -243,13 +243,11 @@ def generate_temp_pairs(
         pair_algo=f"{train_pair_algo}-flipped",
     )
 
-    classifier = TrajectoryPairClassifier(input_dim=43*25).to(device)
+    classifier = TrajectoryPairClassifier(input_dim=43 * 25).to(device)
     classifier.load_state_dict(torch.load(classifier_model_path))
     classifier.eval()
 
-    pair_candidates_with_zero_mu = [
-        (t0, t1, 0.0) for (t0, t1) in pair_candidates
-    ]
+    pair_candidates_with_zero_mu = [(t0, t1, 0.0) for (t0, t1) in pair_candidates]
     save_feedbacks_npz(
         env_name=env_name,
         exp_name=exp_name,
@@ -294,30 +292,26 @@ def generate_temp_pairs(
 
             predicted_mu_list.append(predicted_mu.cpu().numpy())
             flipped_predicted_mu_list.append(flipped_predicted_mu.cpu().numpy())
-    
+
     predicted_mu_list = np.concatenate(predicted_mu_list, axis=0)
     flipped_predicted_mu_list = np.concatenate(flipped_predicted_mu_list, axis=0)
 
     def closest_anchor(pred_mu, flipped_mu):
-        scores = [
-            (a, abs(pred_mu - a) + abs(flipped_mu - (1 - a)))
-            for a in anchors
-        ]
+        scores = [(a, abs(pred_mu - a) + abs(flipped_mu - (1 - a))) for a in anchors]
         return min(scores, key=lambda x: x[1])  # (anchor, score)
 
     anchor_score_list = [
-        (i, *closest_anchor(predicted_mu_list[i], flipped_predicted_mu_list[i]))  # (index, anchor, score)
+        (
+            i,
+            *closest_anchor(predicted_mu_list[i], flipped_predicted_mu_list[i]),
+        )  # (index, anchor, score)
         for i in range(len(pair_candidates))
     ]
 
     anchor_score_list.sort(key=lambda x: x[2])
 
     final_feedbacks_classifier = [
-        (
-            pair_candidates[i][0], 
-            pair_candidates[i][1], 
-            anchor
-        )
+        (pair_candidates[i][0], pair_candidates[i][1], anchor)
         for i, anchor, _ in anchor_score_list[:10000]
     ]
 
@@ -376,5 +370,3 @@ def generate_temp_pairs(
             reward_model_tag=f"{k:02d}",
             num_epoch=100,
         )
-
-
