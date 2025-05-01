@@ -13,6 +13,11 @@ pairs:
 		python main.py -f 2 -e $(ENV) -exp $(exp); \
 	)
 
+test:
+	$(foreach exp, $(EXP_LIST), \
+		python main.py -f 2.5 -e $(ENV) -exp $(exp); \
+	)
+
 reward:
 	$(foreach exp, $(EXP_LIST), \
 		$(foreach algo_pair, $(ALGO_PAIRS), \
