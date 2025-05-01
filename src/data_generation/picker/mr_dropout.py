@@ -35,6 +35,7 @@ def predict_rewards_with_mc_dropout(
 
     mean_rewards = []
     std_rewards = []
+    uncertainties = []
 
     for start in tqdm(range(0, total_len, batch_size), desc="MC Dropout Batching"):
         end = min(start + batch_size, total_len)
@@ -43,19 +44,22 @@ def predict_rewards_with_mc_dropout(
         act_batch = torch.tensor(act[start:end], dtype=torch.float32, device=device)
 
         with torch.no_grad():
-            mean_batch, std_batch = model.forward_mc(
+            mean_batch, std_batch, uncertainty = model.forward_mc(
                 obs_batch, act_batch, mc_passes=mc_passes
             )
             mean_batch = mean_batch.squeeze(-1)
             std_batch = std_batch.squeeze(-1)
+            uncertainty = uncertainty.squeeze(-1)
 
         mean_rewards.append(mean_batch)
         std_rewards.append(std_batch)
+        uncertainties.append(uncertainty)
 
     mean_rewards = torch.cat(mean_rewards, dim=0)  # [T]
     std_rewards = torch.cat(std_rewards, dim=0)  # [T]
+    uncertainties = torch.cat(uncertainties, dim=0)  # [T]
 
-    return mean_rewards, std_rewards
+    return mean_rewards, std_rewards, uncertainties
 
 
 def mr_dropout_test(env_name, exp_name, pair_algo, device="cuda"):
@@ -68,7 +72,7 @@ def mr_dropout_test(env_name, exp_name, pair_algo, device="cuda"):
         pair_algo=pair_algo,
         reward_model_algo=reward_model_algo,
         reward_model_tag="00",
-        num_epoch=100,
+        num_epoch=500,
     )
 
     # 2. 모델 로드
@@ -111,9 +115,13 @@ def mr_dropout_test(env_name, exp_name, pair_algo, device="cuda"):
     )
 
     # 4. MC Dropout 예측
-    mean_rewards, std_rewards = predict_rewards_with_mc_dropout(
+    mean_rewards, std_rewards, uncertainties = predict_rewards_with_mc_dropout(
         model=model, obs=obs, act=act, device=device, batch_size=1024, mc_passes=10
     )
+
+    print("mean_rewards", mean_rewards)
+    print("std_rewards", std_rewards)
+    print("uncertainties", uncertainties)
 
     predicted_mean_cumsum = np.cumsum(
         mean_rewards.cpu().numpy(), axis=0, dtype=np.float64
@@ -121,10 +129,15 @@ def mr_dropout_test(env_name, exp_name, pair_algo, device="cuda"):
     predicted_std_cumsum = np.cumsum(
         std_rewards.cpu().numpy(), axis=0, dtype=np.float64
     )
+    predicted_uncertainty_cumsum = np.cumsum(
+        uncertainties.cpu().numpy(), axis=0, dtype=np.float64
+    )
 
     reward_cumsum = np.cumsum(dataset["rewards"], axis=0, dtype=np.float64)
 
     data = []
+
+    average_reward = np.mean(dataset["rewards"])
 
     for i0, i1 in pair_candidates:
         s0, e0 = i0
@@ -149,13 +162,27 @@ def mr_dropout_test(env_name, exp_name, pair_algo, device="cuda"):
             predicted_std_cumsum[s1 - 1] if s1 > 0 else 0
         )
 
+        uncertainty_0 = predicted_uncertainty_cumsum[e0 - 1] - (
+            predicted_uncertainty_cumsum[s0 - 1] if s0 > 0 else 0
+        )
+        uncertainty_1 = predicted_uncertainty_cumsum[e1 - 1] - (
+            predicted_uncertainty_cumsum[s1 - 1] if s1 > 0 else 0
+        )
+
         sum_of_rewards_0 = reward_cumsum[e0 - 1] - (
             reward_cumsum[s0 - 1] if s0 > 0 else 0
         )
         sum_of_rewards_1 = reward_cumsum[e1 - 1] - (
             reward_cumsum[s1 - 1] if s1 > 0 else 0
         )
-        mu = (sum_of_rewards_1 + 1e-6) / (sum_of_rewards_0 + sum_of_rewards_1 + 2e-6)
+
+        if (
+            np.abs(sum_of_rewards_0 - sum_of_rewards_1)
+            <= average_reward * TRAJECTORY_LENGTH * 0
+        ):
+            mu = 0.5
+        else:
+            mu = 0 if sum_of_rewards_0 > sum_of_rewards_1 else 1
 
         data.append(
             (
@@ -163,8 +190,12 @@ def mr_dropout_test(env_name, exp_name, pair_algo, device="cuda"):
                 (s1, e1),
                 predicted_mu,
                 mu,
-                predicted_std_0,
-                predicted_std_1,
+                # predicted_std_0,
+                # predicted_std_1,
+                uncertainty_0,
+                uncertainty_1,
+                predicted_sum_of_rewards_0,
+                predicted_sum_of_rewards_1,
             )
         )
 

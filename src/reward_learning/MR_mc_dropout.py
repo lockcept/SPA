@@ -58,25 +58,39 @@ class MRWithMCDropout(RewardModelBase):
 
         self.fc = nn.Linear(hidden_dim, 1)
 
-    def forward(self, obs_t, act_t):
+    def forward(self, obs_t, act_t, return_raw=False):
         combined = torch.cat([obs_t, act_t], dim=-1)
         x = F.relu(self.hidden_layer_1(combined))
         x = self.dropout1(x)
         x = F.relu(self.hidden_layer_2(x))
         x = self.dropout2(x)
-        reward_t = self.fc(x)
-        reward_t = 1 + torch.tanh(reward_t)
+        raw_output = self.fc(x)  # tanh 적용 전 값
+        reward_t = 1 + torch.tanh(raw_output)
 
+        if return_raw:
+            return reward_t, raw_output
         return reward_t
 
-    def forward_mc(self, obs_t, act_t, mc_passes=10):
-        self.train()  # dropout 작동을 위해 train 유지
+    def forward_mc(self, obs_t, act_t, mc_passes=20):
+        self.train()  # dropout 활성화
         preds = []
+        hidden_outputs = []
+
         for _ in range(mc_passes):
             with torch.no_grad():
-                preds.append(self(obs_t, act_t).unsqueeze(0))
-        preds = torch.cat(preds, dim=0)
-        return preds.mean(dim=0), preds.std(dim=0)
+                reward_t, hidden = self.forward(obs_t, act_t, return_raw=True)
+                preds.append(reward_t.unsqueeze(0))   # [1, B, 1]
+                hidden_outputs.append(hidden.unsqueeze(0))  # [1, B, 1]
+
+        preds = torch.cat(preds, dim=0)             # [T, B, 1]
+        hidden_output = torch.cat(hidden_outputs, dim=0)  # [T, B, 1]
+
+        mean_reward = preds.mean(dim=0)             # [B, 1]
+        std_reward = preds.std(dim=0)               # [B, 1]
+
+        hidden_std = hidden_output.std(dim=0)      # [B, 1]
+
+        return mean_reward, std_reward, hidden_std
 
     def evaluate(self, data_loader, loss_fn):
         self.eval()
