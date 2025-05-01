@@ -51,17 +51,20 @@ class MR(RewardModelBase):
         self.hidden_layer_2 = nn.Linear(hidden_dim, hidden_dim)
         self.fc = nn.Linear(hidden_dim, 1)
 
-    def forward(self, obs_t, act_t):
+    def forward(self, obs_t, act_t, return_logit=False):
         combined = torch.cat([obs_t, act_t], dim=-1)
 
         combined = F.relu(self.hidden_layer_1(combined))
         combined = F.relu(self.hidden_layer_2(combined))
 
-        reward_t = self.fc(combined)
+        reward_t_logit = self.fc(combined)
         if self.linear_loss:
-            reward_t = 1 + torch.tanh(reward_t)
+            reward_t = 1 + torch.tanh(reward_t_logit)
         else:
-            reward_t = torch.tanh(reward_t)
+            reward_t = torch.tanh(reward_t_logit)
+        
+        if return_logit:
+            return reward_t, reward_t_logit
         return reward_t
 
     def evaluate(self, data_loader, loss_fn):

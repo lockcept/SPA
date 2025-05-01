@@ -27,6 +27,7 @@ from src.data_loading import (
     save_dataset,
 )
 from src.data_generation import generate_all_algo_pairs
+from src.data_generation.data_research import data_research
 from src.reward_learning import train_reward_model
 from src.policy_learning import train, change_reward_from_all_datasets
 
@@ -218,6 +219,11 @@ if __name__ == "__main__":
         print("Generating preference pairs", env_name, exp_name)
 
         generate_all_algo_pairs(env_name=env_name, exp_name=exp_name)
+    elif function_number == 2.5:
+        # Generate preference pairs
+        print("Function for Research", env_name, exp_name)
+
+        data_research(env_name=env_name, exp_name=exp_name)
     elif function_number == 3:
         # Train reward model
         print("Training reward model")

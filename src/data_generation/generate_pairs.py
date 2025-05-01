@@ -1,6 +1,5 @@
 import torch
 
-from data_generation.picker.temp import generate_temp_pairs
 from data_generation.raw_pairs import save_raw_pairs
 from data_generation.ternary_pairs import generate_and_save_ternary_pairs
 from data_generation.utils import (
@@ -151,6 +150,7 @@ def generate_all_algo_pairs(env_name, exp_name):
             "200",
             "500",
             "1000",
+            "10000",
         ],
     )
     generate_and_save_ternary_pairs(
@@ -164,6 +164,7 @@ def generate_all_algo_pairs(env_name, exp_name):
             "200",
             "500",
             "1000",
+            "10000",
         ],
     )
     generate_and_save_ternary_pairs(
@@ -179,11 +180,4 @@ def generate_all_algo_pairs(env_name, exp_name):
             "1000",
             "100000",
             ],
-    )
-
-    generate_temp_pairs(
-        env_name=env_name,
-        exp_name=exp_name,
-        traj_set=all_traj_set,
-        device=device,
     )
