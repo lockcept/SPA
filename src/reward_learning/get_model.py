@@ -1,4 +1,5 @@
 from reward_learning.MR import MR
+from reward_learning.MR_SURF import MR_SURF
 from reward_learning.MR_mc_dropout import MRWithMCDropout
 
 
@@ -24,6 +25,20 @@ def get_reward_model(reward_model_algo, model_path, allow_existing, obs_dim, act
         model, optimizer = MRWithMCDropout.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim},
             path=model_path,
+            allow_existing=allow_existing,
+        )
+    elif reward_model_algo == "MR-SURF-exp":
+        model, optimizer = MR_SURF.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            linear_loss=False,
+            allow_existing=allow_existing,
+        )
+    elif reward_model_algo == "MR-SURF-linear":
+        model, optimizer = MR_SURF.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            linear_loss=True,
             allow_existing=allow_existing,
         )
     else:

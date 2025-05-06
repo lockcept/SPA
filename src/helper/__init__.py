@@ -5,6 +5,9 @@ from .evaluate_policy_model import evaluate_best_and_last_policy
 from .plot_pair import plot_pair, evaluate_pair
 from .plot_policy_model import plot_policy_models
 from .analyze_pair import analyze_pair
+from .evaluate_reward_model_by_state import (
+    evaluate_reward_by_state,
+)
 
 __all__ = [
     "analyze_env_dataset",
@@ -16,4 +19,5 @@ __all__ = [
     "evaluate_pair",
     "plot_policy_models",
     "analyze_pair",
+    "evaluate_reward_by_state",
 ]

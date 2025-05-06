@@ -22,6 +22,7 @@ from src.helper import (
     evaluate_pair,
     plot_policy_models,
     analyze_pair,
+    evaluate_reward_by_state,
 )
 from src.data_loading import (
     save_dataset,
@@ -183,6 +184,12 @@ if __name__ == "__main__":
             "Evaluating reward model", env_name, exp_name, pair_algo, reward_model_algo
         )
         evaluate_and_log_reward_models(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            reward_model_algo=reward_model_algo,
+        )
+        evaluate_reward_by_state(
             env_name=env_name,
             exp_name=exp_name,
             pair_algo=pair_algo,

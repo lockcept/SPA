@@ -25,8 +25,13 @@ def get_pairs_by_mu_type(mu_type, pair_data, average_reward):
 
     # warning: calculate legnth_values only on the first pair (s0)
     length_values = pair_data["s0"][:, 1] - pair_data["s0"][:, 0]
+    # mu_values = np.where(
+    #     np.abs(reward_sum_0 - reward_sum_1) < average_reward * length_values * 0.1,
+    #     0.5,
+    #     np.where(reward_sum_0 > reward_sum_1, 0, 1),
+    # )
     mu_values = np.where(
-        np.abs(reward_sum_0 - reward_sum_1) < average_reward * length_values * 0.1,
+        np.abs(reward_sum_0 - reward_sum_1) < length_values * 0.5,
         0.5,
         np.where(reward_sum_0 > reward_sum_1, 0, 1),
     )

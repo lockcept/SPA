@@ -163,7 +163,7 @@ class MR(RewardModelBase):
             if avg_epoch_loss < best_train_loss:
                 best_train_loss = avg_epoch_loss
                 torch.save(self.state_dict(), self.path)
-                print(f"New best model saved (Train loss: {avg_epoch_loss:.4f})")
+                # print(f"New best model saved (Train loss: {avg_epoch_loss:.4f})")
 
     def train_model(self, optimizer, train_loader, val_loader, num_epochs):
         loss_fn = None

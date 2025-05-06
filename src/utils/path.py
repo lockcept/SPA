@@ -69,7 +69,7 @@ def get_reward_model_path(
     env_name,
     exp_name,
     pair_algo,
-    reward_model_algo: Literal["MR-exp", "MR-linear"],
+    reward_model_algo: Literal["MR-exp", "MR-linear", "MR-SURF-exp", "MR-SURF-linear"],
     reward_model_tag,
 ):
     """
@@ -84,7 +84,7 @@ def get_reward_model_log_path(
     env_name,
     exp_name,
     pair_algo,
-    reward_model_algo: Literal["MR-exp", "MR-linear"],
+    reward_model_algo: Literal["MR-exp", "MR-linear", "MR-SURF-exp", "MR-SURF-linear"],
     log_file,
 ):
     """
@@ -123,7 +123,7 @@ def get_policy_model_path(
     env_name,
     exp_name,
     pair_algo,
-    reward_model_algo: Literal["MR-exp", "MR-linear"],
+    reward_model_algo: Literal["MR-exp", "MR-linear", "MR-SURF-exp", "MR-SURF-linear"],
 ):
     """
     Return path of policy model file
@@ -137,7 +137,7 @@ def get_policy_model_log_path(
     env_name,
     exp_name,
     pair_algo,
-    reward_model_algo: Literal["MR-exp", "MR-linear"],
+    reward_model_algo: Literal["MR-exp", "MR-linear", "MR-SURF-exp", "MR-SURF-linear"],
     log_file,
 ):
     """

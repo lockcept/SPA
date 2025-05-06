@@ -119,6 +119,7 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
                     "EnvName",
                     "ExpName",
                     "PairAlgo",
+                    "Count",
                     "Accuracy",
                 ]
             )
@@ -130,6 +131,7 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
                 env_name,
                 exp_name,
                 pair_algo,
+                total_count,
                 formatted_accuracy,
             ]
         )
