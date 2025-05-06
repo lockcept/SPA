@@ -239,7 +239,7 @@ def evaluate_and_log_reward_models(
         env_name=env_name,
         exp_name=exp_name,
         pair_type="test",
-        pair_algo="ternary-500",
+        pair_algo="binary-10000",
         drop_last=False,
         shuffle=False,
     )

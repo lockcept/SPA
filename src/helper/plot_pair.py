@@ -69,10 +69,15 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     )
 
     mu_values = np.where(
-        np.abs(rewards_sum_0 - rewards_sum_1) < average_reward * 0.1 * 25,
+        np.abs(rewards_sum_0 - rewards_sum_1) < 0.5 * 25,
         0.5,
         np.where(rewards_sum_0 > rewards_sum_1, 0, 1),
     )
+    # mu_values = np.where(
+    #     np.abs(rewards_sum_0 - rewards_sum_1) < average_reward * 0.1 * 25,
+    #     0.5,
+    #     np.where(rewards_sum_0 > rewards_sum_1, 0, 1),
+    # )
 
     true_feedbacks = [(data[i][0], data[i][1], mu) for i, mu in enumerate(mu_values)]
     true_feedbacks = np.array(

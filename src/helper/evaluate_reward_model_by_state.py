@@ -97,7 +97,7 @@ def evaluate_reward_by_state(
     if write_header:
         with open(csv_path, mode="w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["env_name", "exp_name", "pair_algo", "pcc", "order_agreement"])
+            writer.writerow(["env_name", "exp_name", "pair_algo", "reward_model_algo", "pcc", "order_agreement"])
 
     predicted_rewards = predict_rewards(
         env_name=env_name,
@@ -146,6 +146,7 @@ def evaluate_reward_by_state(
             env_name,
             exp_name,
             pair_algo,
+            reward_model_algo,
             f"{pcc:.6f}",
             f"{order_agreement:.6f}",
         ])

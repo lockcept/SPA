@@ -1,5 +1,6 @@
 import torch
 
+from data_generation.binary_pairs import generate_and_save_binary_pairs
 from data_generation.raw_pairs import save_raw_pairs
 from data_generation.ternary_pairs import generate_and_save_ternary_pairs
 from data_generation.utils import (
@@ -178,6 +179,22 @@ def generate_all_algo_pairs(env_name, exp_name):
             "200",
             "500",
             "1000",
+            "100000",
+            ],
+    )
+
+    generate_and_save_binary_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="test",
+        pairs=val_pairs,
+        mu_types=[
+            "100",
+            "200",
+            "500",
+            "1000",
+            "10000",
             "100000",
             ],
     )
