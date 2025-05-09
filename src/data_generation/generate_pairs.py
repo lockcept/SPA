@@ -152,6 +152,7 @@ def generate_all_algo_pairs(env_name, exp_name):
             "500",
             "1000",
             "10000",
+            "100000",
         ],
     )
     generate_and_save_ternary_pairs(

@@ -69,7 +69,7 @@ def evaluate_pair(env_name, exp_name, pair_type, pair_algo):
     )
 
     mu_values = np.where(
-        np.abs(rewards_sum_0 - rewards_sum_1) < 0.5 * 25,
+        np.abs(rewards_sum_0 - rewards_sum_1) < 0.0 * 25,
         0.5,
         np.where(rewards_sum_0 > rewards_sum_1, 0, 1),
     )
