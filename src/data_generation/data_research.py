@@ -118,7 +118,7 @@ def train_mr_with_conf_filter(
     exp_name,
     result,
     pair_algo="ternary-500",
-    unlabel_pair_algo="ternary-10000",
+    unlabel_pair_algo="unlabel-100000",
     threshold=0.999,
 ):
     data = np.array(result)
@@ -179,7 +179,7 @@ def train_mr_with_conf_filter(
             num_epoch=num_epoch,
         )
 
-def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="ternary-10000", min_k=10, max_k=20, use_knn=False):
+def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="unlabel-100000", n=10000, min_k=10, max_k=20, use_knn=False):
     data = np.array(result)
     mean = data[:, 1]
     std = data[:, 2]
@@ -199,6 +199,8 @@ def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="ternary-1
     for p in unlabel_feedbacks:
         trajectories.append(p[0])
         trajectories.append(p[1])
+    
+    trajectories = trajectories[:n]  # n개만 사용
 
     traj_data = []
     for (s, e) in trajectories:
@@ -252,7 +254,7 @@ def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="ternary-1
 
     return buckets
 
-def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo="ternary-500", unlabel_pair_algo="ternary-10000", new_pair_name="aug-bucket", num_per_bucket_pair=100, z=3.1, threshold=0.99, use_conf=False):
+def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo="ternary-500", unlabel_pair_algo="unlabel-100000", new_pair_name="aug-bucket", n=10000, num_per_bucket_pair=100, z=3.1, threshold=0.99, use_conf=False):
     unlabel_feedbacks = load_pair(
         env_name=env_name,
         exp_name=exp_name,
@@ -263,6 +265,8 @@ def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo=
     for p in unlabel_feedbacks:
         trajectories.append(p[0])
         trajectories.append(p[1])
+
+    trajectories = trajectories[:n]  # n개만 사용
 
     feedbacks_bucket = []
     k = len(buckets)
@@ -364,7 +368,7 @@ def data_research(env_name, exp_name):
         env_name=env_name,
         exp_name=exp_name,
         result=result,
-        unlabel_pair_algo="ternary-10000",
+        unlabel_pair_algo="unlabel-100000",
         min_k=10,
         max_k=20,
         use_knn=False,
@@ -380,7 +384,7 @@ def data_research(env_name, exp_name):
         exp_name=exp_name,
         buckets=buckets,
         label_pair_algo="ternary-500",
-        unlabel_pair_algo="ternary-10000",
+        unlabel_pair_algo="unlabel-100000",
         new_pair_name=new_pair_name,
         num_per_bucket_pair=100,
         z=3.1,
