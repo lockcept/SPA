@@ -1,5 +1,8 @@
+import os
 from data_generation.utils import save_feedbacks_npz
 import random
+
+from utils.path import get_pair_path
 
 def generate_and_save_unlabel_pairs(
     env_name,
@@ -11,6 +14,14 @@ def generate_and_save_unlabel_pairs(
     label_n=500,
     trajectory_length=25,
 ):
+    pair_name = f"unlabel-{n}"
+    save_path = get_pair_path(env_name, exp_name, pair_type, pair_name)
+
+    # 이미 존재하는 경우 스킵
+    if os.path.exists(save_path):
+        print(f"Already exists: {save_path} — skipping generation.")
+        return
+
     # 1. trajectory set 생성
     traj_set = set()
     for s, e in all_trajs:
@@ -46,6 +57,6 @@ def generate_and_save_unlabel_pairs(
         env_name=env_name,
         exp_name=exp_name,
         pair_type=pair_type,
-        pair_name=f"unlabel-{n}",
+        pair_name=pair_name,
         feedbacks=feedbacks,
     )

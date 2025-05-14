@@ -115,7 +115,7 @@ def wandb_init(config: dict) -> None:
 def train(
     env_name,
     exp_name,
-    pair_algo,
+    pair_algo: str,
     reward_model_algo,
 ):
     """
@@ -161,9 +161,10 @@ def train(
     # wandb
 
     configs.update({"seed": seed})
-    configs.update({"project": "AESPA"})
+    configs.update({"project": "CUDA"})
     new_exp_name = '-'.join(exp_name.split('-')[:-1])
-    group = f"{pair_algo}_{reward_model_algo}"
+    simple_pair_algo = pair_algo.replace("ternary-", "t-").replace("bucket-","buc-")
+    group = f"{simple_pair_algo}_{reward_model_algo}"
     configs.update({"group": group})
     configs.update({"name": exp_name})
     configs.update({"env":env_name, "exp_name": new_exp_name, "pair_algo": pair_algo, "reward_model_algo": reward_model_algo})

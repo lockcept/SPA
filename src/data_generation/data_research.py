@@ -1,15 +1,12 @@
-import csv
 import glob
-import itertools
-import os
+from math import comb
 from random import sample, shuffle
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import torch
 import numpy as np
 from tqdm import tqdm
-from data_generation.picker.mr_dropout import mr_dropout_test
-from data_generation.utils import generate_pairs_from_indices, save_feedbacks_npz
+from data_generation.utils import save_feedbacks_npz
 from data_loading.load_data import load_dataset, load_pair
 from reward_learning.get_model import get_reward_model
 from reward_learning.train_model import train_reward_model
@@ -98,11 +95,11 @@ def predict_rewards(
 
 
 
-def train_mr(env_name, exp_name, label_pair_algo="ternary-500", unlabel_pair_algo="ternary-10000", reward_model_algo="MR-exp"):
+def train_mr(env_name, exp_name, n=7, label_pair_algo="ternary-500", unlabel_pair_algo="ternary-10000", reward_model_algo="MR-exp"):
     # -------------------------------
-    # MR 모델 7개 학습 (라벨: ternary-500)
+    # MR 모델 학습 (라벨: ternary-500)
     # -------------------------------
-    for i in range(7):
+    for i in range(n):
         train_reward_model(
             env_name=env_name,
             exp_name=exp_name,
@@ -254,7 +251,7 @@ def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="unlabel-1
 
     return buckets
 
-def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo="ternary-500", unlabel_pair_algo="unlabel-100000", new_pair_name="aug-bucket", n=10000, num_per_bucket_pair=100, z=3.1, threshold=0.99, use_conf=False):
+def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo="ternary-500", unlabel_pair_algo="unlabel-100000", new_pair_name="aug-bucket", n=10000, m=10000, z=3.1, threshold=0.99, use_conf=False, use_ratio=False):
     unlabel_feedbacks = load_pair(
         env_name=env_name,
         exp_name=exp_name,
@@ -270,6 +267,35 @@ def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo=
 
     feedbacks_bucket = []
     k = len(buckets)
+
+    # bucket 크기 정보
+    bucket_sizes = [len(b) for b in buckets]
+    pair_count = np.zeros((k, k), dtype=int)
+
+    if use_ratio:
+        # 비례 분배
+        total_weight = 0
+        weight_matrix = np.zeros((k, k))
+        for i in range(k):
+            for j in range(i + 1, k):
+                w = bucket_sizes[i] * bucket_sizes[j]
+                weight_matrix[i, j] = w
+                total_weight += w
+
+        for i in range(k):
+            for j in range(i + 1, k):
+                weight = weight_matrix[i, j]
+                pair_count[i, j] = int(round(m * weight / total_weight))
+
+    else:
+        # 균등 분배
+        total_pairs = comb(k, 2)
+        uniform_count = m // total_pairs
+        for i in range(k):
+            for j in range(i + 1, k):
+                pair_count[i, j] = uniform_count
+
+    feedbacks_bucket = []
 
     for i in range(k):
         for j in range(i + 1, k):
@@ -295,9 +321,9 @@ def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo=
                         if upper_i < lower_j:
                             local_pairs.append((s0, s1, 1.0)) 
 
-            # 무작위로 top_k_per_pair만 선택
-            if len(local_pairs) > num_per_bucket_pair:
-                feedbacks_bucket.extend(sample(local_pairs, num_per_bucket_pair))
+            alloc = pair_count[i, j]
+            if len(local_pairs) > alloc:
+                feedbacks_bucket.extend(sample(local_pairs, alloc))
             elif len(local_pairs) > 0:
                 feedbacks_bucket.extend(local_pairs)
 
@@ -321,6 +347,8 @@ def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo=
         pair_name=pair_name,
         feedbacks=feedbacks_bucket,
     )
+
+    return pair_name
 
 
 def train_aug_mr(
@@ -353,49 +381,90 @@ def data_research(env_name, exp_name):
     train_mr(
         env_name=env_name,
         exp_name=exp_name,
-        reward_model_algo="MR-SURF-exp"
+        n=3,
+        reward_model_algo="MR-linear"
     )
+
+    # train_mr(
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     reward_model_algo="MR-SURF-exp"
+    # )
 
     train_mr(
         env_name=env_name,
         exp_name=exp_name,
+        n=3,
         reward_model_algo="MR-SURF-linear",
     )
 
     result = predict_rewards(env_name, exp_name, pair_algo="ternary-500", reward_model_algo="MR-exp")
 
-    buckets = divide_into_buckets(
-        env_name=env_name,
-        exp_name=exp_name,
-        result=result,
-        unlabel_pair_algo="unlabel-100000",
-        min_k=10,
-        max_k=20,
-        use_knn=False,
-    )
+    use_knn = False
     use_conf = False
-    if use_conf:
-        new_pair_name = "aug-bucket-conf"
-    else:
-        new_pair_name = "aug-bucket"
+    use_ratio = False
+    m = 10000
+    mu = 0.99
+    z = 3.1
+    min_k = 10
+    max_k = 20
 
-    extract_feedbacks_from_buckets(
-        env_name=env_name,
-        exp_name=exp_name,
-        buckets=buckets,
-        label_pair_algo="ternary-500",
-        unlabel_pair_algo="unlabel-100000",
-        new_pair_name=new_pair_name,
-        num_per_bucket_pair=100,
-        z=3.1,
-        threshold=0.99,
-        use_conf=False,
-    )
+    params = [ # (use_knn, use_conf, use_ratio, m, mu, z, min_k, max_k) ]
+        (False, False, False, m, mu, z, min_k, max_k),
+        (False, True, False, m, mu, z, min_k, max_k),
+        (True, False, False, m, mu, z, min_k, max_k),
+        (True, False, True, m, mu, z, min_k, max_k),
+    ]
 
-    train_aug_mr(
-        env_name=env_name,
-        exp_name=exp_name,
-        pair_algo="ternary-500",
-        aug_pair_algo=new_pair_name,
-        reward_model_algo="MR-linear",
-    )
+    for param in params:
+        use_knn, use_conf, use_ratio, m, mu, z, min_k, max_k = param
+
+        new_pair_name = "aug"
+        new_pair_name = new_pair_name + f"-{m}"
+
+        if use_knn:
+            new_pair_name = new_pair_name + "-bucket-knn"
+
+            if use_ratio:
+                new_pair_name = new_pair_name + "-ratio"
+            
+            new_pair_name = new_pair_name + f"-{min_k}-{max_k}"
+        else:
+            new_pair_name = new_pair_name + f"-bucket-{max_k}"
+        
+        if use_conf:
+            new_pair_name = new_pair_name + f"-conf-{mu}"
+        else:
+            new_pair_name = new_pair_name + f"-uncert-{z}"
+
+        buckets = divide_into_buckets(
+            env_name=env_name,
+            exp_name=exp_name,
+            result=result,
+            unlabel_pair_algo="unlabel-100000",
+            min_k=min_k,
+            max_k=max_k,
+            use_knn=use_knn,
+        )
+
+        extract_feedbacks_from_buckets(
+            env_name=env_name,
+            exp_name=exp_name,
+            buckets=buckets,
+            label_pair_algo="ternary-500",
+            unlabel_pair_algo="unlabel-100000",
+            new_pair_name=new_pair_name,
+            m=m,
+            z=z,
+            threshold=mu,
+            use_conf=False,
+            use_ratio=use_ratio,
+        )
+
+        train_aug_mr(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo="ternary-500",
+            aug_pair_algo=new_pair_name,
+            reward_model_algo="MR-linear",
+        )
