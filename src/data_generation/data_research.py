@@ -16,11 +16,14 @@ from utils.path import get_reward_model_path
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 num_epoch = 200
 
+
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
+
 def get_total_reward(s, e, reward_cumsum):
     return reward_cumsum[e - 1] - (reward_cumsum[s - 1] if s > 0 else 0)
+
 
 def predict_rewards(
     env_name,
@@ -74,7 +77,9 @@ def predict_rewards(
             model_rewards.append(rewards.cpu().detach().numpy())
             model_logits.append(logits.cpu().detach().numpy())
 
-        return np.concatenate(model_rewards, axis=0), np.concatenate(model_logits, axis=0)
+        return np.concatenate(model_rewards, axis=0), np.concatenate(
+            model_logits, axis=0
+        )
 
     predicted_rewards = []
     predicted_logits = []
@@ -85,17 +90,23 @@ def predict_rewards(
         predicted_logits.append(pred_logits)
 
     preds_array = np.stack(predicted_rewards, axis=0)  # [7, T]
-    pred_mean = preds_array.mean(axis=0)              # [T]
-    pred_std = preds_array.std(axis=0)                # [T]
-    logit_std = np.array(predicted_logits).std(axis=0)           # [T]
+    pred_mean = preds_array.mean(axis=0)  # [T]
+    pred_std = preds_array.std(axis=0)  # [T]
+    logit_std = np.array(predicted_logits).std(axis=0)  # [T]
 
     true_rewards = dataset["rewards"]
     result = list(zip(true_rewards, pred_mean, pred_std, logit_std))
     return result
 
 
-
-def train_mr(env_name, exp_name, n=7, label_pair_algo="ternary-500", unlabel_pair_algo="ternary-10000", reward_model_algo="MR-exp"):
+def train_mr(
+    env_name,
+    exp_name,
+    n=7,
+    label_pair_algo="ternary-500",
+    unlabel_pair_algo="ternary-10000",
+    reward_model_algo="MR-exp",
+):
     # -------------------------------
     # MR 모델 학습 (라벨: ternary-500)
     # -------------------------------
@@ -109,6 +120,7 @@ def train_mr(env_name, exp_name, n=7, label_pair_algo="ternary-500", unlabel_pai
             reward_model_tag=f"{i:02d}",
             num_epoch=num_epoch,
         )
+
 
 def train_mr_with_conf_filter(
     env_name,
@@ -142,9 +154,11 @@ def train_mr_with_conf_filter(
         # mu가 threshold 이상인 경우만 confident_pairs에 추가
         if mu > threshold or mu < 1 - threshold:
             new_mu = 1 if mu > 0.5 else 0
-            feedbacks_to_augment.append(((s0,e0), (s1,e1), new_mu))
+            feedbacks_to_augment.append(((s0, e0), (s1, e1), new_mu))
 
-    print(f"[{len(feedbacks_to_augment)} / {len(unlabel_feedbacks)}] confident pairs selected")
+    print(
+        f"[{len(feedbacks_to_augment)} / {len(unlabel_feedbacks)}] confident pairs selected"
+    )
 
     # 라벨 데이터 + 필터된 무라벨 데이터 합치기
     labeled_feedbacks = load_pair(
@@ -176,7 +190,17 @@ def train_mr_with_conf_filter(
             num_epoch=num_epoch,
         )
 
-def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="unlabel-100000", n=10000, min_k=10, max_k=20, use_knn=False):
+
+def divide_into_buckets(
+    env_name,
+    exp_name,
+    result,
+    unlabel_pair_algo="unlabel-100000",
+    n=10000,
+    min_k=10,
+    max_k=20,
+    use_knn=False,
+):
     data = np.array(result)
     mean = data[:, 1]
     std = data[:, 2]
@@ -184,7 +208,7 @@ def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="unlabel-1
     mean_cum = np.cumsum(mean, dtype=np.float64)
     var_cum = np.cumsum(var, dtype=np.float64)
 
-    unlabel_feedbacks = load_pair( 
+    unlabel_feedbacks = load_pair(
         env_name=env_name,
         exp_name=exp_name,
         pair_type="train",
@@ -196,11 +220,11 @@ def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="unlabel-1
     for p in unlabel_feedbacks:
         trajectories.append(p[0])
         trajectories.append(p[1])
-    
+
     trajectories = trajectories[:n]  # n개만 사용
 
     traj_data = []
-    for (s, e) in trajectories:
+    for s, e in trajectories:
         r = get_total_reward(s, e, mean_cum)
         v = get_total_reward(s, e, var_cum)
         std_ = np.sqrt(v)
@@ -236,22 +260,38 @@ def divide_into_buckets(env_name, exp_name, result, unlabel_pair_algo="unlabel-1
         bucket_mean_rewards = []
         for i in range(best_k):
             rewards_in_bucket = [r for (_, r, _) in buckets[i]]
-            mean_r = np.mean(rewards_in_bucket) if rewards_in_bucket else float('inf')
+            mean_r = np.mean(rewards_in_bucket) if rewards_in_bucket else float("inf")
             bucket_mean_rewards.append((i, mean_r))
 
         # reward 평균 기준으로 index 재정렬
-        sorted_bucket_indices = [i for i, _ in sorted(bucket_mean_rewards, key=lambda x: x[1])]
+        sorted_bucket_indices = [
+            i for i, _ in sorted(bucket_mean_rewards, key=lambda x: x[1])
+        ]
         sorted_buckets = [buckets[i] for i in sorted_bucket_indices]
         buckets = sorted_buckets  # overwrite
 
     else:
         # k-means 클러스터링
-        k = max_k 
+        k = max_k
         buckets = [traj_data[n * i // k : n * (i + 1) // k] for i in range(k)]
 
     return buckets
 
-def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo="ternary-500", unlabel_pair_algo="unlabel-100000", new_pair_name="aug-bucket", n=10000, m=10000, z=3.1, threshold=0.99, use_conf=False, use_ratio=False):
+
+def extract_feedbacks_from_buckets(
+    env_name,
+    exp_name,
+    buckets,
+    label_pair_algo="ternary-500",
+    unlabel_pair_algo="unlabel-100000",
+    new_pair_name="aug-bucket",
+    n=10000,
+    m=10000,
+    z=3.1,
+    threshold=0.99,
+    use_conf=False,
+    use_ratio=False,
+):
     unlabel_feedbacks = load_pair(
         env_name=env_name,
         exp_name=exp_name,
@@ -314,12 +354,12 @@ def extract_feedbacks_from_buckets(env_name, exp_name, buckets, label_pair_algo=
 
                     if use_conf:
                         if sigmoid(r1 - r0) > threshold:
-                            local_pairs.append((s0, s1, 1.0))  
+                            local_pairs.append((s0, s1, 1.0))
                         if sigmoid(r0 - r1) > threshold:
                             local_pairs.append((s0, s1, 0.0))
                     else:
                         if upper_i < lower_j:
-                            local_pairs.append((s0, s1, 1.0)) 
+                            local_pairs.append((s0, s1, 1.0))
 
             alloc = pair_count[i, j]
             if len(local_pairs) > alloc:
@@ -368,22 +408,14 @@ def train_aug_mr(
             num_epoch=num_epoch,
         )
 
+
 def data_research(env_name, exp_name):
     """
     Research function for data generation and analysis.
     """
-    train_mr(
-        env_name=env_name,
-        exp_name=exp_name,
-        reward_model_algo="MR-exp"
-    )
+    train_mr(env_name=env_name, exp_name=exp_name, reward_model_algo="MR-exp")
 
-    train_mr(
-        env_name=env_name,
-        exp_name=exp_name,
-        n=3,
-        reward_model_algo="MR-linear"
-    )
+    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="MR-linear")
 
     # train_mr(
     #     env_name=env_name,
@@ -398,7 +430,9 @@ def data_research(env_name, exp_name):
         reward_model_algo="MR-SURF-linear",
     )
 
-    result = predict_rewards(env_name, exp_name, pair_algo="ternary-500", reward_model_algo="MR-exp")
+    result = predict_rewards(
+        env_name, exp_name, pair_algo="ternary-500", reward_model_algo="MR-exp"
+    )
 
     use_knn = False
     use_conf = False
@@ -409,7 +443,7 @@ def data_research(env_name, exp_name):
     min_k = 10
     max_k = 20
 
-    params = [ # (use_knn, use_conf, use_ratio, m, mu, z, min_k, max_k) ]
+    params = [  # (use_knn, use_conf, use_ratio, m, mu, z, min_k, max_k) ]
         (False, False, False, m, mu, z, min_k, max_k),
         (False, True, False, m, mu, z, min_k, max_k),
         (True, False, False, m, mu, z, min_k, max_k),
@@ -427,11 +461,11 @@ def data_research(env_name, exp_name):
 
             if use_ratio:
                 new_pair_name = new_pair_name + "-ratio"
-            
+
             new_pair_name = new_pair_name + f"-{min_k}-{max_k}"
         else:
             new_pair_name = new_pair_name + f"-bucket-{max_k}"
-        
+
         if use_conf:
             new_pair_name = new_pair_name + f"-conf-{mu}"
         else:

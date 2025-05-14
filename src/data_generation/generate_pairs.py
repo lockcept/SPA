@@ -1,6 +1,7 @@
 import torch
 
 from data_generation.binary_pairs import generate_and_save_binary_pairs
+from data_generation.lire_pairs import generate_and_save_lire_pairs
 from data_generation.raw_pairs import save_raw_pairs
 from data_generation.ternary_pairs import generate_and_save_ternary_pairs
 from data_generation.unlabel_pairs import generate_and_save_unlabel_pairs
@@ -84,9 +85,11 @@ def generate_all_algo_pairs(env_name, exp_name):
             all_traj_set.append(p[1])
 
     else:
-        train_set = [traj for i, traj in enumerate(indices) if i % 5 in (0, 1, 2, 3)]  # 80%
-        val_set   = [traj for i, traj in enumerate(indices) if i % 10 == 4]         # 10%
-        test_set  = [traj for i, traj in enumerate(indices) if i % 10 == 9]         # 10%
+        train_set = [
+            traj for i, traj in enumerate(indices) if i % 5 in (0, 1, 2, 3)
+        ]  # 80%
+        val_set = [traj for i, traj in enumerate(indices) if i % 10 == 4]  # 10%
+        test_set = [traj for i, traj in enumerate(indices) if i % 10 == 9]  # 10%
 
         print("Generating train pairs")
         train_pairs = generate_pairs_from_indices(
@@ -182,7 +185,7 @@ def generate_all_algo_pairs(env_name, exp_name):
             "500",
             "1000",
             "100000",
-            ],
+        ],
     )
 
     generate_and_save_unlabel_pairs(
@@ -209,5 +212,12 @@ def generate_all_algo_pairs(env_name, exp_name):
             "1000",
             "10000",
             "100000",
-            ],
+        ],
+    )
+
+    generate_and_save_lire_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
     )
