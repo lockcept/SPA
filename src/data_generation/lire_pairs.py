@@ -28,7 +28,7 @@ def insert_into_buckets(traj, buckets, cum_rewards):
     while low <= high:
         mid = (low + high) // 2
         sample = random.choice(buckets[mid])
-        mu = binary_compare(traj, sample, cum_rewards)
+        mu = binary_compare(sample, traj, cum_rewards)
         compare_count += 1
 
         if mu == 0.5:
