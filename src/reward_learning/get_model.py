@@ -42,10 +42,17 @@ def get_reward_model(reward_model_algo, model_path, allow_existing, obs_dim, act
             linear_loss=True,
             allow_existing=allow_existing,
         )
-    elif reward_model_algo == "PT":
+    elif reward_model_algo == "PT-exp":
         model, optimizer = PT.initialize(
             config={"obs_dim": obs_dim, "act_dim": act_dim},
             path=model_path,
+            allow_existing=allow_existing,
+        )
+    elif reward_model_algo == "PT-linear":
+        model, optimizer = PT.initialize(
+            config={"obs_dim": obs_dim, "act_dim": act_dim},
+            path=model_path,
+            linear_loss=True,
             allow_existing=allow_existing,
         )
     else:

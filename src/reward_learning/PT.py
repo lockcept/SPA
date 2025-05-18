@@ -139,9 +139,12 @@ class PT(RewardModelBase):
         optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
         return model, optimizer
 
-    def __init__(self, obs_dim, act_dim, path):
+    def __init__(self, obs_dim, act_dim, path, linear_loss=False):
         super().__init__({}, path)
-        self.loss_fn = BradleyTerryLoss()
+        if linear_loss:
+            self.loss_fn = LinearLoss()
+        else:
+            self.loss_fn = BradleyTerryLoss()
         self.model = PreferenceTransformer(obs_dim=obs_dim, act_dim=act_dim)
 
     def forward(self, obs_t, act_t, timestep=None, attn_mask=None):
@@ -214,3 +217,17 @@ class BradleyTerryLoss(nn.Module):
         if not torch.all((0.0 < prob_s1_wins) & (prob_s1_wins < 1.0)):
             print("⚠️ WARNING: Some sigmoid outputs are outside (0, 1) range!")
         return self.cross_entropy_loss(prob_s1_wins, mu)
+
+
+class LinearLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.cross_entropy_loss = nn.BCELoss()
+
+    def forward(self, rewards_s0, rewards_s1, mu):
+        rewards_s0 = 1.0 + torch.tanh(rewards_s0)
+        rewards_s1 = 1.0 + torch.tanh(rewards_s1)
+
+        linear_ratio = (rewards_s1 + 1e-6) / (rewards_s1 + rewards_s0 + 2e-6)
+
+        return self.cross_entropy_loss(linear_ratio, mu)
