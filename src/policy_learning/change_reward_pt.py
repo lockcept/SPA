@@ -11,7 +11,7 @@ from utils.path import get_reward_model_path
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def change_reward_and_save_pt(env_name, exp_name, pair_algo, seq_len=25):
+def change_reward_and_save_pt(env_name, exp_name, pair_algo, is_linear=False, seq_len=25):
     # 원본 dataset 불러오기
     dataset = load_dataset(env_name)
     obs = dataset["observations"]
@@ -21,7 +21,10 @@ def change_reward_and_save_pt(env_name, exp_name, pair_algo, seq_len=25):
     act_dim = act.shape[1]
 
     # 모델 불러오기
-    reward_model_algo = "PT"
+    if is_linear:
+        reward_model_algo = "PT-linear"
+    else:
+        reward_model_algo = "PT-exp"
     model_path_pattern = get_reward_model_path(
         env_name=env_name,
         exp_name=exp_name,

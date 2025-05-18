@@ -119,12 +119,12 @@ class PreferenceTransformer(nn.Module):
 
 class PT(RewardModelBase):
     @staticmethod
-    def initialize(config, path=None, allow_existing=True):
+    def initialize(config, path=None, allow_existing=True, linear_loss=False):
         obs_dim = config.get("obs_dim")
         act_dim = config.get("act_dim")
         lr = config.get("lr", 1e-4)
 
-        model = PT(obs_dim=obs_dim, act_dim=act_dim, path=path)
+        model = PT(obs_dim=obs_dim, act_dim=act_dim, path=path, linear_loss=linear_loss)
 
         if path is not None and os.path.isfile(path):
             if not allow_existing:
