@@ -60,7 +60,11 @@ def change_reward_and_save_pt(env_name, exp_name, pair_algo, seq_len=25):
         rewards_per_model = []
 
         for reward_model in model_list:
-            rewards = []
+            padded_obs_list = []
+            padded_act_list = []
+            timestep_list = []
+            attn_mask_list = []
+
             for t in range(T):
                 if t < seq_len - 1:
                     padded_obs = np.concatenate(
@@ -87,43 +91,37 @@ def change_reward_and_save_pt(env_name, exp_name, pair_algo, seq_len=25):
                     timestep = np.arange(1, seq_len + 1)
                     attn_mask = np.ones(seq_len)
 
-                input = {
-                    "observations": torch.tensor(
-                        padded_obs[None], dtype=torch.float32
-                    ).to(device),
-                    "actions": torch.tensor(padded_act[None], dtype=torch.float32).to(
-                        device
-                    ),
-                    "timestep": torch.tensor(timestep[None], dtype=torch.long).to(
-                        device
-                    ),
-                    "attn_mask": torch.tensor(attn_mask[None], dtype=torch.float32).to(
-                        device
-                    ),
-                }
-                if torch.isnan(input["observations"]).any():
-                    print(f"⚠️ NaN in obs at t={t}")
-                if torch.isnan(input["actions"]).any():
-                    print(f"⚠️ NaN in act at t={t}")
-                if torch.isnan(input["timestep"]).any():
-                    print(f"⚠️ NaN in timestep at t={t}")
-                if torch.isnan(input["attn_mask"]).any():
-                    print(f"⚠️ NaN in attn_mask at t={t}")
-                if input["attn_mask"].sum() == 0:
-                    print(f"⚠️ All attn_mask=0 at t={t}")
+                padded_obs_list.append(padded_obs)
+                padded_act_list.append(padded_act)
+                timestep_list.append(timestep)
+                attn_mask_list.append(attn_mask)
 
-                with torch.no_grad():
-                    reward = reward_model(
-                        input["observations"],
-                        input["actions"],
-                        input["timestep"],
-                        input["attn_mask"],
-                    )
-                    rewards.append(reward.item())
+            input = {
+                "observations": torch.tensor(
+                    np.array(padded_obs_list), dtype=torch.float32
+                ).to(device),
+                "actions": torch.tensor(
+                    np.array(padded_act_list), dtype=torch.float32
+                ).to(device),
+                "timestep": torch.tensor(np.array(timestep_list), dtype=torch.int32).to(
+                    device
+                ),
+                "attn_mask": torch.tensor(
+                    np.array(attn_mask_list), dtype=torch.float32
+                ).to(device),
+            }
 
-            rewards_per_model.append(np.array(rewards))
+            with torch.no_grad():
+                reward = reward_model(
+                    input["observations"],  # shape [T, seq_len, obs_dim]
+                    input["actions"],  # shape [T, seq_len, act_dim]
+                    input["timestep"],  # shape [T, seq_len]
+                    input["attn_mask"],  # shape [T, seq_len]
+                )
+                rewards = reward.squeeze(-1).cpu().numpy()  # shape [T]
 
-        # 모델 평균 reward
+            rewards_per_model.append(rewards)
+
         mean_rewards = np.mean(rewards_per_model, axis=0)
         predicted_rewards.append(mean_rewards)
 
