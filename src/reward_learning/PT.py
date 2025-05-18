@@ -141,6 +141,7 @@ class PT(RewardModelBase):
 
     def __init__(self, obs_dim, act_dim, path, linear_loss=False):
         super().__init__({}, path)
+        self.linear_loss = linear_loss
         if linear_loss:
             self.loss_fn = LinearLoss()
         else:
@@ -152,7 +153,12 @@ class PT(RewardModelBase):
         if timestep is None:
             timestep = torch.arange(T, device=obs_t.device).unsqueeze(0).repeat(B, 1)
         out, _ = self.model(obs_t, act_t, timestep, attn_mask)
-        return out["weighted_sum"]
+        reward = out["weighted_sum"]
+
+        if self.linear_loss:
+            reward = 1.0 + torch.tanh(reward)
+
+        return reward
 
     def evaluate(self, data_loader, loss_fn=None):
         self.eval()
