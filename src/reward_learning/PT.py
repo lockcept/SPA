@@ -220,8 +220,8 @@ class BradleyTerryLoss(nn.Module):
         prob_s1_wins = torch.sigmoid(rewards_s1 - rewards_s0).squeeze()
         diff = rewards_s1 - rewards_s0
         prob_s1_wins = torch.sigmoid(diff)
-        if not torch.all((0.0 < prob_s1_wins) & (prob_s1_wins < 1.0)):
-            print("⚠️ WARNING: Some sigmoid outputs are outside (0, 1) range!")
+        # if not torch.all((0.0 < prob_s1_wins) & (prob_s1_wins < 1.0)):
+        #     print("⚠️ WARNING: Some sigmoid outputs are outside (0, 1) range!")
         return self.cross_entropy_loss(prob_s1_wins, mu)
 
 

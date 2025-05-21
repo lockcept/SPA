@@ -1,6 +1,8 @@
 import glob
 from math import comb
+import os
 from random import sample, shuffle
+import random
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import torch
@@ -8,9 +10,10 @@ import numpy as np
 from tqdm import tqdm
 from data_generation.utils import save_feedbacks_npz
 from data_loading.load_data import load_dataset, load_pair
+from policy_learning.change_reward_pt import change_reward_and_save_pt
 from reward_learning.get_model import get_reward_model
 from reward_learning.train_model import train_reward_model
-from utils.path import get_reward_model_path
+from utils.path import get_pair_path, get_reward_model_path
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -106,6 +109,7 @@ def train_mr(
     label_pair_algo="ternary-500",
     unlabel_pair_algo="ternary-10000",
     reward_model_algo="MR-exp",
+    num_epoch=num_epoch,
 ):
     # -------------------------------
     # MR 모델 학습 (라벨: ternary-500)
@@ -277,6 +281,115 @@ def divide_into_buckets(
 
     return buckets
 
+def extract_feedbacks_without_buckets(
+    env_name,
+    exp_name,
+    result,
+    label_pair_algo="ternary-500",
+    unlabel_pair_algo="unlabel-100000",
+    new_pair_name="aug-bucket",
+    n=10000,
+    m=10000,
+    z=3.1,
+    threshold=0.99,
+    use_conf=False,
+):
+    pair_name = f"{label_pair_algo}-{new_pair_name}"
+
+    save_path = get_pair_path(env_name, exp_name, pair_name, pair_name)
+
+    # 이미 존재하는 경우 스킵
+    if os.path.exists(save_path):
+        print(f"Already exists: {save_path} — skipping generation.")
+        return
+
+    unlabeled_feedbacks = load_pair(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
+        pair_algo=unlabel_pair_algo,
+    )
+
+    data = np.array(result)
+    mean = data[:, 1]
+    std = data[:, 2]
+    var = std**2
+    mean_cum = np.cumsum(mean, dtype=np.float64)
+    var_cum = np.cumsum(var, dtype=np.float64)
+
+    # trajectory list 생성
+    trajectories = []
+    for p in unlabeled_feedbacks:
+        trajectories.append(p[0])
+        trajectories.append(p[1])
+    trajectories = trajectories[:n]
+
+    traj_data = []
+    for s, e in trajectories:
+        r = get_total_reward(s, e, mean_cum)
+        v = get_total_reward(s, e, var_cum)
+        std_ = np.sqrt(v)
+        traj_data.append(((s, e), r, std_))
+
+    seen_pairs = set()
+    feedbacks = []
+    total = len(traj_data)
+
+    pbar = tqdm(total=m, desc="Sampling confident feedbacks")
+    while len(feedbacks) < m:
+        i, j = random.sample(range(total), 2)
+        if i == j:
+            continue
+
+        pair_key = (min(i, j), max(i, j))
+        if pair_key in seen_pairs:
+            continue
+        seen_pairs.add(pair_key)
+
+        t0 = traj_data[i]
+        t1 = traj_data[j]
+
+        if t0[1] > t1[1]:
+            t0, t1 = t1, t0
+        
+        (s0, r0, std0) = t0
+        (s1, r1, std1) = t1
+
+        if use_conf:
+            mu = sigmoid(r1 - r0)
+            if mu > threshold:
+                feedbacks.append((s0, s1, 1.0))
+                pbar.update(1)
+            elif 1 - mu > threshold:
+                feedbacks.append((s0, s1, 0.0))
+                pbar.update(1)
+        else:
+            upper_0 = r0 + z * std0
+            lower_1 = r1 - z * std1
+
+            if upper_0 < lower_1:
+                feedbacks.append((s0, s1, 1.0))
+                pbar.update(1)
+
+    pbar.close()
+
+    labeled_feedbacks = load_pair(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
+        pair_algo=label_pair_algo,
+    ).tolist()
+
+    feedbacks = labeled_feedbacks + feedbacks
+
+    save_feedbacks_npz(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
+        pair_name=pair_name,
+        feedbacks=feedbacks,
+    )
+
 
 def extract_feedbacks_from_buckets(
     env_name,
@@ -413,9 +526,12 @@ def data_research(env_name, exp_name):
     """
     Research function for data generation and analysis.
     """
-    train_mr(env_name=env_name, exp_name=exp_name, reward_model_algo="MR-exp")
 
-    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="MR-linear")
+    label_pair_algo = "ternary-500"
+
+    # train_mr(env_name=env_name, exp_name=exp_name, reward_model_algo="MR-exp")
+
+    # train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="MR-linear")
 
     # train_mr(
     #     env_name=env_name,
@@ -423,31 +539,62 @@ def data_research(env_name, exp_name):
     #     reward_model_algo="MR-SURF-exp"
     # )
 
-    train_mr(
+    # train_mr(
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     n=3,
+    #     reward_model_algo="MR-SURF-linear",
+    # )
+    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-exp", label_pair_algo=label_pair_algo, num_epoch=200)
+    change_reward_and_save_pt(
         env_name=env_name,
         exp_name=exp_name,
-        n=3,
-        reward_model_algo="MR-SURF-linear",
+        pair_algo=label_pair_algo,
+        is_linear=False,
+    )
+
+    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-exp", label_pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1", num_epoch=200)
+    change_reward_and_save_pt(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1",
+        is_linear=False,
+    )
+
+    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-linear", label_pair_algo=label_pair_algo, num_epoch=200)
+    change_reward_and_save_pt(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=label_pair_algo,
+        is_linear=True,
+    )
+
+    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-linear", label_pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1", num_epoch=200)
+    change_reward_and_save_pt(
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1",
+        is_linear=True,
     )
 
     result = predict_rewards(
-        env_name, exp_name, pair_algo="ternary-500", reward_model_algo="MR-exp"
+        env_name, exp_name, pair_algo=label_pair_algo, reward_model_algo="MR-exp"
     )
 
     use_knn = False
     use_conf = False
     use_ratio = False
     m = 10000
-    mu = 0.99
+    mu = 0.999
     z = 3.1
     min_k = 10
     max_k = 20
 
     params = [  # (use_knn, use_conf, use_ratio, m, mu, z, min_k, max_k) ]
-        (False, False, False, m, mu, z, min_k, max_k),
-        (False, True, False, m, mu, z, min_k, max_k),
-        (True, False, False, m, mu, z, min_k, max_k),
-        (True, False, True, m, mu, z, min_k, max_k),
+        # (False, False, False, m, mu, z, min_k, max_k),
+        # (False, True, False, m, mu, z, min_k, max_k),
+        # (True, False, False, m, mu, z, min_k, max_k),
+        # (True, False, True, m, mu, z, min_k, max_k),
     ]
 
     for param in params:
@@ -485,7 +632,7 @@ def data_research(env_name, exp_name):
             env_name=env_name,
             exp_name=exp_name,
             buckets=buckets,
-            label_pair_algo="ternary-500",
+            label_pair_algo=label_pair_algo,
             unlabel_pair_algo="unlabel-100000",
             new_pair_name=new_pair_name,
             m=m,
@@ -498,7 +645,44 @@ def data_research(env_name, exp_name):
         train_aug_mr(
             env_name=env_name,
             exp_name=exp_name,
+            pair_algo=label_pair_algo,
+            aug_pair_algo=new_pair_name,
+            reward_model_algo="MR-linear",
+        )
+
+    params_no_bucket = [ # (use_conf, m, mu, z) ]
+        # (False, m, mu, z),
+        # (True, m, mu, z),
+    ]
+
+    for param in params_no_bucket:
+        use_conf, m, mu, z = param
+
+        new_pair_name = "aug"
+        new_pair_name = new_pair_name + f"-{m}"
+
+        if use_conf:
+            new_pair_name = new_pair_name + f"-conf-{mu}"
+        else:
+            new_pair_name = new_pair_name + f"-uncert-{z}"
+
+        extract_feedbacks_without_buckets(
+            env_name=env_name,
+            exp_name=exp_name,
+            result=result,
+            unlabel_pair_algo="unlabel-100000",
+            new_pair_name=new_pair_name,
+            m=m,
+            z=z,
+            threshold=mu,
+            use_conf=use_conf,
+        )
+
+        train_aug_mr(
+            env_name=env_name,
+            exp_name=exp_name,
             pair_algo="ternary-500",
             aug_pair_algo=new_pair_name,
             reward_model_algo="MR-linear",
         )
+

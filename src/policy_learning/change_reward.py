@@ -79,8 +79,20 @@ def change_reward_from_all_datasets(env_name, exp_name, pair_algo, reward_model_
         reward_model_algo=reward_model_algo,
         reward_model_tag="*",
     )
+
     model_files = glob.glob(model_path_pattern)
     model_list = []
+
+    # 사전순 정렬
+    model_files_sorted = sorted(model_files)
+
+    # 상위 n개만 사용
+    n = 3  # 원하는 개수로 설정
+    model_files = model_files_sorted[:n]
+
+    print(f"Using top {n} models:")
+    for path in model_files:
+        print(" -", path)
 
     for model_file in model_files:
         model, _ = get_reward_model(

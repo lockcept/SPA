@@ -8,6 +8,9 @@ from .analyze_pair import analyze_pair
 from .evaluate_reward_model_by_state import (
     evaluate_reward_by_state,
 )
+from .evaluate_reward_from_dataset import (
+    evaluate_existing_reward_dataset,
+)
 
 __all__ = [
     "analyze_env_dataset",
@@ -20,4 +23,5 @@ __all__ = [
     "plot_policy_models",
     "analyze_pair",
     "evaluate_reward_by_state",
+    "evaluate_existing_reward_dataset",
 ]

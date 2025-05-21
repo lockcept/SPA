@@ -23,6 +23,7 @@ from src.helper import (
     plot_policy_models,
     analyze_pair,
     evaluate_reward_by_state,
+    evaluate_existing_reward_dataset,
 )
 from src.data_loading import (
     save_dataset,
@@ -201,6 +202,16 @@ if __name__ == "__main__":
         print("Analyzing changed dataset")
 
         save_reward_graph(env_name, exp_name, pair_algo, reward_model_algo)
+    elif function_number == -4.1:
+        # Evaluate reward model
+        print("Evaluating reward model", env_name, exp_name, pair_algo, reward_model_algo)
+
+        evaluate_existing_reward_dataset(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            reward_model_algo=reward_model_algo,
+        )
     elif function_number == -5:
         # Plot policy evaluation
 
