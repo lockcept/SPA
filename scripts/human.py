@@ -1,23 +1,49 @@
+import os
+import ast
 import numpy as np
+import itertools
 
-file_path = "scripts/human.txt" 
-data_list = []
+# === human-lire.txt 기반 ===
+lire_path = "scripts/human-lire.txt"
+bucket_dict = {}
 
-with open(file_path, "r") as file:
+with open(lire_path, "r") as file:
     for line in file:
-        s0_val, s1_val, mu_val = map(int, line.strip().split())
+        if not line.strip():
+            continue
+        b_idx_str, list_str = line.strip().split(" ", 1)
+        b_idx = int(b_idx_str)
+        traj_list = ast.literal_eval(list_str.strip())
+        bucket_dict[b_idx] = traj_list
 
-        s0 = (s0_val, s0_val + 25)
-        s1 = (s1_val, s1_val + 25)
+# 1. 모든 trajectory (start, end), 그리고 그에 대응하는 bucket index를 저장
+all_trajs = []  # (start, end, bucket_index)
 
-        mu_map = {1: 0.0, 2: 0.5, 3: 1.0}
-        mu = mu_map.get(mu_val, 0.5)
+for b_idx, traj_list in bucket_dict.items():
+    for start in traj_list:
+        all_trajs.append(((start, start + 25), b_idx))
 
-        data_list.append((s0, s1, mu))
+# 2. 모든 nC2 쌍에 대해 bucket index 비교로 mu 생성
+lire_data = []
 
-pair_data = np.array(data_list, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f4")])
+for (s0, b0), (s1, b1) in itertools.combinations(all_trajs, 2):
+    if b0 == b1:
+        mu = 0.5
+    elif b0 < b1:
+        mu = 0.0
+    else:
+        mu = 1.0
 
-print(pair_data)
+    lire_data.append((s0, s1, mu))
+    lire_data.append((s1, s0, 1.0 - mu))  # 반대 쌍도 추가
 
+# 3. 저장
+lire_array = np.array(
+    lire_data, dtype=[("s0", "i4", (2,)), ("s1", "i4", (2,)), ("mu", "f4")]
+)
 
-np.savez("scripts/human.npz", data=pair_data)
+save_dir = "pair/HUMAN/train"
+os.makedirs(save_dir, exist_ok=True)
+np.savez(os.path.join(save_dir, "human-lire.npz"), data=lire_array)
+
+print(f"human-lire.npz pairs: {len(lire_array)}")
