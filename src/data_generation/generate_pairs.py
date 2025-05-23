@@ -3,6 +3,7 @@ import torch
 from data_generation.binary_pairs import generate_and_save_binary_pairs
 from data_generation.lire_pairs import generate_and_save_lire_pairs
 from data_generation.raw_pairs import save_raw_pairs
+from data_generation.seq_pairs import generate_and_save_seq_pairs
 from data_generation.ternary_pairs import generate_and_save_ternary_pairs
 from data_generation.unlabel_pairs import generate_and_save_unlabel_pairs
 from data_generation.utils import (
@@ -216,6 +217,13 @@ def generate_all_algo_pairs(env_name, exp_name):
     )
 
     generate_and_save_lire_pairs(
+        dataset=dataset,
+        env_name=env_name,
+        exp_name=exp_name,
+        pair_type="train",
+    )
+
+    generate_and_save_seq_pairs(
         dataset=dataset,
         env_name=env_name,
         exp_name=exp_name,
