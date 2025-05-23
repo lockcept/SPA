@@ -27,7 +27,7 @@ def generate_and_save_seq_pairs(
 
     if os.path.exists(save_path):
         print(f"Already exists: {save_path} — skipping generation.")
-        # return
+        return
 
     feedbacks = load_pair(
         env_name=env_name,
@@ -60,7 +60,6 @@ def generate_and_save_seq_pairs(
             node_list.append(root)
             for node in node_list:
                 seq_feedbacks.append((node, challenger, 1.0))
-            print(f"feedback appended {len(node_list)}")
             root = challenger
         elif mu == 0.0:
             seq_feedbacks.append((root, challenger, 0.0))
