@@ -545,37 +545,37 @@ def data_research(env_name, exp_name):
     #     n=3,
     #     reward_model_algo="MR-SURF-linear",
     # )
-    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-exp", label_pair_algo=label_pair_algo, num_epoch=200)
-    change_reward_and_save_pt(
-        env_name=env_name,
-        exp_name=exp_name,
-        pair_algo=label_pair_algo,
-        is_linear=False,
-    )
+    # train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-exp", label_pair_algo=label_pair_algo, num_epoch=200)
+    # change_reward_and_save_pt(
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     pair_algo=label_pair_algo,
+    #     is_linear=False,
+    # )
 
-    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-exp", label_pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1", num_epoch=200)
-    change_reward_and_save_pt(
-        env_name=env_name,
-        exp_name=exp_name,
-        pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1",
-        is_linear=False,
-    )
+    # train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-exp", label_pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1", num_epoch=200)
+    # change_reward_and_save_pt(
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1",
+    #     is_linear=False,
+    # )
 
-    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-linear", label_pair_algo=label_pair_algo, num_epoch=200)
-    change_reward_and_save_pt(
-        env_name=env_name,
-        exp_name=exp_name,
-        pair_algo=label_pair_algo,
-        is_linear=True,
-    )
+    # train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-linear", label_pair_algo=label_pair_algo, num_epoch=200)
+    # change_reward_and_save_pt(
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     pair_algo=label_pair_algo,
+    #     is_linear=True,
+    # )
 
-    train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-linear", label_pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1", num_epoch=200)
-    change_reward_and_save_pt(
-        env_name=env_name,
-        exp_name=exp_name,
-        pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1",
-        is_linear=True,
-    )
+    # train_mr(env_name=env_name, exp_name=exp_name, n=3, reward_model_algo="PT-linear", label_pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1", num_epoch=200)
+    # change_reward_and_save_pt(
+    #     env_name=env_name,
+    #     exp_name=exp_name,
+    #     pair_algo=f"{label_pair_algo}-aug-10000-bucket-20-uncert-3.1",
+    #     is_linear=True,
+    # )
 
     result = predict_rewards(
         env_name, exp_name, pair_algo=label_pair_algo, reward_model_algo="MR-exp"
@@ -595,6 +595,14 @@ def data_research(env_name, exp_name):
         # (False, True, False, m, mu, z, min_k, max_k),
         # (True, False, False, m, mu, z, min_k, max_k),
         # (True, False, True, m, mu, z, min_k, max_k),
+        (False, False, False, m, mu, z, 2, 5),
+        (True, False, True, m, mu, z, 2, 5),
+        (False, False, False, m, mu, z, 5, 10),
+        (True, False, True, m, mu, z, 5, 10),
+        (False, False, False, m, mu, z, 25, 50),
+        (True, False, True, m, mu, z, 25, 50),
+        (False, False, False, m, mu, z, 50, 100),
+        (True, False, True, m, mu, z, 50, 100),
     ]
 
     for param in params:
