@@ -3,7 +3,8 @@ import os
 import shutil
 
 # 검색 패턴 설정
-search_pattern = "model/drawer-open-v2/*/policy/ternary-500/MR-exp**"
+search_pattern = "dataset/*/CUDA*"
+# search_pattern = "model/*/*/reward/ternary-500-aug-10000-bucket-knn-ratio-10-20-uncert-2.3**"
 paths = glob.glob(search_pattern, recursive=True)
 
 # 필터링: 실제 존재하는 경로만
@@ -19,7 +20,7 @@ else:
     for path in paths:
         if os.path.isfile(path):
             print(f"[FILE ] {path}")
-            # os.remove(path)
+            os.remove(path)
         elif os.path.isdir(path):
             print(f"[DIR  ] {path}")
             # shutil.rmtree(path)

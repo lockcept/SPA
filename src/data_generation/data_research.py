@@ -595,14 +595,7 @@ def data_research(env_name, exp_name):
         # (False, True, False, m, mu, z, min_k, max_k),
         # (True, False, False, m, mu, z, min_k, max_k),
         # (True, False, True, m, mu, z, min_k, max_k),
-        (False, False, False, m, mu, z, 2, 5),
-        (True, False, True, m, mu, z, 2, 5),
-        (False, False, False, m, mu, z, 5, 10),
-        (True, False, True, m, mu, z, 5, 10),
-        (False, False, False, m, mu, z, 25, 50),
-        (True, False, True, m, mu, z, 25, 50),
-        (False, False, False, m, mu, z, 50, 100),
-        (True, False, True, m, mu, z, 50, 100),
+        (True, True, True, m, mu, z, min_k, max_k),
     ]
 
     for param in params:
@@ -650,17 +643,18 @@ def data_research(env_name, exp_name):
             use_ratio=use_ratio,
         )
 
-        train_aug_mr(
-            env_name=env_name,
-            exp_name=exp_name,
-            pair_algo=label_pair_algo,
-            aug_pair_algo=new_pair_name,
-            reward_model_algo="MR-linear",
-        )
+        # train_aug_mr(
+        #     env_name=env_name,
+        #     exp_name=exp_name,
+        #     pair_algo=label_pair_algo,
+        #     aug_pair_algo=new_pair_name,
+        #     reward_model_algo="MR-linear",
+        # )
 
     params_no_bucket = [ # (use_conf, m, mu, z) ]
         # (False, m, mu, z),
         # (True, m, mu, z),
+        # (True, 10000, 0.8, 3.1),
     ]
 
     for param in params_no_bucket:
