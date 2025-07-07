@@ -31,7 +31,7 @@ from src.data_loading import (
 from src.data_generation import generate_all_algo_pairs
 from src.data_generation.data_research import data_research
 from src.reward_learning import train_reward_model
-from src.policy_learning import train, change_reward_from_all_datasets
+from src.policy_learning import train, change_reward_from_all_datasets, change_reward_and_save_pt
 
 
 DEFAULT_ENV = "box-close-v2"
@@ -259,13 +259,31 @@ if __name__ == "__main__":
         # Change reward and save dataset
         print("Changing reward", env_name, exp_name, pair_algo, reward_model_algo)
 
-        change_reward_from_all_datasets(
-            env_name=env_name,
-            exp_name=exp_name,
-            pair_algo=pair_algo,
-            reward_model_algo=reward_model_algo,
-        )
-
+        if reward_model_algo == "PT-linear":
+            is_linear = True
+            change_reward_and_save_pt(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_algo=pair_algo,
+                is_linear=is_linear,
+                seq_len=25,
+            )
+        elif reward_model_algo == "PT-exp":
+            is_linear = False
+            change_reward_and_save_pt(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_algo=pair_algo,
+                is_linear=is_linear,
+                seq_len=25,
+            )
+        else:
+            change_reward_from_all_datasets(
+                env_name=env_name,
+                exp_name=exp_name,
+                pair_algo=pair_algo,
+                reward_model_algo=reward_model_algo,
+            )
     elif function_number == 5:
         # Train policy
         print("Training policy", env_name, exp_name, pair_algo, reward_model_algo)
