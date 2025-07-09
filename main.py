@@ -17,7 +17,6 @@ from src.helper import (
     save_reward_graph,
     evaluate_score_model,
     evaluate_and_log_reward_models,
-    evaluate_best_and_last_policy,
     plot_pair,
     evaluate_pair,
     plot_policy_models,
@@ -31,7 +30,11 @@ from src.data_loading import (
 from src.data_generation import generate_all_algo_pairs
 from src.data_generation.data_research import data_research
 from src.reward_learning import train_reward_model
-from src.policy_learning import train, change_reward_from_all_datasets, change_reward_and_save_pt
+from src.policy_learning import (
+    train,
+    change_reward_from_all_datasets,
+    change_reward_and_save_pt,
+)
 
 
 DEFAULT_ENV = "box-close-v2"
@@ -204,7 +207,9 @@ if __name__ == "__main__":
         save_reward_graph(env_name, exp_name, pair_algo, reward_model_algo)
     elif function_number == -4.1:
         # Evaluate reward model
-        print("Evaluating reward model", env_name, exp_name, pair_algo, reward_model_algo)
+        print(
+            "Evaluating reward model", env_name, exp_name, pair_algo, reward_model_algo
+        )
 
         evaluate_existing_reward_dataset(
             env_name=env_name,
@@ -217,15 +222,6 @@ if __name__ == "__main__":
 
         print("Plotting policy evaluation")
         plot_policy_models(exp_name=exp_name)
-
-    elif function_number == -5.1:
-        # Evaluate policy
-        evaluate_best_and_last_policy(
-            env_name=env_name,
-            exp_name=exp_name,
-            pair_algo=pair_algo,
-            reward_model_algo=reward_model_algo,
-        )
 
     elif function_number == 1:
         # Load and save dataset

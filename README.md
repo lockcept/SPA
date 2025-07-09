@@ -16,13 +16,6 @@ cd d4rl
 pip install -e .
 ```
 
-install OfflineRL-Kit
-
-```bash
-cd OfflineRL-Kit
-pip install -e .
-```
-
 ## Run
 
 ```bash
