@@ -113,7 +113,7 @@ def wandb_init(config: dict) -> None:
     wandb.run.save()
 
 
-def train(
+def train_iql_policy(
     env_name,
     exp_name,
     pair_algo: str,

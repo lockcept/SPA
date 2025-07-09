@@ -31,7 +31,7 @@ from src.data_generation import generate_all_algo_pairs
 from src.data_generation.data_research import data_research
 from src.reward_learning import train_reward_model
 from src.policy_learning import (
-    train,
+    train_iql_policy,
     change_reward_from_all_datasets,
     change_reward_and_save_pt,
 )
@@ -284,7 +284,7 @@ if __name__ == "__main__":
         # Train policy
         print("Training policy", env_name, exp_name, pair_algo, reward_model_algo)
 
-        train(
+        train_iql_policy(
             env_name=env_name,
             exp_name=exp_name,
             pair_algo=pair_algo,
