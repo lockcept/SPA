@@ -4,13 +4,14 @@ import numpy as np
 import torch
 import wandb
 
-from offlinerlkit.nets import MLP
-from offlinerlkit.modules import ActorProb, Critic, DiagGaussian
-from offlinerlkit.utils.load_dataset import qlearning_dataset
-from offlinerlkit.buffer import ReplayBuffer
-from offlinerlkit.utils.logger import Logger
-
 from data_loading import get_env
+from policy_learning.actor_module import ActorProb
+from policy_learning.critic_module import Critic
+from policy_learning.dist_module import DiagGaussian
+from policy_learning.load_dataset import qlearning_dataset
+from policy_learning.logger import Logger
+from policy_learning.mlp import MLP
+from policy_learning.replay_buffer import ReplayBuffer
 from utils import get_new_dataset_path, get_policy_model_path
 
 
@@ -124,8 +125,8 @@ def train(
     policy_dir = get_policy_model_path(env_name, exp_name, pair_algo, reward_model_algo)
 
     # import gym lazyly to reduce the overhead
-    from offlinerlkit.policy_trainer import MFPolicyTrainer  # pylint: disable=C0415
-    from offlinerlkit.policy import IQLPolicy  # pylint: disable=C0415
+    from policy_learning.policy_trainer import MFPolicyTrainer  # pylint: disable=C0415
+    from policy_learning.iql_policy import IQLPolicy  # pylint: disable=C0415
 
     configs = get_configs()
     # create env and dataset
@@ -162,12 +163,19 @@ def train(
 
     configs.update({"seed": seed})
     configs.update({"project": "CUDA"})
-    new_exp_name = '-'.join(exp_name.split('-')[:-1])
-    simple_pair_algo = pair_algo.replace("ternary-", "t-").replace("bucket-","buc-")
+    new_exp_name = "-".join(exp_name.split("-")[:-1])
+    simple_pair_algo = pair_algo.replace("ternary-", "t-").replace("bucket-", "buc-")
     group = f"{simple_pair_algo}_{reward_model_algo}"
     configs.update({"group": group})
     configs.update({"name": exp_name})
-    configs.update({"env":env_name, "exp_name": new_exp_name, "pair_algo": pair_algo, "reward_model_algo": reward_model_algo})
+    configs.update(
+        {
+            "env": env_name,
+            "exp_name": new_exp_name,
+            "pair_algo": pair_algo,
+            "reward_model_algo": reward_model_algo,
+        }
+    )
     wandb_init(config=configs)
 
     # create policy model
