@@ -36,6 +36,7 @@ def get_configs():
     step_per_epoch = 1000
     eval_episodes = 5
     batch_size = 256
+    preference_batch_size = 8
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     return {
@@ -206,7 +207,7 @@ def train_ipl_policy(
         exp_name=exp_name,
         pair_type="train",
         pair_algo=pair_algo,
-        batch_size=configs["batch_size"],
+        batch_size=configs["preference_batch_size"],
         shuffle=True,
         drop_last=True,
     )
