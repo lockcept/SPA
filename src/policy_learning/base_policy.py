@@ -1,9 +1,7 @@
-
-
 import numpy as np
 import torch
 import torch.nn as nn
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 
 class BasePolicy(nn.Module):
@@ -17,11 +15,9 @@ class BasePolicy(nn.Module):
         raise NotImplementedError
 
     def select_action(
-        self,
-        obs: Union[np.ndarray, torch.Tensor],
-        deterministic: bool = False
+        self, obs: Union[np.ndarray, torch.Tensor], deterministic: bool = False
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def learn(self, batch: Dict) -> Dict[str, float]:
+    def learn(self, batch: Dict, preference_batch: Optional[Dict]) -> Dict[str, float]:
         raise NotImplementedError

@@ -46,6 +46,15 @@ policy:
 			python main.py -f 5 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
 		)\
 	)
+	
+policy-ipl:
+	$(foreach exp, $(EXP_LIST), \
+		$(foreach algo_pair, $(ALGO_PAIRS), \
+			$(eval algo=$(word 1,$(subst :, ,$(algo_pair)))) \
+			$(eval reward=$(word 2,$(subst :, ,$(algo_pair)))) \
+			python main.py -f 5.1 -e $(ENV) -exp $(exp) -pa $(algo) -ra $(reward); \
+		)\
+	)
 
 eval_pair:
 	$(foreach exp, $(EXP_LIST), \

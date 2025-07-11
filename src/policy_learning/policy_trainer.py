@@ -29,6 +29,7 @@ class MFPolicyTrainer:
         step_per_epoch: int = 1000,
         batch_size: int = 256,
         eval_episodes: int = 10,
+        preference_dataloader: Optional[torch.utils.data.DataLoader] = None,
         lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
     ) -> None:
         self.policy = policy
@@ -40,7 +41,10 @@ class MFPolicyTrainer:
         self._step_per_epoch = step_per_epoch
         self._batch_size = batch_size
         self._eval_episodes = eval_episodes
+        self.preference_dataloader = preference_dataloader
         self.lr_scheduler = lr_scheduler
+
+        self._pref_iter = None
 
         self.log_path = os.path.join(logger._dir, "train_log.csv")
 
@@ -60,7 +64,17 @@ class MFPolicyTrainer:
 
             for _ in pbar:
                 batch = self.buffer.sample(self._batch_size)
-                loss = self.policy.learn(batch)
+                if self.preference_dataloader is not None:
+                    if self._pref_iter is None:
+                        self._pref_iter = iter(self.preference_dataloader)
+                    try:
+                        preference_batch = next(self._pref_iter)
+                    except StopIteration:
+                        self._pref_iter = iter(self.preference_dataloader)
+                        preference_batch = next(self._pref_iter)
+                    loss = self.policy.learn(batch, preference_batch=preference_batch)
+                else:
+                    loss = self.policy.learn(batch)
                 pbar.set_postfix(**loss)
 
                 for k, v in loss.items():
