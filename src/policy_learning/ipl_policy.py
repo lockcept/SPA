@@ -89,9 +89,24 @@ class IPLIQLPolicy(BasePolicy):
             qs = q1_old
             next_v = self.critic_v(next_obss)
 
-        # Compute value loss using expectile regression
+        # Compute value loss using expectile regression with preference and offline data distinction
         v = self.critic_v(obss)
-        v_loss = self._expectile_regression(qs - v).mean()
+        s0_obs, s0_act, s1_obs, s1_act, mu, _, _ = [
+            x.to(self.actor.device) for x in preference_batch
+        ]
+        B, T = s0_obs.shape[:2]
+        # Offline value loss over all obss
+        v_loss_offline = self._expectile_regression(qs - v).mean()
+
+        # Preference-based value loss
+        s0_v = self.critic_v(s0_obs.view(B * T, -1))
+        s1_v = self.critic_v(s1_obs.view(B * T, -1))
+        s0_q = self.critic_q1_old(s0_obs.view(B * T, -1), s0_act.view(B * T, -1))
+        s1_q = self.critic_q1_old(s1_obs.view(B * T, -1), s1_act.view(B * T, -1))
+
+        v_loss_fb = self._expectile_regression(s0_q - s0_v).mean() + self._expectile_regression(s1_q - s1_v).mean()
+        v_loss = 0.5 * v_loss_fb + 0.5 * v_loss_offline
+
         self.critic_v_optim.zero_grad()
         v_loss.backward()
         self.critic_v_optim.step()
@@ -128,7 +143,21 @@ class IPLIQLPolicy(BasePolicy):
             v = self.critic_v(obss)
             exp_a = torch.exp((q - v) * self._temperature)
             exp_a = torch.clip(exp_a, None, 100.0)
-        actor_loss = -(exp_a * log_probs).mean()
+        # Offline actor loss over all data
+        actor_loss_offline = -(exp_a * log_probs).mean()
+
+        # Preference-based actor loss
+        s0_logp = self.actor(s0_obs.view(B * T, -1)).log_prob(s0_act.view(B * T, -1))
+        s1_logp = self.actor(s1_obs.view(B * T, -1)).log_prob(s1_act.view(B * T, -1))
+        with torch.no_grad():
+            s0_q = self.critic_q1_old(s0_obs.view(B * T, -1), s0_act.view(B * T, -1))
+            s0_v = self.critic_v(s0_obs.view(B * T, -1))
+            s1_q = self.critic_q1_old(s1_obs.view(B * T, -1), s1_act.view(B * T, -1))
+            s1_v = self.critic_v(s1_obs.view(B * T, -1))
+            s0_adv = torch.exp((s0_q - s0_v) * self._temperature).clamp_max(100.0)
+            s1_adv = torch.exp((s1_q - s1_v) * self._temperature).clamp_max(100.0)
+        actor_loss_fb = -(s0_adv * s0_logp).mean() + -(s1_adv * s1_logp).mean()
+        actor_loss = 0.5 * actor_loss_fb + 0.5 * actor_loss_offline
 
         self.actor_optim.zero_grad()
         actor_loss.backward()
