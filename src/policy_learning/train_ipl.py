@@ -54,6 +54,7 @@ def get_configs():
         "step_per_epoch": step_per_epoch,
         "eval_episodes": eval_episodes,
         "batch_size": batch_size,
+        "preference_batch_size": preference_batch_size,
         "device": device,
     }
 
@@ -74,13 +75,12 @@ def train_ipl_policy(
     pair_algo: str,
     reward_model_algo,
 ):
-    new_reward_model_algo = reward_model_algo + "-ipl"
 
     """
     Train IPL policy on the given dataset
     """
     policy_dir = get_policy_model_path(
-        env_name, exp_name, pair_algo, new_reward_model_algo
+        env_name, exp_name, pair_algo, reward_model_algo
     )
 
     # import gym lazyly to reduce the overhead
@@ -118,7 +118,7 @@ def train_ipl_policy(
     configs.update({"project": "CUDA"})
     new_exp_name = "-".join(exp_name.split("-")[:-1])
     simple_pair_algo = pair_algo.replace("ternary-", "t-").replace("bucket-", "buc-")
-    group = f"{simple_pair_algo}_{new_reward_model_algo}"
+    group = f"{simple_pair_algo}_{reward_model_algo}"
     configs.update({"group": group})
     configs.update({"name": exp_name})
     configs.update(
@@ -126,7 +126,7 @@ def train_ipl_policy(
             "env": env_name,
             "exp_name": new_exp_name,
             "pair_algo": pair_algo,
-            "reward_model_algo": new_reward_model_algo,
+            "reward_model_algo": reward_model_algo,
         }
     )
     wandb_init(config=configs)
