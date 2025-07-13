@@ -127,7 +127,14 @@ class IPLIQLPolicy(BasePolicy):
         chi2_coeff = 0.5
         q = self.critic_q1(obss, actions)
         reward = q - self._gamma * next_v
-        chi2_loss = (reward**2).mean() * chi2_coeff
+        # Preference-based chi2 loss
+        reward_pref = torch.cat([
+            self.critic_q1(s0_obs.view(B * T, -1), s0_act.view(B * T, -1)) - self._gamma * self.critic_v(s0_obs.view(B * T, -1)),
+            self.critic_q1(s1_obs.view(B * T, -1), s1_act.view(B * T, -1)) - self._gamma * self.critic_v(s1_obs.view(B * T, -1))
+        ])
+        chi2_loss_pref = (reward_pref**2).mean()
+        chi2_loss_offline = (reward**2).mean()
+        chi2_loss = chi2_coeff * (0.5 * chi2_loss_pref + 0.5 * chi2_loss_offline)
 
         critic_loss = q_loss + chi2_loss
 
