@@ -35,44 +35,6 @@ class ReplayBuffer:
 
         self.device = torch.device(device)
 
-    def add(
-        self,
-        obs: np.ndarray,
-        next_obs: np.ndarray,
-        action: np.ndarray,
-        reward: np.ndarray,
-        terminal: np.ndarray,
-    ) -> None:
-        # Copy to avoid modification by reference
-        self.observations[self._ptr] = np.array(obs).copy()
-        self.next_observations[self._ptr] = np.array(next_obs).copy()
-        self.actions[self._ptr] = np.array(action).copy()
-        self.rewards[self._ptr] = np.array(reward).copy()
-        self.terminals[self._ptr] = np.array(terminal).copy()
-
-        self._ptr = (self._ptr + 1) % self._max_size
-        self._size = min(self._size + 1, self._max_size)
-
-    def add_batch(
-        self,
-        obss: np.ndarray,
-        next_obss: np.ndarray,
-        actions: np.ndarray,
-        rewards: np.ndarray,
-        terminals: np.ndarray,
-    ) -> None:
-        batch_size = len(obss)
-        indexes = np.arange(self._ptr, self._ptr + batch_size) % self._max_size
-
-        self.observations[indexes] = np.array(obss).copy()
-        self.next_observations[indexes] = np.array(next_obss).copy()
-        self.actions[indexes] = np.array(actions).copy()
-        self.rewards[indexes] = np.array(rewards).copy()
-        self.terminals[indexes] = np.array(terminals).copy()
-
-        self._ptr = (self._ptr + batch_size) % self._max_size
-        self._size = min(self._size + batch_size, self._max_size)
-
     def load_dataset(self, dataset: Dict[str, np.ndarray]) -> None:
         observations = np.array(dataset["observations"], dtype=self.obs_dtype)
         next_observations = np.array(dataset["next_observations"], dtype=self.obs_dtype)
@@ -89,13 +51,113 @@ class ReplayBuffer:
         self._ptr = len(observations)
         self._size = len(observations)
 
-    def normalize_obs(self, eps: float = 1e-3) -> Tuple[np.ndarray, np.ndarray]:
-        mean = self.observations.mean(0, keepdims=True)
-        std = self.observations.std(0, keepdims=True) + eps
-        self.observations = (self.observations - mean) / std
-        self.next_observations = (self.next_observations - mean) / std
-        obs_mean, obs_std = mean, std
-        return obs_mean, obs_std
+        # additionally segment into trajectories based on terminal flag
+        self.trajectories = []
+        start_idx = 0
+        for idx, term in enumerate(terminals):
+            if term > 0.5:  # terminal reached
+                end_idx = idx + 1
+                traj_obs = observations[start_idx:end_idx]
+                traj_act = actions[start_idx:end_idx]
+                self.trajectories.append(
+                    {"observations": traj_obs, "actions": traj_act}
+                )
+                start_idx = end_idx
+        # if leftover (not terminal at end)
+        if start_idx < len(observations):
+            traj_obs = observations[start_idx:]
+            traj_act = actions[start_idx:]
+            self.trajectories.append({"observations": traj_obs, "actions": traj_act})
+
+    def sample_trajectory_pair(
+        self, batch_size: int = 32, seg_len: int = 25
+    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
+        """Sample batch_size pairs of completely random segments from possibly different trajectories."""
+        assert hasattr(self, "trajectories"), "Dataset not segmented yet."
+        obs0_list, act0_list, obs1_list, act1_list = [], [], [], []
+        for _ in range(batch_size):
+            # first segment from one random trajectory
+            traj_a = self.trajectories[np.random.randint(0, len(self.trajectories))]
+            traj_obs_a = traj_a["observations"]
+            traj_act_a = traj_a["actions"]
+            traj_len_a = len(traj_obs_a)
+            if traj_len_a < seg_len:
+                obs_seq0 = traj_obs_a[:seg_len]
+                act_seq0 = traj_act_a[:seg_len]
+            else:
+                max_start_a = traj_len_a - seg_len
+                start_a = np.random.randint(0, max_start_a + 1)
+                end_a = start_a + seg_len
+                obs_seq0 = traj_obs_a[start_a:end_a]
+                act_seq0 = traj_act_a[start_a:end_a]
+
+            # second segment from another random trajectory (could be same, sampled with replacement)
+            traj_b = self.trajectories[np.random.randint(0, len(self.trajectories))]
+            traj_obs_b = traj_b["observations"]
+            traj_act_b = traj_b["actions"]
+            traj_len_b = len(traj_obs_b)
+            if traj_len_b < seg_len:
+                obs_seq1 = traj_obs_b[:seg_len]
+                act_seq1 = traj_act_b[:seg_len]
+            else:
+                max_start_b = traj_len_b - seg_len
+                start_b = np.random.randint(0, max_start_b + 1)
+                end_b = start_b + seg_len
+                obs_seq1 = traj_obs_b[start_b:end_b]
+                act_seq1 = traj_act_b[start_b:end_b]
+
+            obs0_list.append(obs_seq0)
+            act0_list.append(act_seq0)
+            obs1_list.append(obs_seq1)
+            act1_list.append(act_seq1)
+        obs0 = torch.tensor(np.stack(obs0_list), dtype=torch.float32).to(self.device)
+        act0 = torch.tensor(np.stack(act0_list), dtype=torch.float32).to(self.device)
+        obs1 = torch.tensor(np.stack(obs1_list), dtype=torch.float32).to(self.device)
+        act1 = torch.tensor(np.stack(act1_list), dtype=torch.float32).to(self.device)
+        return {"obs0": obs0, "act0": act0, "obs1": obs1, "act1": act1}
+
+    def sample_overlapping_pair(
+        self, batch_size: int = 32, seg_len: int = 250, overlap_shift: int = 20
+    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
+        """Sample batch_size pairs of nearly overlapping segments sigma and sigma'."""
+        assert hasattr(self, "trajectories"), "Dataset not segmented yet."
+        obs0_list, act0_list, obs1_list, act1_list = [], [], [], []
+        for _ in range(batch_size):
+            traj = self.trajectories[np.random.randint(0, len(self.trajectories))]
+            traj_obs = traj["observations"]
+            traj_act = traj["actions"]
+            traj_len = len(traj_obs)
+            if traj_len < seg_len + overlap_shift + 1:
+                obs_seq = traj_obs[:seg_len]
+                act_seq = traj_act[:seg_len]
+                obs0_list.append(obs_seq)
+                act0_list.append(act_seq)
+                obs1_list.append(obs_seq)
+                act1_list.append(act_seq)
+                continue
+            max_start = traj_len - seg_len - overlap_shift
+            start = np.random.randint(0, max_start)
+            end = start + seg_len
+            obs_seq0 = traj_obs[start:end]
+            act_seq0 = traj_act[start:end]
+            # sample shift from normal distribution N(0, overlap_shift^2)
+            shift = int(np.random.normal(loc=0.0, scale=overlap_shift))
+            shift_start = min(max(0, start + shift), traj_len - seg_len)
+            shift_end = shift_start + seg_len
+            obs_seq1 = traj_obs[shift_start:shift_end]
+            act_seq1 = traj_act[shift_start:shift_end]
+            obs0_list.append(obs_seq0)
+            act0_list.append(act_seq0)
+            obs1_list.append(obs_seq1)
+            act1_list.append(act_seq1)
+        obs0 = torch.tensor(np.stack(obs0_list), dtype=torch.float32).to(self.device)
+        act0 = torch.tensor(np.stack(act0_list), dtype=torch.float32).to(self.device)
+        obs1 = torch.tensor(np.stack(obs1_list), dtype=torch.float32).to(self.device)
+        act1 = torch.tensor(np.stack(act1_list), dtype=torch.float32).to(self.device)
+        return (
+            {"observations": obs0, "actions": act0},
+            {"observations": obs1, "actions": act1},
+        )
 
     def sample(self, batch_size: int) -> Dict[str, torch.Tensor]:
 
@@ -112,49 +174,3 @@ class ReplayBuffer:
             "terminals": torch.tensor(self.terminals[batch_indexes]).to(self.device),
             "rewards": torch.tensor(self.rewards[batch_indexes]).to(self.device),
         }
-
-    def sample_all(self) -> Dict[str, np.ndarray]:
-        return {
-            "observations": self.observations[: self._size].copy(),
-            "actions": self.actions[: self._size].copy(),
-            "next_observations": self.next_observations[: self._size].copy(),
-            "terminals": self.terminals[: self._size].copy(),
-            "rewards": self.rewards[: self._size].copy(),
-        }
-
-    def sample_overlapping_segments(self, batch_size: int, seg_len: int = 25, overlap_shift: int = 5) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
-        """
-        Sample nearly overlapping segments sigma and sigma' by shifting within a small offset.
-        terminal is ignored.
-        """
-        assert self._size > seg_len + overlap_shift, "Not enough samples to create segments"
-        max_start = self._size - seg_len - overlap_shift
-        start_idxs = np.random.randint(0, max_start, size=batch_size)
-
-        obs0_batch, act0_batch = [], []
-        obs1_batch, act1_batch = [], []
-        for start in start_idxs:
-            # sigma segment
-            end = start + seg_len
-            obs_seq0 = self.observations[start:end]
-            act_seq0 = self.actions[start:end]
-            # sigma' shifted segment
-            shift = np.random.randint(-overlap_shift, overlap_shift+1)
-            shift_start = max(0, start + shift)
-            shift_end = shift_start + seg_len
-            obs_seq1 = self.observations[shift_start:shift_end]
-            act_seq1 = self.actions[shift_start:shift_end]
-
-            obs0_batch.append(obs_seq0)
-            act0_batch.append(act_seq0)
-            obs1_batch.append(obs_seq1)
-            act1_batch.append(act_seq1)
-
-        obs0_batch = torch.tensor(np.stack(obs0_batch), dtype=torch.float32).to(self.device)
-        act0_batch = torch.tensor(np.stack(act0_batch), dtype=torch.float32).to(self.device)
-        obs1_batch = torch.tensor(np.stack(obs1_batch), dtype=torch.float32).to(self.device)
-        act1_batch = torch.tensor(np.stack(act1_batch), dtype=torch.float32).to(self.device)
-
-        sigma = {"observations": obs0_batch, "actions": act0_batch}
-        sigma_prime = {"observations": obs1_batch, "actions": act1_batch}
-        return sigma, sigma_prime

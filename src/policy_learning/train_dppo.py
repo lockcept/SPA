@@ -18,6 +18,48 @@ from policy_learning.replay_buffer import ReplayBuffer
 from utils import get_new_dataset_path, get_policy_model_path
 
 
+class DeterministicPolicy(torch.nn.Module):
+    def __init__(
+        self,
+        obs_dim: int,
+        hidden_dims: list,
+        action_dim: int,
+        dropout_rate: float = 0.0,
+        max_action: float = 1.0,
+    ):
+        super().__init__()
+        layers = []
+        input_dim = obs_dim
+        for h in hidden_dims:
+            layers.append(torch.nn.Linear(input_dim, h))
+            layers.append(torch.nn.ReLU())
+            if dropout_rate and dropout_rate > 0.0:
+                layers.append(torch.nn.Dropout(dropout_rate))
+            input_dim = h
+        self.mlp = torch.nn.Sequential(*layers)
+        self.out_layer = torch.nn.Linear(input_dim, action_dim)
+        self.max_action = max_action
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        x = self.mlp(observations)
+        means = torch.tanh(self.out_layer(x))
+        return means * self.max_action
+
+    def mode(self, observations: torch.Tensor) -> torch.Tensor:
+        """Alias for deterministic output"""
+        return self.forward(observations)
+
+    def select_action(self, obs: np.ndarray, deterministic: bool = True) -> np.ndarray:
+        """Select deterministic action for given single observation or batch of observations"""
+        self.eval()
+        with torch.no_grad():
+            obs_tensor = torch.tensor(obs, dtype=torch.float32)
+            if next(self.parameters()).is_cuda:
+                obs_tensor = obs_tensor.cuda()
+            action = self.mode(obs_tensor).cpu().numpy()
+        return action
+
+
 def get_configs():
     """
     suggested hypers
@@ -26,22 +68,22 @@ def get_configs():
     hidden_dims = [256, 256]
     actor_lr = 3e-4
     dropout_rate = None
+    policy_dropout_rate = 0.25
     step_per_epoch = 1000
     batch_size = 256
-    preference_batch_size = 8
+    preference_batch_size = 256
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    M_epochs = 200  # predictor training epochs
     N_epochs = 300  # policy training epochs
 
     return {
         "hidden_dims": hidden_dims,
         "actor_lr": actor_lr,
         "dropout_rate": dropout_rate,
+        "policy_dropout_rate": policy_dropout_rate,
         "step_per_epoch": step_per_epoch,
         "batch_size": batch_size,
         "preference_batch_size": preference_batch_size,
         "device": device,
-        "M_epochs": M_epochs,
         "N_epochs": N_epochs,
     }
 
@@ -56,7 +98,7 @@ def wandb_init(config: dict) -> None:
     wandb.run.save()
 
 
-def evaluate_policy_detailed(policy_trainer, env, n_episodes=5):
+def evaluate_policy_detailed(policy: DeterministicPolicy, env, n_episodes=10):
     eval_info = {
         "eval/episode_reward": [],
         "eval/episode_length": [],
@@ -68,9 +110,7 @@ def evaluate_policy_detailed(policy_trainer, env, n_episodes=5):
     episode_reward, episode_length, episode_success = 0, 0, 0
 
     while num_episodes < n_episodes:
-        action = policy_trainer.policy.select_action(
-            obs.reshape(1, -1), deterministic=True
-        )
+        action = policy.select_action(obs.reshape(1, -1), deterministic=True)
         next_obs, reward, terminal, info = env.step(action.flatten())
         episode_reward += reward
         episode_length += 1
@@ -99,6 +139,7 @@ def evaluate_policy_detailed(policy_trainer, env, n_episodes=5):
     eval_info["eval/episode_success"] = [
         ep["episode_success"] for ep in eval_ep_info_buffer
     ]
+    print(eval_info)
     return eval_info
 
 
@@ -161,23 +202,18 @@ def train_dppo_policy(
     wandb_init(config=configs)
 
     # create policy model
-    actor_backbone = MLP(
-        input_dim=np.prod(configs["obs_shape"]),
+    obs_dim = np.prod(configs["obs_shape"])
+    actor = DeterministicPolicy(
+        obs_dim=obs_dim,
         hidden_dims=configs["hidden_dims"],
-        dropout_rate=configs["dropout_rate"],
-    )
-    dist = DiagGaussian(
-        latent_dim=getattr(actor_backbone, "output_dim"),
-        output_dim=configs["action_dim"],
-        unbounded=False,
-        conditioned_sigma=False,
-        max_mu=configs["max_action"],
-    )
-    actor = ActorProb(actor_backbone, dist, configs["device"])
+        action_dim=configs["action_dim"],
+        dropout_rate=(
+            configs["policy_dropout_rate"] if configs["policy_dropout_rate"] else 0.0
+        ),
+        max_action=configs["max_action"],
+    ).to(configs["device"])
 
     actor_optim = torch.optim.Adam(actor.parameters(), lr=configs["actor_lr"])
-
-    lr_scheduler = None
 
     # create DPPO policy
     policy = DPPOPolicy(
@@ -226,42 +262,37 @@ def train_dppo_policy(
     logger = Logger(policy_dir, output_config)
     logger.log_hyperparameters(configs)
 
-    # create policy trainer
-    policy_trainer = MFPolicyTrainer(
-        policy=policy,
-        eval_env=env,
-        buffer=buffer,
-        logger=logger,
-        step_per_epoch=configs["step_per_epoch"],
-        batch_size=configs["batch_size"],
-        preference_dataloader=preference_dataloader,
-        lr_scheduler=lr_scheduler,
-    )
-
     # Phase 1: Train preference predictor only
-    for epoch_idx in range(configs["M_epochs"]):
-        for pref_batch in preference_dataloader:
-            pref_loss_dict = train_preference_predictor(
-                pref_predictor,
-                pref_opt,
-                pref_batch,
-                buffer=buffer,
-                smoothness_weight=1.0,
-            )
-            # logkv_mean for each batch metric
-            for key, value in pref_loss_dict.items():
-                logger.logkv_mean(key, value)
-        # dump averaged metrics once per epoch
-        logger.set_timestep(epoch_idx)
-        logger.dumpkvs()
-        wandb.log(pref_loss_dict, step=epoch_idx)
+    import itertools
+    from itertools import cycle
+
+    total_pref_steps = 10000
+    step_counter = 0
+    for pref_batch in itertools.islice(cycle(preference_dataloader), total_pref_steps):
+        pref_loss_dict = train_preference_predictor(
+            pref_predictor,
+            pref_opt,
+            pref_batch,
+            buffer=buffer,
+            smoothness_weight=1.0,
+        )
+        step_counter += 1
+        for key, value in pref_loss_dict.items():
+            logger.logkv_mean(f"pref/{key}", value)
+        # log every 100 steps
+        if step_counter % 1 == 0:
+            logger.set_timestep(step_counter)
+            logger.dumpkvs()
 
     # Phase 2: Fix predictor, train policy
+    from tqdm import tqdm
+
     for epoch_idx in range(configs["N_epochs"]):
-        for _ in range(configs["step_per_epoch"]):
-            unlabeled_batch = buffer.sample_overlapping_segments(
-                configs["preference_batch_size"]
-            )
+        for step_idx in tqdm(
+            range(configs["step_per_epoch"]),
+            desc=f"Epoch {epoch_idx+1}/{configs['N_epochs']}",
+        ):
+            unlabeled_batch = buffer.sample_trajectory_pair(64, 250)
             policy_loss_dict = policy.learn_with_predictor(
                 pref_predictor,
                 unlabeled_batch,
@@ -270,11 +301,9 @@ def train_dppo_policy(
             for key, value in policy_loss_dict.items():
                 logger.logkv_mean(key, value)
         logger.set_timestep(epoch_idx)
-        logger.dumpkvs()
-        wandb.log(policy_loss_dict, step=epoch_idx)
 
         # detailed evaluation
-        eval_info = evaluate_policy_detailed(policy_trainer, env, n_episodes=5)
+        eval_info = evaluate_policy_detailed(policy, env, n_episodes=5)
         normalized_rewards = [
             env.get_normalized_score(r) for r in eval_info["eval/episode_reward"]
         ]
@@ -295,6 +324,6 @@ def train_dppo_policy(
         # also log to logger
         for key, value in wandb_log.items():
             logger.logkv(key, value)
-        logger.set_timestep(epoch_idx)
+        logger.set_timestep((epoch_idx + 1) * configs["step_per_epoch"])
         logger.dumpkvs()
-        wandb.log(wandb_log, step=epoch_idx)
+        wandb.log(wandb_log, step=(epoch_idx + 1) * configs["step_per_epoch"])

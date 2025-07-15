@@ -7,6 +7,8 @@ import torch.nn.functional as F
 
 from policy_learning.base_policy import BasePolicy
 from policy_learning.pref_transformer import PrefTransformer
+from policy_learning.replay_buffer import ReplayBuffer
+
 
 class PreferencePredictor(nn.Module):
     def __init__(self, input_dim, hidden_dim=256, n_heads=4, n_layers=1, dropout=0.1):
@@ -23,7 +25,7 @@ class PreferencePredictor(nn.Module):
 
     def encode_traj(self, traj):
         # traj shape: (B, T, obs+act)
-        h = self.encoder(traj)   # PrefTransformer returns (B, T, hidden)
+        h = self.encoder(traj)  # PrefTransformer returns (B, T, hidden)
         return h.mean(dim=1)
 
     def forward(self, traj0, traj1):
@@ -59,21 +61,28 @@ class DPPOPolicy(BasePolicy):
         if len(obs.shape) == 1:
             obs = obs.reshape(1, -1)
         with torch.no_grad():
-            dist = self.actor(obs)
-            if deterministic:
-                action = dist.mode().cpu().numpy()
-            else:
-                action = dist.sample().cpu().numpy()
+            obs_tensor = torch.tensor(
+                obs, dtype=torch.float32, device=next(self.actor.parameters()).device
+            )
+            action = self.actor(obs_tensor).cpu().numpy()
         action = np.clip(action, self.action_space.low[0], self.action_space.high[0])
         return action
 
     def learn_with_predictor(
         self, predictor: nn.Module, unlabeled_batch: Dict, lambda_reg: float = 0.5
     ) -> Dict[str, float]:
-        # unlabeled_batch contains (traj0_obs, traj0_act, traj1_obs, traj1_act)
+        # unlabeled_batch should be from buffer.sample_trajectory_pair or sample_overlapping_pair
+        device = next(self.actor.parameters()).device
         s0_obs, s0_act, s1_obs, s1_act = [
-            x.to(next(self.actor.parameters()).device) for x in unlabeled_batch
+            x.to(device)
+            for x in [
+                unlabeled_batch["obs0"],
+                unlabeled_batch["act0"],
+                unlabeled_batch["obs1"],
+                unlabeled_batch["act1"],
+            ]
         ]
+
         # build traj for predictor
         traj0 = torch.cat([s0_obs, s0_act], dim=-1)  # (B, T, obs+act)
         traj1 = torch.cat([s1_obs, s1_act], dim=-1)
@@ -81,11 +90,14 @@ class DPPOPolicy(BasePolicy):
             logits_pref = predictor(traj0, traj1)
             y_hat = (torch.sigmoid(logits_pref) > 0.5).float()
 
-        # compute policy-segment L2 distance as in learner.py
-        policy_act0 = self.actor(s0_obs).mode()
-        policy_act1 = self.actor(s1_obs).mode()
+        # compute policy-segment L2 distance
+        B, T, obs_dim = s0_obs.shape
+        flat_obs0 = s0_obs.view(B * T, obs_dim)
+        flat_obs1 = s1_obs.view(B * T, obs_dim)
+        policy_act0 = self.actor(flat_obs0).view(B, T, -1)
+        policy_act1 = self.actor(flat_obs1).view(B, T, -1)
         # normalize by action range
-        action_range = (self.action_space.high[0] - self.action_space.low[0])
+        action_range = self.action_space.high[0] - self.action_space.low[0]
         step_diffs0 = (policy_act0 - s0_act) / action_range
         step_diffs1 = (policy_act1 - s1_act) / action_range
         d0 = torch.norm(step_diffs0, dim=2).mean(dim=1)  # average over T
@@ -105,10 +117,8 @@ def train_preference_predictor(
     predictor,
     optimizer,
     pref_batch,
-    buffer=None,
+    buffer: ReplayBuffer,
     smoothness_weight=1.0,
-    seg_len=25,
-    overlap_shift=5,
 ):
     s0_obs, s0_act, s1_obs, s1_act, mu, _, _ = [
         x.to(next(predictor.parameters()).device) for x in pref_batch
@@ -120,16 +130,23 @@ def train_preference_predictor(
     ce_loss = F.binary_cross_entropy_with_logits(logits, label)
 
     smoothness_loss = torch.tensor(0.0, device=logits.device)
-    if buffer is not None:
-        # sample nearly overlapping segments sigma, sigma'
-        sigma, sigma_prime = buffer.sample_overlapping_segments(
-            batch_size=label.shape[0], seg_len=seg_len, overlap_shift=overlap_shift
-        )
-        sigma_traj = torch.cat([sigma["observations"].to(label.device), sigma["actions"].to(label.device)], dim=-1)
-        sigma_prime_traj = torch.cat([sigma_prime["observations"].to(label.device), sigma_prime["actions"].to(label.device)], dim=-1)
-        logits_overlap = predictor(sigma_traj, sigma_prime_traj)
-        probs_overlap = torch.sigmoid(logits_overlap)
-        smoothness_loss = ((probs_overlap - 0.5) ** 2).mean()
+
+    # sample nearly overlapping segments sigma, sigma'
+    sigma, sigma_prime = buffer.sample_overlapping_pair()
+    sigma_traj = torch.cat(
+        [sigma["observations"].to(label.device), sigma["actions"].to(label.device)],
+        dim=-1,
+    )
+    sigma_prime_traj = torch.cat(
+        [
+            sigma_prime["observations"].to(label.device),
+            sigma_prime["actions"].to(label.device),
+        ],
+        dim=-1,
+    )
+    logits_overlap = predictor(sigma_traj, sigma_prime_traj)
+    probs_overlap = torch.sigmoid(logits_overlap)
+    smoothness_loss = ((probs_overlap - 0.5) ** 2).mean()
 
     total_loss = ce_loss + smoothness_weight * smoothness_loss
     optimizer.zero_grad()
