@@ -121,3 +121,40 @@ class ReplayBuffer:
             "terminals": self.terminals[: self._size].copy(),
             "rewards": self.rewards[: self._size].copy(),
         }
+
+    def sample_overlapping_segments(self, batch_size: int, seg_len: int = 25, overlap_shift: int = 5) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
+        """
+        Sample nearly overlapping segments sigma and sigma' by shifting within a small offset.
+        terminal is ignored.
+        """
+        assert self._size > seg_len + overlap_shift, "Not enough samples to create segments"
+        max_start = self._size - seg_len - overlap_shift
+        start_idxs = np.random.randint(0, max_start, size=batch_size)
+
+        obs0_batch, act0_batch = [], []
+        obs1_batch, act1_batch = [], []
+        for start in start_idxs:
+            # sigma segment
+            end = start + seg_len
+            obs_seq0 = self.observations[start:end]
+            act_seq0 = self.actions[start:end]
+            # sigma' shifted segment
+            shift = np.random.randint(-overlap_shift, overlap_shift+1)
+            shift_start = max(0, start + shift)
+            shift_end = shift_start + seg_len
+            obs_seq1 = self.observations[shift_start:shift_end]
+            act_seq1 = self.actions[shift_start:shift_end]
+
+            obs0_batch.append(obs_seq0)
+            act0_batch.append(act_seq0)
+            obs1_batch.append(obs_seq1)
+            act1_batch.append(act_seq1)
+
+        obs0_batch = torch.tensor(np.stack(obs0_batch), dtype=torch.float32).to(self.device)
+        act0_batch = torch.tensor(np.stack(act0_batch), dtype=torch.float32).to(self.device)
+        obs1_batch = torch.tensor(np.stack(obs1_batch), dtype=torch.float32).to(self.device)
+        act1_batch = torch.tensor(np.stack(act1_batch), dtype=torch.float32).to(self.device)
+
+        sigma = {"observations": obs0_batch, "actions": act0_batch}
+        sigma_prime = {"observations": obs1_batch, "actions": act1_batch}
+        return sigma, sigma_prime

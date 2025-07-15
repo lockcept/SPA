@@ -33,6 +33,7 @@ from src.reward_learning import train_reward_model
 from src.policy_learning import (
     train_iql_policy,
     train_ipl_policy,
+    train_dppo_policy,
     change_reward_from_all_datasets,
     change_reward_and_save_pt,
 )
@@ -296,6 +297,16 @@ if __name__ == "__main__":
         print("Train IPL", env_name, exp_name, pair_algo, reward_model_algo)
 
         train_ipl_policy(
+            env_name=env_name,
+            exp_name=exp_name,
+            pair_algo=pair_algo,
+            reward_model_algo=reward_model_algo,
+        )
+    elif function_number == 5.2:
+        # Train DPPO
+        print("Train DPPO", env_name, exp_name, pair_algo, reward_model_algo)
+
+        train_dppo_policy(
             env_name=env_name,
             exp_name=exp_name,
             pair_algo=pair_algo,
