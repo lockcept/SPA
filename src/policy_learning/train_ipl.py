@@ -141,6 +141,10 @@ def train_ipl_policy(
         input_dim=np.prod(configs["obs_shape"]) + configs["action_dim"],
         hidden_dims=configs["hidden_dims"],
     )
+    critic_q2_backbone = MLP(
+        input_dim=np.prod(configs["obs_shape"]) + configs["action_dim"],
+        hidden_dims=configs["hidden_dims"],
+    )
     critic_v_backbone = MLP(
         input_dim=np.prod(configs["obs_shape"]), hidden_dims=configs["hidden_dims"]
     )
@@ -153,6 +157,7 @@ def train_ipl_policy(
     )
     actor = ActorProb(actor_backbone, dist, configs["device"])
     critic_q1 = Critic(critic_q1_backbone, configs["device"])
+    critic_q2 = Critic(critic_q2_backbone, configs["device"])
     critic_v = Critic(critic_v_backbone, configs["device"])
 
     for m in (
@@ -167,6 +172,9 @@ def train_ipl_policy(
     critic_q1_optim = torch.optim.Adam(
         critic_q1.parameters(), lr=configs["critic_q_lr"]
     )
+    critic_q2_optim = torch.optim.Adam(
+        critic_q2.parameters(), lr=configs["critic_q_lr"]
+    )
     critic_v_optim = torch.optim.Adam(critic_v.parameters(), lr=configs["critic_v_lr"])
 
     if configs["lr_decay"]:
@@ -180,9 +188,11 @@ def train_ipl_policy(
     policy = IPLIQLPolicy(
         actor,
         critic_q1,
+        critic_q2,
         critic_v,
         actor_optim,
         critic_q1_optim,
+        critic_q2_optim,
         critic_v_optim,
         action_space=env.action_space,
         tau=configs["tau"],
